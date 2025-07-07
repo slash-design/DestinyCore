@@ -1381,7 +1381,7 @@ void Creature::CalculateBaseDamage(const CreatureTemplate* cinfo, uint8 level)
     float minrangedmg = cinfo->minrangedmg;
     float maxrangedmg = cinfo->maxrangedmg;
 
-    if (sWorld->getBoolConfig(CONFIG_DAMAGE_ENABLE_FROM_DBC))
+    /*if (sWorld->getBoolConfig(CONFIG_DAMAGE_ENABLE_FROM_DBC))
     {
         uint32 index = (getClass()-1) * 123 + level-1;
         GtNpcDamageByClassEntry const* NpcDam = NULL;
@@ -1421,7 +1421,7 @@ void Creature::CalculateBaseDamage(const CreatureTemplate* cinfo, uint8 level)
         SetFloatValue(UNIT_FIELD_MINRANGEDDAMAGE, mindmg);
         SetFloatValue(UNIT_FIELD_MAXRANGEDDAMAGE, maxdmg);
     }
-    else
+    else*/
     {
         SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, mindmg);
         SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, maxdmg);

@@ -41,7 +41,7 @@ class ARC4
         static void rc4_init(RC4_Context * ctx, const uint8 * seed, int seedlen);
         static void rc4_process(RC4_Context * ctx, uint8 * data, int datalen);
     private:
-        EVP_CIPHER_CTX* m_ctx;
+        EVP_CIPHER_CTX *m_ctx;
 };
 
 #endif

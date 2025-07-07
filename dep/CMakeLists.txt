@@ -37,6 +37,7 @@ add_subdirectory(fmt)
 if(SERVERS)
   add_subdirectory(gsoap)
   add_subdirectory(mysql)
+  add_subdirectory(boost)
 endif()
 
 if(TOOLS)

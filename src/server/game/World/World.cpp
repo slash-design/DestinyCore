@@ -305,11 +305,12 @@ void World::AddSession_(WorldSession* s)
     }
 
     s->SendAuthResponse(AUTH_OK);
-    s->SendAddonsInfo();
+    //s->SendAddonsInfo();
     s->SendClientCacheVersion(sWorld->getIntConfig(CONFIG_CLIENTCACHE_VERSION));
     s->SendBattlePay();
     s->SendTutorialsData();
-    s->SendDisplayPromo(0);
+    //s->SendDisplayPromo(0);
+    s->SendTimezoneInformation();
 
     UpdateMaxSessionCounters();
 

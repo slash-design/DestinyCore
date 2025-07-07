@@ -107,11 +107,10 @@ DBCStorage <GtOCTBaseHPByClassEntry>      sGtOCTBaseHPByClassStore(GtOCTBaseHPBy
 DBCStorage <GtOCTBaseMPByClassEntry>      sGtOCTBaseMPByClassStore(GtOCTBaseMPByClassfmt);
 DBCStorage <GtBattlePetTypeDamageModEntry>      sGtBattlePetTypeDamageModStore(GtBattlePetTypeDamageModfmt);
 DBCStorage <GuildPerkSpellsEntry>         sGuildPerkSpellsStore(GuildPerkSpellsfmt);
-DBCStorage <GtNpcDamageByClassEntry>     sGtNpcDamageByClassStore(GtNpcDamageByClassfmt);
-DBCStorage <GtNpcDamageByClassEntry>     sGtNpcDamageByClassExp1Store(GtNpcDamageByClassfmt);
-DBCStorage <GtNpcDamageByClassEntry>     sGtNpcDamageByClassExp2Store(GtNpcDamageByClassfmt);
-DBCStorage <GtNpcDamageByClassEntry>     sGtNpcDamageByClassExp3Store(GtNpcDamageByClassfmt);
-DBCStorage <GtNpcDamageByClassEntry>     sGtNpcDamageByClassExp4Store(GtNpcDamageByClassfmt);
+//DBCStorage <GtNpcDamageByClassEntry>     sGtNpcDamageByClassExp1Store(GtNpcDamageByClassfmt);
+//DBCStorage <GtNpcDamageByClassEntry>     sGtNpcDamageByClassExp2Store(GtNpcDamageByClassfmt);
+//DBCStorage <GtNpcDamageByClassEntry>     sGtNpcDamageByClassExp3Store(GtNpcDamageByClassfmt);
+//DBCStorage <GtNpcDamageByClassEntry>     sGtNpcDamageByClassExp4Store(GtNpcDamageByClassfmt);
 
 DBCStorage <HolidaysEntry>                sHolidaysStore(Holidaysfmt);
 
@@ -448,11 +447,11 @@ void LoadDBCStores(const std::string& dataPath)
     LoadDBC(availableDbcLocales, bad_dbc_files, sGtOCTBaseMPByClassStore,        dbcPath, "gtOCTBaseMPByClass.dbc");//15595
     LoadDBC(availableDbcLocales, bad_dbc_files, sGtBattlePetTypeDamageModStore,        dbcPath, "gtBattlePetTypeDamageMod.dbc");//15595
     LoadDBC(availableDbcLocales, bad_dbc_files, sGuildPerkSpellsStore,        dbcPath, "GuildPerkSpells.dbc");//15595
-    LoadDBC(availableDbcLocales, bad_dbc_files, sGtNpcDamageByClassStore,        dbcPath, "gtNpcDamageByClass.dbc");//20810
-    LoadDBC(availableDbcLocales, bad_dbc_files, sGtNpcDamageByClassExp1Store,    dbcPath, "gtNpcDamageByClassExp1.dbc");//20810
-    LoadDBC(availableDbcLocales, bad_dbc_files, sGtNpcDamageByClassExp2Store,    dbcPath, "gtNpcDamageByClassExp2.dbc");//20810
-    LoadDBC(availableDbcLocales, bad_dbc_files, sGtNpcDamageByClassExp3Store,    dbcPath, "gtNpcDamageByClassExp3.dbc");//20810
-    LoadDBC(availableDbcLocales, bad_dbc_files, sGtNpcDamageByClassExp4Store,    dbcPath, "gtNpcDamageByClassExp4.dbc");//20810
+    //LoadDBC(availableDbcLocales, bad_dbc_files, sGtNpcDamageByClassStore,        dbcPath, "gtNpcDamageByClass.dbc");//20810
+    //LoadDBC(availableDbcLocales, bad_dbc_files, sGtNpcDamageByClassExp1Store,    dbcPath, "gtNpcDamageByClassExp1.dbc");//20810
+    //LoadDBC(availableDbcLocales, bad_dbc_files, sGtNpcDamageByClassExp2Store,    dbcPath, "gtNpcDamageByClassExp2.dbc");//20810
+    //LoadDBC(availableDbcLocales, bad_dbc_files, sGtNpcDamageByClassExp3Store,    dbcPath, "gtNpcDamageByClassExp3.dbc");//20810
+    //LoadDBC(availableDbcLocales, bad_dbc_files, sGtNpcDamageByClassExp4Store,    dbcPath, "gtNpcDamageByClassExp4.dbc");//20810
 
     LoadDBC(availableDbcLocales, bad_dbc_files, sHolidaysStore,               dbcPath, "Holidays.dbc");//14545
     LoadDBC(availableDbcLocales, bad_dbc_files, sImportPriceArmorStore,       dbcPath, "ImportPriceArmor.dbc"); // 15595

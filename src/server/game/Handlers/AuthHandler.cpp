@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -90,8 +90,7 @@ void WorldSession::SendAuthResponse(uint8 code, bool queued, uint32 queuePos)
 
             packet << fields[1].GetUInt8();
             packet << fields[0].GetUInt8();
-        }
-        while (raceResult->NextRow());
+        } while (raceResult->NextRow());
 
         do
         {
@@ -99,8 +98,7 @@ void WorldSession::SendAuthResponse(uint8 code, bool queued, uint32 queuePos)
 
             packet << fields[1].GetUInt8();
             packet << fields[0].GetUInt8();
-        }
-        while (classResult->NextRow());
+        } while (classResult->NextRow());
 
         packet << uint32(0);
         packet << uint8(Expansion());
