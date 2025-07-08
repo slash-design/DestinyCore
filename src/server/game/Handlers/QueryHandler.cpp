@@ -118,6 +118,39 @@ void WorldSession::HandleNameQueryOpcode(WorldPacket& recvData)
     SendNameQueryOpcode(guid);
 }
 
+void WorldSession::SendRealmNameQueryOpcode(uint32 realmId)
+{
+    RealmNameMap::const_iterator iter = realmNameStore.find(realmId);
+
+    bool found = iter != realmNameStore.end();
+    std::string realmName = found ? iter->second : "";
+
+    WorldPacket data(SMSG_REALM_NAME_QUERY_RESPONSE);
+    data << uint8(!found);
+    data << uint32(realmId);
+
+    if (found)
+    {
+        data.WriteBits(realmName.length(), 8);
+        data.WriteBit(realmId == GetVirtualRealmID());
+        data.WriteBits(realmName.length(), 8);
+        data.FlushBits();
+
+        data.WriteString(realmName);
+        data.WriteString(realmName);
+    }
+
+    SendPacket(&data);
+}
+
+void WorldSession::HandleRealmNameQueryOpcode(WorldPacket& recvPacket)
+{
+    uint32 realmId;
+    recvPacket >> realmId;
+    SendRealmNameQueryOpcode(realmId);
+}
+
+
 void WorldSession::HandleQueryTimeOpcode(WorldPacket & /*recvData*/)
 {
     SendQueryTimeResponse();

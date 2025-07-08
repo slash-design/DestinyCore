@@ -891,15 +891,18 @@ void WorldSession::SetAccountData(AccountDataType type, time_t tm, std::string d
 
 void WorldSession::SendAccountDataTimes(uint32 mask, bool ready)
 {
-    WorldPacket data(SMSG_ACCOUNT_DATA_TIMES, 4+1+4+NUM_ACCOUNT_DATA_TYPES*4);
-    data << uint32(time(NULL));                             // Server time
-    data << uint32(mask);                                   // type mask
-    for (uint32 i = 0; i < NUM_ACCOUNT_DATA_TYPES; ++i)
-        data << uint32(GetAccountData(AccountDataType(i))->Time);// also unix time
-    data.WriteBit(!ready);
+    WorldPacket data(SMSG_ACCOUNT_DATA_TIMES, 4 + 1 + 4 + NUM_ACCOUNT_DATA_TYPES * 4);
+
+    data.WriteBit(1);
     data.FlushBits();
+
+    for (uint32 i = 0; i < NUM_ACCOUNT_DATA_TYPES; ++i)
+        data << uint32(GetAccountData(AccountDataType(i))->Time); // also unix time
+
+    data << uint32(mask);
+    data << uint32(time(NULL)); // Server time
+
     SendPacket(&data);
-    SendTimeZoneInformation();
 }
 
 // ToDo: add confing. Are we need it?
@@ -1036,355 +1039,24 @@ void WorldSession::ReadAddonsInfo(WorldPacket &data)
 
 void WorldSession::SendAddonsInfo()
 {
-    uint8 addonPublicKey[256] =
-    {
-        0xC3, 0x5B, 0x50, 0x84, 0xB9, 0x3E, 0x32, 0x42, 0x8C, 0xD0, 0xC7, 0x48, 0xFA, 0x0E, 0x5D, 0x54,
-        0x5A, 0xA3, 0x0E, 0x14, 0xBA, 0x9E, 0x0D, 0xB9, 0x5D, 0x8B, 0xEE, 0xB6, 0x84, 0x93, 0x45, 0x75,
-        0xFF, 0x31, 0xFE, 0x2F, 0x64, 0x3F, 0x3D, 0x6D, 0x07, 0xD9, 0x44, 0x9B, 0x40, 0x85, 0x59, 0x34,
-        0x4E, 0x10, 0xE1, 0xE7, 0x43, 0x69, 0xEF, 0x7C, 0x16, 0xFC, 0xB4, 0xED, 0x1B, 0x95, 0x28, 0xA8,
-        0x23, 0x76, 0x51, 0x31, 0x57, 0x30, 0x2B, 0x79, 0x08, 0x50, 0x10, 0x1C, 0x4A, 0x1A, 0x2C, 0xC8,
-        0x8B, 0x8F, 0x05, 0x2D, 0x22, 0x3D, 0xDB, 0x5A, 0x24, 0x7A, 0x0F, 0x13, 0x50, 0x37, 0x8F, 0x5A,
-        0xCC, 0x9E, 0x04, 0x44, 0x0E, 0x87, 0x01, 0xD4, 0xA3, 0x15, 0x94, 0x16, 0x34, 0xC6, 0xC2, 0xC3,
-        0xFB, 0x49, 0xFE, 0xE1, 0xF9, 0xDA, 0x8C, 0x50, 0x3C, 0xBE, 0x2C, 0xBB, 0x57, 0xED, 0x46, 0xB9,
-        0xAD, 0x8B, 0xC6, 0xDF, 0x0E, 0xD6, 0x0F, 0xBE, 0x80, 0xB3, 0x8B, 0x1E, 0x77, 0xCF, 0xAD, 0x22,
-        0xCF, 0xB7, 0x4B, 0xCF, 0xFB, 0xF0, 0x6B, 0x11, 0x45, 0x2D, 0x7A, 0x81, 0x18, 0xF2, 0x92, 0x7E,
-        0x98, 0x56, 0x5D, 0x5E, 0x69, 0x72, 0x0A, 0x0D, 0x03, 0x0A, 0x85, 0xA2, 0x85, 0x9C, 0xCB, 0xFB,
-        0x56, 0x6E, 0x8F, 0x44, 0xBB, 0x8F, 0x02, 0x22, 0x68, 0x63, 0x97, 0xBC, 0x85, 0xBA, 0xA8, 0xF7,
-        0xB5, 0x40, 0x68, 0x3C, 0x77, 0x86, 0x6F, 0x4B, 0xD7, 0x88, 0xCA, 0x8A, 0xD7, 0xCE, 0x36, 0xF0,
-        0x45, 0x6E, 0xD5, 0x64, 0x79, 0x0F, 0x17, 0xFC, 0x64, 0xDD, 0x10, 0x6F, 0xF3, 0xF5, 0xE0, 0xA6,
-        0xC3, 0xFB, 0x1B, 0x8C, 0x29, 0xEF, 0x8E, 0xE5, 0x34, 0xCB, 0xD1, 0x2A, 0xCE, 0x79, 0xC3, 0x9A,
-        0x0D, 0x36, 0xEA, 0x01, 0xE0, 0xAA, 0x91, 0x20, 0x54, 0xF0, 0x72, 0xD8, 0x1E, 0xC7, 0x89, 0xD2
-    };
+}
 
-    WorldPacket data(SMSG_ADDON_INFO, 8);
-    data.WriteBits(sObjectMgr->GetBannedAddons()->size(), 18);  // banned addons count
-    data.WriteBits(m_addonsList.size(), 23);                    // addons count
+void WorldSession::SendTimezoneInformation()
+{
+    char timezoneString[256];
 
-    ByteBuffer buffer;
-    ByteBuffer buffer1;
-    for (AddonsList::iterator itr = m_addonsList.begin(); itr != m_addonsList.end(); ++itr)
-    {
-        bool bit0 = true; //itr->UsePublicKeyOrCRC;
-        bool bit1 = itr->CRC != STANDARD_ADDON_CRC;
-        bool bit2 = false;
+    // TIME_ZONE_INFORMATION timeZoneInfo;
+    // GetTimeZoneInformation(&timeZoneInfo);
+    // wcstombs(timezoneString, timeZoneInfo.StandardName, sizeof(timezoneString));
 
-        data.WriteBit(bit0);
-        data.WriteBit(bit1);
-        data.WriteBit(bit2);
+    snprintf(timezoneString, sizeof(timezoneString), "Etc/UTC"); // The method above cannot be used, because of non-english OS translations, so we send const data (possible strings are hardcoded in the client because of the same reason)
 
-        if (bit2)
-        {
-            data.WriteBits(0, 8);                           // string length
-            //buffer.WriteStringData(..);                   // use <Addon>\<Addon>.url file or not
-        }
-        if (bit1)
-        {
-            TC_LOG_DEBUG("server", "ADDON: CRC (0x%x) for addon %s is wrong (does not match expected 0x%x), sending pubkey",
-                itr->CRC, itr->Name.c_str(), STANDARD_ADDON_CRC);
-
-#pragma region crcOrder
-            buffer << uint8(addonPublicKey[181]);
-            buffer << uint8(addonPublicKey[205]);
-            buffer << uint8(addonPublicKey[44]);
-            buffer << uint8(addonPublicKey[93]);
-            buffer << uint8(addonPublicKey[236]);
-            buffer << uint8(addonPublicKey[21]);
-            buffer << uint8(addonPublicKey[91]);
-            buffer << uint8(addonPublicKey[221]);
-            buffer << uint8(addonPublicKey[133]);
-            buffer << uint8(addonPublicKey[152]);
-            buffer << uint8(addonPublicKey[226]);
-            buffer << uint8(addonPublicKey[172]);
-            buffer << uint8(addonPublicKey[168]);
-            buffer << uint8(addonPublicKey[146]);
-            buffer << uint8(addonPublicKey[83]);
-            buffer << uint8(addonPublicKey[113]);
-            buffer << uint8(addonPublicKey[100]);
-            buffer << uint8(addonPublicKey[50]);
-            buffer << uint8(addonPublicKey[191]);
-            buffer << uint8(addonPublicKey[241]);
-            buffer << uint8(addonPublicKey[142]);
-            buffer << uint8(addonPublicKey[96]);
-            buffer << uint8(addonPublicKey[17]);
-            buffer << uint8(addonPublicKey[244]);
-            buffer << uint8(addonPublicKey[155]);
-            buffer << uint8(addonPublicKey[160]);
-            buffer << uint8(addonPublicKey[36]);
-            buffer << uint8(addonPublicKey[196]);
-            buffer << uint8(addonPublicKey[45]);
-            buffer << uint8(addonPublicKey[165]);
-            buffer << uint8(addonPublicKey[32]);
-            buffer << uint8(addonPublicKey[15]);
-            buffer << uint8(addonPublicKey[98]);
-            buffer << uint8(addonPublicKey[20]);
-            buffer << uint8(addonPublicKey[137]);
-            buffer << uint8(addonPublicKey[88]);
-            buffer << uint8(addonPublicKey[136]);
-            buffer << uint8(addonPublicKey[22]);
-            buffer << uint8(addonPublicKey[231]);
-            buffer << uint8(addonPublicKey[224]);
-            buffer << uint8(addonPublicKey[188]);
-            buffer << uint8(addonPublicKey[158]);
-            buffer << uint8(addonPublicKey[192]);
-            buffer << uint8(addonPublicKey[217]);
-            buffer << uint8(addonPublicKey[253]);
-            buffer << uint8(addonPublicKey[81]);
-            buffer << uint8(addonPublicKey[210]);
-            buffer << uint8(addonPublicKey[122]);
-            buffer << uint8(addonPublicKey[220]);
-            buffer << uint8(addonPublicKey[77]);
-            buffer << uint8(addonPublicKey[35]);
-            buffer << uint8(addonPublicKey[180]);
-            buffer << uint8(addonPublicKey[132]);
-            buffer << uint8(addonPublicKey[73]);
-            buffer << uint8(addonPublicKey[223]);
-            buffer << uint8(addonPublicKey[153]);
-            buffer << uint8(addonPublicKey[242]);
-            buffer << uint8(addonPublicKey[190]);
-            buffer << uint8(addonPublicKey[74]);
-            buffer << uint8(addonPublicKey[34]);
-            buffer << uint8(addonPublicKey[80]);
-            buffer << uint8(addonPublicKey[144]);
-            buffer << uint8(addonPublicKey[48]);
-            buffer << uint8(addonPublicKey[252]);
-            buffer << uint8(addonPublicKey[161]);
-            buffer << uint8(addonPublicKey[13]);
-            buffer << uint8(addonPublicKey[38]);
-            buffer << uint8(addonPublicKey[239]);
-            buffer << uint8(addonPublicKey[97]);
-            buffer << uint8(addonPublicKey[9]);
-            buffer << uint8(addonPublicKey[166]);
-            buffer << uint8(addonPublicKey[43]);
-            buffer << uint8(addonPublicKey[40]);
-            buffer << uint8(addonPublicKey[4]);
-            buffer << uint8(addonPublicKey[41]);
-            buffer << uint8(addonPublicKey[37]);
-            buffer << uint8(addonPublicKey[3]);
-            buffer << uint8(addonPublicKey[173]);
-            buffer << uint8(addonPublicKey[211]);
-            buffer << uint8(addonPublicKey[194]);
-            buffer << uint8(addonPublicKey[186]);
-            buffer << uint8(addonPublicKey[193]);
-            buffer << uint8(addonPublicKey[111]);
-            buffer << uint8(addonPublicKey[92]);
-            buffer << uint8(addonPublicKey[249]);
-            buffer << uint8(addonPublicKey[105]);
-            buffer << uint8(addonPublicKey[53]);
-            buffer << uint8(addonPublicKey[106]);
-            buffer << uint8(addonPublicKey[116]);
-            buffer << uint8(addonPublicKey[107]);
-            buffer << uint8(addonPublicKey[76]);
-            buffer << uint8(addonPublicKey[204]);
-            buffer << uint8(addonPublicKey[202]);
-            buffer << uint8(addonPublicKey[118]);
-            buffer << uint8(addonPublicKey[232]);
-            buffer << uint8(addonPublicKey[159]);
-            buffer << uint8(addonPublicKey[49]);
-            buffer << uint8(addonPublicKey[228]);
-            buffer << uint8(addonPublicKey[203]);
-            buffer << uint8(addonPublicKey[60]);
-            buffer << uint8(addonPublicKey[179]);
-            buffer << uint8(addonPublicKey[99]);
-            buffer << uint8(addonPublicKey[31]);
-            buffer << uint8(addonPublicKey[101]);
-            buffer << uint8(addonPublicKey[0]);
-            buffer << uint8(addonPublicKey[164]);
-            buffer << uint8(addonPublicKey[89]);
-            buffer << uint8(addonPublicKey[141]);
-            buffer << uint8(addonPublicKey[234]);
-            buffer << uint8(addonPublicKey[149]);
-            buffer << uint8(addonPublicKey[117]);
-            buffer << uint8(addonPublicKey[198]);
-            buffer << uint8(addonPublicKey[16]);
-            buffer << uint8(addonPublicKey[82]);
-            buffer << uint8(addonPublicKey[135]);
-            buffer << uint8(addonPublicKey[148]);
-            buffer << uint8(addonPublicKey[94]);
-            buffer << uint8(addonPublicKey[57]);
-            buffer << uint8(addonPublicKey[230]);
-            buffer << uint8(addonPublicKey[238]);
-            buffer << uint8(addonPublicKey[51]);
-            buffer << uint8(addonPublicKey[109]);
-            buffer << uint8(addonPublicKey[66]);
-            buffer << uint8(addonPublicKey[240]);
-            buffer << uint8(addonPublicKey[103]);
-            buffer << uint8(addonPublicKey[187]);
-            buffer << uint8(addonPublicKey[119]);
-            buffer << uint8(addonPublicKey[108]);
-            buffer << uint8(addonPublicKey[171]);
-            buffer << uint8(addonPublicKey[195]);
-            buffer << uint8(addonPublicKey[90]);
-            buffer << uint8(addonPublicKey[130]);
-            buffer << uint8(addonPublicKey[56]);
-            buffer << uint8(addonPublicKey[246]);
-            buffer << uint8(addonPublicKey[39]);
-            buffer << uint8(addonPublicKey[185]);
-            buffer << uint8(addonPublicKey[47]);
-            buffer << uint8(addonPublicKey[184]);
-            buffer << uint8(addonPublicKey[8]);
-            buffer << uint8(addonPublicKey[11]);
-            buffer << uint8(addonPublicKey[95]);
-            buffer << uint8(addonPublicKey[213]);
-            buffer << uint8(addonPublicKey[139]);
-            buffer << uint8(addonPublicKey[178]);
-            buffer << uint8(addonPublicKey[183]);
-            buffer << uint8(addonPublicKey[182]);
-            buffer << uint8(addonPublicKey[243]);
-            buffer << uint8(addonPublicKey[67]);
-            buffer << uint8(addonPublicKey[218]);
-            buffer << uint8(addonPublicKey[229]);
-            buffer << uint8(addonPublicKey[61]);
-            buffer << uint8(addonPublicKey[248]);
-            buffer << uint8(addonPublicKey[245]);
-            buffer << uint8(addonPublicKey[27]);
-            buffer << uint8(addonPublicKey[214]);
-            buffer << uint8(addonPublicKey[174]);
-            buffer << uint8(addonPublicKey[28]);
-            buffer << uint8(addonPublicKey[42]);
-            buffer << uint8(addonPublicKey[162]);
-            buffer << uint8(addonPublicKey[112]);
-            buffer << uint8(addonPublicKey[216]);
-            buffer << uint8(addonPublicKey[209]);
-            buffer << uint8(addonPublicKey[120]);
-            buffer << uint8(addonPublicKey[86]);
-            buffer << uint8(addonPublicKey[64]);
-            buffer << uint8(addonPublicKey[121]);
-            buffer << uint8(addonPublicKey[29]);
-            buffer << uint8(addonPublicKey[131]);
-            buffer << uint8(addonPublicKey[129]);
-            buffer << uint8(addonPublicKey[6]);
-            buffer << uint8(addonPublicKey[176]);
-            buffer << uint8(addonPublicKey[19]);
-            buffer << uint8(addonPublicKey[225]);
-            buffer << uint8(addonPublicKey[62]);
-            buffer << uint8(addonPublicKey[233]);
-            buffer << uint8(addonPublicKey[199]);
-            buffer << uint8(addonPublicKey[26]);
-            buffer << uint8(addonPublicKey[59]);
-            buffer << uint8(addonPublicKey[123]);
-            buffer << uint8(addonPublicKey[145]);
-            buffer << uint8(addonPublicKey[55]);
-            buffer << uint8(addonPublicKey[78]);
-            buffer << uint8(addonPublicKey[125]);
-            buffer << uint8(addonPublicKey[69]);
-            buffer << uint8(addonPublicKey[30]);
-            buffer << uint8(addonPublicKey[126]);
-            buffer << uint8(addonPublicKey[207]);
-            buffer << uint8(addonPublicKey[24]);
-            buffer << uint8(addonPublicKey[147]);
-            buffer << uint8(addonPublicKey[71]);
-            buffer << uint8(addonPublicKey[115]);
-            buffer << uint8(addonPublicKey[14]);
-            buffer << uint8(addonPublicKey[25]);
-            buffer << uint8(addonPublicKey[46]);
-            buffer << uint8(addonPublicKey[157]);
-            buffer << uint8(addonPublicKey[215]);
-            buffer << uint8(addonPublicKey[250]);
-            buffer << uint8(addonPublicKey[197]);
-            buffer << uint8(addonPublicKey[237]);
-            buffer << uint8(addonPublicKey[140]);
-            buffer << uint8(addonPublicKey[206]);
-            buffer << uint8(addonPublicKey[85]);
-            buffer << uint8(addonPublicKey[219]);
-            buffer << uint8(addonPublicKey[212]);
-            buffer << uint8(addonPublicKey[227]);
-            buffer << uint8(addonPublicKey[10]);
-            buffer << uint8(addonPublicKey[251]);
-            buffer << uint8(addonPublicKey[222]);
-            buffer << uint8(addonPublicKey[58]);
-            buffer << uint8(addonPublicKey[254]);
-            buffer << uint8(addonPublicKey[1]);
-            buffer << uint8(addonPublicKey[23]);
-            buffer << uint8(addonPublicKey[154]);
-            buffer << uint8(addonPublicKey[169]);
-            buffer << uint8(addonPublicKey[138]);
-            buffer << uint8(addonPublicKey[84]);
-            buffer << uint8(addonPublicKey[151]);
-            buffer << uint8(addonPublicKey[7]);
-            buffer << uint8(addonPublicKey[70]);
-            buffer << uint8(addonPublicKey[68]);
-            buffer << uint8(addonPublicKey[33]);
-            buffer << uint8(addonPublicKey[2]);
-            buffer << uint8(addonPublicKey[208]);
-            buffer << uint8(addonPublicKey[63]);
-            buffer << uint8(addonPublicKey[54]);
-            buffer << uint8(addonPublicKey[134]);
-            buffer << uint8(addonPublicKey[167]);
-            buffer << uint8(addonPublicKey[127]);
-            buffer << uint8(addonPublicKey[189]);
-            buffer << uint8(addonPublicKey[177]);
-            buffer << uint8(addonPublicKey[124]);
-            buffer << uint8(addonPublicKey[75]);
-            buffer << uint8(addonPublicKey[65]);
-            buffer << uint8(addonPublicKey[175]);
-            buffer << uint8(addonPublicKey[79]);
-            buffer << uint8(addonPublicKey[235]);
-            buffer << uint8(addonPublicKey[52]);
-            buffer << uint8(addonPublicKey[201]);
-            buffer << uint8(addonPublicKey[102]);
-            buffer << uint8(addonPublicKey[5]);
-            buffer << uint8(addonPublicKey[104]);
-            buffer << uint8(addonPublicKey[150]);
-            buffer << uint8(addonPublicKey[163]);
-            buffer << uint8(addonPublicKey[200]);
-            buffer << uint8(addonPublicKey[156]);
-            buffer << uint8(addonPublicKey[72]);
-            buffer << uint8(addonPublicKey[110]);
-            buffer << uint8(addonPublicKey[247]);
-            buffer << uint8(addonPublicKey[143]);
-            buffer << uint8(addonPublicKey[114]);
-            buffer << uint8(addonPublicKey[87]);
-            buffer << uint8(addonPublicKey[255]);
-            buffer << uint8(addonPublicKey[18]);
-            buffer << uint8(addonPublicKey[12]);
-            buffer << uint8(addonPublicKey[170]);
-            buffer << uint8(addonPublicKey[128]);
-
-#pragma endregion
-        }
-        if (bit0)
-        {
-            buffer << uint8(1);
-            buffer << uint32(0);
-        }
-
-        buffer << uint8(itr->State);
-    }
-
-    for (BannedAddonDataMap::iterator itr = sBannedAddonDataMap.begin(); itr != sBannedAddonDataMap.end(); ++itr)
-    {
-        uint32 index = itr->first;
-        BannedAddon const * ba = sObjectMgr->GetBannedAddon(index);
-
-        for (uint8 i = 0; i < 16; i += 4)
-        {
-            // md5 name
-            buffer1 << uint8(ba->MD5_name[i]);
-            buffer1 << uint8(ba->MD5_name[i+1]);
-            buffer1 << uint8(ba->MD5_name[i+2]);
-            buffer1 << uint8(ba->MD5_name[i+3]);
-
-            // md5 version
-            buffer1 << uint8(ba->MD5_version[i]);
-            buffer1 << uint8(ba->MD5_version[i+1]);
-            buffer1 << uint8(ba->MD5_version[i+2]);
-            buffer1 << uint8(ba->MD5_version[i+3]);
-        }
-
-        buffer1 << uint32(1);                 // state, low bit must be 1, client checks (state & 1)
-        buffer1 << uint32(ba->timestamp);
-        buffer1 << uint32(index);
-    }
-
+    WorldPacket data(SMSG_SET_TIME_ZONE_INFORMATION, 2 + strlen(timezoneString) * 2);
+    data.WriteBits(strlen(timezoneString), 7);
+    data.WriteBits(strlen(timezoneString), 7);
     data.FlushBits();
-
-    if (!buffer.empty())
-        data.append(buffer);
-
-    if (!buffer1.empty())
-        data.append(buffer1);
-
-    m_addonsList.clear();
+    data.WriteString(timezoneString);
+    data.WriteString(timezoneString);
     SendPacket(&data);
 }
 

@@ -958,20 +958,16 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 
 int WorldSocket::HandleSendAuthSession()
 {
-    WorldPacket packet(SMSG_AUTH_CHALLENGE, 37);
+    WorldPacket packet(SMSG_AUTH_CHALLENGE, 33);
 
-    packet << uint16(0);                                    // crap
-    packet << uint8(1);
+    packet << uint32(1);        // unk, meist 0 oder 1 – Trinity hat 1
+    packet << m_Seed;           // 4 Bytes – zufälliger uint32
 
-    BigNumber seed1;
-    seed1.SetRand(16 * 8);
-    packet.append(seed1.AsByteArray(16), 16);               // new encryption seeds
+    uint8 seed[16];
+    for (int i = 0; i < 16; ++i)
+        seed[i] = rand() % 256;
 
-    BigNumber seed2;
-    seed2.SetRand(16 * 8);
-    packet.append(seed2.AsByteArray(16), 16);               // new encryption seeds
-
-    packet << m_Seed;
+    packet.append(seed, 16);    // 16 Bytes zufälliger Kram
 
     return SendPacket(&packet);
 }
@@ -1021,31 +1017,32 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     recvPacket >> digest[10];
     recvPacket >> addonSize;
 
-    recvPacket >> addonSize;
     addonsData.resize(addonSize);
     recvPacket.read((uint8*)addonsData.contents(), addonSize);
 
+    recvPacket.ReadBit();
     uint32 accountNameLength = recvPacket.ReadBits(11);
+
     account = recvPacket.ReadString(accountNameLength);
     
     // if (ConfigMgr::GetBoolDefault("Login.with.email", false))
-    {
-        const char* c_login = account.c_str();
-        if (c_login)
-        {
-            char* sobaka = strchr((char*)c_login, '@');
-            if (sobaka != NULL) // email
-            {
-                PreparedStatement* stmt1 = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_BY_EMAIL);
-                stmt1->setString(0, account);
-                if (PreparedQueryResult result = LoginDatabase.Query(stmt1)) // select acc for auth process
-                {
-                    Field* field = result->Fetch();
-                    account = field[0].GetString();
-                }
-            }
-        }
-    } 
+    //{
+    //    const char* c_login = account.c_str();
+    //    if (c_login)
+    //    {
+    //        char* sobaka = strchr((char*)c_login, '@');
+    //        if (sobaka != NULL) // email
+    //        {
+    //            PreparedStatement* stmt1 = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_BY_EMAIL);
+    //            stmt1->setString(0, account);
+    //            if (PreparedQueryResult result = LoginDatabase.Query(stmt1)) // select acc for auth process
+    //            {
+    //                Field* field = result->Fetch();
+    //                account = field[0].GetString();
+    //            }
+    //        }
+    //    }
+    //} 
 
     if (sWorld->IsClosed())
     {

@@ -260,6 +260,7 @@ class WorldSession
 
         void ReadAddonsInfo(WorldPacket& data);
         void SendAddonsInfo();
+        void SendTimezoneInformation();
         bool IsAddonRegistered(const std::string& prefix);
 
         void ReadMovementInfo(WorldPacket& data, MovementInfo* mi);
@@ -281,6 +282,8 @@ class WorldSession
         void SendClientCacheVersion(uint32 version);
         void SendBattlePay();
         void SendDisplayPromo(int32 promo);
+
+        uint32 GetVirtualRealmID() const { return m_virtualRealmID; }
 
         AccountTypes GetSecurity() const { return _security; }
         uint32 GetAccountId() const { return _accountId; }
@@ -1056,6 +1059,9 @@ class WorldSession
         void HandleClearRaidMarkerOpcode(WorldPacket& recvPacket);
         void HandleQueryPlayerRecipes(WorldPacket& recvPacket);
 
+        void HandleRealmNameQueryOpcode(WorldPacket& recvPacket);
+        void SendRealmNameQueryOpcode(uint32 realmId);
+
         void HandleSaveCUFProfiles(WorldPacket& recvPacket);
         void SendLoadCUFProfiles();
 
@@ -1115,6 +1121,7 @@ class WorldSession
         AccountTypes _security;
         uint32 _accountId;
         std::string _account_name;
+        uint32 m_virtualRealmID;
         uint8 m_expansion;
 
         std::string _clientOS;

@@ -35,10 +35,9 @@ HMAC_CTX* HMAC_CTX_new()
 }
 #endif
 
-HmacHash::HmacHash(uint32 len, uint8 *seed)
+HmacHash::HmacHash(uint32 len, uint8 *seed) : m_ctx(HMAC_CTX_new())
 {
-    m_ctx = HMAC_CTX_new();
-    HMAC_Init_ex(m_ctx, seed, len, EVP_sha1(), nullptr);
+    HMAC_Init_ex(m_ctx, seed, len, EVP_sha1(), NULL);
 }
 
 HmacHash::~HmacHash()

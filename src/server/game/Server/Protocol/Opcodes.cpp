@@ -92,6 +92,7 @@ void InitOpcodes()
     DEFINE_OPCODE_HANDLER(CMSG, CMSG_AUTOSTORE_BANK_ITEM,                     STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleAutoStoreBankItemOpcode   );
     DEFINE_OPCODE_HANDLER(CMSG, CMSG_AUTOSTORE_LOOT_ITEM,                     STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleAutostoreLootItemOpcode   );
     DEFINE_OPCODE_HANDLER(CMSG, CMSG_BANKER_ACTIVATE,                         STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleBankerActivateOpcode      );
+    DEFINE_OPCODE_HANDLER(CMSG, CMSG_BATTLE_PAY_GET_PURCHASE_LIST,            STATUS_UNHANDLED, PROCESS_INPLACE,      &WorldSession::Handle_NULL                     );
     DEFINE_OPCODE_HANDLER(CMSG, CMSG_BATTLE_PET_DELETE,                       STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleBattlePetDelete           );
     DEFINE_OPCODE_HANDLER(CMSG, CMSG_BATTLE_PET_MODIFY_NAME,                  STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleBattlePetModifyName       );
     DEFINE_OPCODE_HANDLER(CMSG, CMSG_BATTLE_PET_NAME_QUERY,                   STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleBattlePetNameQuery        );
@@ -1045,12 +1046,14 @@ void InitOpcodes()
     DEFINE_OPCODE_HANDLER(SMSG, SMSG_ZONE_UNDER_ATTACK,                       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide               );
     DEFINE_OPCODE_HANDLER(SMSG, SMSG_BATTLEGROUND_PLAYER_POSITIONS,           STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide               );
     DEFINE_OPCODE_HANDLER(SMSG, SMSG_PET_GUIDS,                               STATUS_UNHANDLED, PROCESS_INPLACE,      &WorldSession::Handle_ServerSide               );
+    DEFINE_OPCODE_HANDLER(SMSG, MSG_VERIFY_CONNECTIVITY,                      STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide               );
+    DEFINE_OPCODE_HANDLER(SMSG, SMSG_REALM_NAME_QUERY_RESPONSE,                     STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
 
 
     //------------                      M S G                   ------------//
 
     // On 5.x.x  MSG not exist (only MSG_VERIFY_CONNECTIVITY), so all packest in this  array should be sored in SMSG OR CMSG
-    DEFINE_OPCODE_HANDLER(SMSG, MSG_VERIFY_CONNECTIVITY,                      STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_EarlyProccess            );
+    DEFINE_OPCODE_HANDLER(CMSG, MSG_VERIFY_CONNECTIVITY,                      STATUS_UNHANDLED, PROCESS_INPLACE,      &WorldSession::Handle_EarlyProccess            );
     DEFINE_OPCODE_HANDLER(CMSG, MSG_PETITION_DECLINE,                         STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandlePetitionDeclineOpcode     );
     DEFINE_OPCODE_HANDLER(SMSG, MSG_PETITION_DECLINE,                         STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide               );
     DEFINE_OPCODE_HANDLER(CMSG, MSG_QUERY_NEXT_MAIL_TIME,                     STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleQueryNextMailTime         );

@@ -31,6 +31,10 @@ if(POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW) # find_package() uses <PackageName>_ROOT variables
 endif()
 
+if(POLICY CMP0144)
+  cmake_policy(SET CMP0144 NEW)
+endif()
+
 # Set RPATH-handing (CMake parameters)
 set(CMAKE_SKIP_BUILD_RPATH 0)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH 0)
