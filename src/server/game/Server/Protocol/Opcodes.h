@@ -64,6 +64,7 @@ enum Opcodes
     CMSG_AUTOSTORE_BANK_ITEM                          = 0x0417, // 5.4.1 17538
     CMSG_AUTOSTORE_LOOT_ITEM                          = 0x12F7, // 5.4.1 17538
     CMSG_BANKER_ACTIVATE                              = 0x07FD, // 5.4.1 17538
+    CMSG_BATTLE_PAY_GET_PURCHASE_LIST                 = 0x18B2, // 5.4.8 18414
     CMSG_BATTLE_PET_DELETE                            = 0x11EC, // 5.4.1 17538
     CMSG_BATTLE_PET_MODIFY_NAME                       = 0x056C, // 5.4.1 17538
     CMSG_BATTLE_PET_NAME_QUERY                        = 0x17C5, // 5.4.1 17538
@@ -142,7 +143,7 @@ enum Opcodes
     CMSG_CHAR_CREATE                                  = 0x08CD, // 5.4.1 17538
     CMSG_CHAR_CUSTOMIZE                               = 0x0564, // 5.4.1 17538
     CMSG_CHAR_DELETE                                  = 0x09C0, // 5.4.1 17538
-    CMSG_CHAR_ENUM                                    = 0x0848, // 5.4.1 17538
+    CMSG_CHAR_ENUM                                    = 0x00E0, // 5.4.8 18414
     CMSG_CHAR_RACE_FACTION_CHANGE                     = 0x1540, // 5.4.1 17538
     CMSG_CHAR_RENAME                                  = 0x0C4C, // 5.4.1 17538
     CMSG_CHAT_FILTERED                                = 0x147D, // 5.4.1 17538
@@ -365,7 +366,7 @@ enum Opcodes
     CMSG_MOVE_STOP_TURN                               = 0x1749, // 5.4.1 17538
     CMSG_MOVE_TELEPORT_ACK                            = 0x0AE9, // 5.4.1 17538
     CMSG_MOVE_TIME_SKIPPED                            = 0x12E1, // 5.4.1 17538
-    CMSG_MOVE_WORLDPORT_RESPONSE                      = 0x00E0, // 5.4.1 17538
+    CMSG_MOVE_WORLDPORT_RESPONSE                      = 0, // 5.4.1 17538 -- lookup later
     CMSG_NAME_QUERY                                   = 0x11E9, // 5.4.1 17538
     CMSG_NEXT_CINEMATIC_CAMERA                        = 0x18A3, // 5.4.1 17538
     CMSG_NPC_TEXT_QUERY                               = 0x17CF, // 5.4.1 17538
@@ -539,7 +540,7 @@ enum Opcodes
     CMSG_UNLEARN_SPECIALIZATION                       = 0x1A7E, // 5.4.1 17538
     CMSG_UNREGISTER_ALL_ADDON_PREFIXES                = 0x0C59, // 5.4.1 17538
     CMSG_UNSET_FACTION_ATWAR                          = 0x0667, // 5.4.1 17538
-    CMSG_UPDATE_ACCOUNT_DATA                          = 0x104C, // 5.4.1 17538
+    CMSG_UPDATE_ACCOUNT_DATA                          = 0x0068, // 5.4.8 18414
     CMSG_UPGRADE_ITEM                                 = 0x1B5F, // 5.4.1 17538
     CMSG_USE_ITEM                                     = 0x1A66, // 5.4.1 17538
     CMSG_USED_FOLLOW                                  = 0x177D, // 5.4.1 17538
@@ -657,7 +658,7 @@ enum Opcodes
     SMSG_CHAR_CREATE                                  = 0x1007, // 5.4.1 17538
     SMSG_CHAR_CUSTOMIZE                               = 0x041D, // 5.4.1 17538
     SMSG_CHAR_DELETE                                  = 0x0017, // 5.4.1 17538
-    SMSG_CHAR_ENUM                                    = 0x040E, // 5.4.1 17538
+    SMSG_CHAR_ENUM                                    = 0x11C3, // 5.4.8 18414
     SMSG_CHAR_FACTION_CHANGE                          = 0x103B, // 5.4.1 17538
     SMSG_CHAR_RENAME                                  = 0x05BD, // 5.4.1 17538
     SMSG_CHAT_NOT_IN_PARTY                            = 0x0835, // 5.4.1 17538
@@ -1030,7 +1031,7 @@ enum Opcodes
     SMSG_SET_DUNGEON_DIFFICULTY                       = 0x00BC, // 5.4.1 17538
     SMSG_SET_FACTION_STANDING                         = 0x1017, // 5.4.1 17538
     SMSG_SET_FACTION_VISIBLE                          = 0x003F, // 5.4.1 17538
-    SMSG_SET_FLAT_SPELL_MODIFIER                      = 0x00E0, // 5.4.1 17538
+    SMSG_SET_FLAT_SPELL_MODIFIER                      = 0x10F2, // 5.4.8 18414
     SMSG_SET_FORCED_REACTIONS                         = 0x0025, // 5.4.1 17538
     SMSG_SET_MOVEFLAG2_0x1000                         = 0x0386, // 5.4.1 17538
     SMSG_SET_PCT_SPELL_MODIFIER                       = 0x0061, // 5.4.1 17538
@@ -1124,6 +1125,7 @@ enum Opcodes
     SMSG_WORLD_STATE_UI_TIMER_UPDATE                  = 0x05AC, // 5.4.1 17538
     SMSG_ZONE_UNDER_ATTACK                            = 0x148D, // 5.4.1 17538
     SMSG_PET_GUIDS                                    = 0x050F, // 5.4.1 17538
+    SMSG_REALM_NAME_QUERY_RESPONSE                    = 0x063E, // 5.4.8 18414
 
 
 

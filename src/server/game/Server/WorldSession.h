@@ -1059,6 +1059,9 @@ class WorldSession
         void HandleClearRaidMarkerOpcode(WorldPacket& recvPacket);
         void HandleQueryPlayerRecipes(WorldPacket& recvPacket);
 
+        void HandleRealmNameQueryOpcode(WorldPacket& recvPacket);
+        void SendRealmNameQueryOpcode(uint32 realmId);
+
         void HandleSaveCUFProfiles(WorldPacket& recvPacket);
         void SendLoadCUFProfiles();
 

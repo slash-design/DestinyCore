@@ -259,46 +259,65 @@ bool LoginQueryHolder::Initialize()
 
 void WorldSession::HandleCharEnum(PreparedQueryResult result)
 {
-    WorldPacket data(SMSG_CHAR_ENUM);
-
     uint32 charCount = 0;
     ByteBuffer bitBuffer;
     ByteBuffer dataBuffer;
+
+    // Sended before SMSG_ENUM_CHARACTERS_RESULT
+    // must be procceded before BuildEnumData, because of unsetting bosted character guid
+    //if (m_charBooster->GetCurrentAction() == CHARACTER_BOOST_APPLIED)
+    //    m_charBooster->HandleCharacterBoost();
 
     if (result)
     {
         _allowedCharsToLogin.clear();
 
         charCount = uint32(result->GetRowCount());
-
-        bitBuffer.WriteBits(charCount, 16);
-
         bitBuffer.reserve(24 * charCount / 8);
         dataBuffer.reserve(charCount * 381);
+
+        bitBuffer.WriteBits(0, 21); // factionChangeRestrictions - raceId / mask loop
+        bitBuffer.WriteBits(charCount, 16);
 
         do
         {
             uint32 guidLow = (*result)[0].GetUInt32();
 
-            TC_LOG_DEBUG("network", "Loading char guid %u from account %u.", guidLow, GetAccountId());
+            TC_LOG_INFO("network", "Loading char guid %u from account %u.", guidLow, GetAccountId());
 
             Player::BuildEnumData(result, &dataBuffer, &bitBuffer);
 
-            _allowedCharsToLogin.insert(guidLow);
+            // Do not allow banned characters to log in
+            if (!(*result)[20].GetUInt32())
+                _allowedCharsToLogin.insert(guidLow);
+
+            if (!sWorld->HasCharacterNameData(guidLow)) // This can happen if characters are inserted into the database manually. Core hasn't loaded name data yet.
+                sWorld->AddCharacterNameData(guidLow, (*result)[1].GetString(), (*result)[4].GetUInt8(), (*result)[2].GetUInt8(), (*result)[3].GetUInt8(), (*result)[7].GetUInt8());
         } while (result->NextRow());
+
+        bitBuffer.WriteBit(1); // Sucess
+        bitBuffer.FlushBits();
     }
     else
+    {
+        bitBuffer.WriteBits(0, 21);
         bitBuffer.WriteBits(0, 16);
+        bitBuffer.WriteBit(1); // Success
+        bitBuffer.FlushBits();
+    }
 
-    bitBuffer.WriteBit(1);
-    bitBuffer.WriteBits(0, 21); // restricted faction change rules count
-    bitBuffer.FlushBits();
+    WorldPacket data(SMSG_CHAR_ENUM, 7 + bitBuffer.size() + dataBuffer.size());
 
     data.append(bitBuffer);
+
     if (charCount)
         data.append(dataBuffer);
 
     SendPacket(&data);
+
+    // Sended after SMSG_ENUM_CHARACTERS_RESULT
+    //if (m_charBooster->GetCurrentAction() == CHARACTER_BOOST_ITEMS)
+    //    m_charBooster->HandleCharacterBoost();
 }
 
 void WorldSession::HandleCharEnumOpcode(WorldPacket & recvData)

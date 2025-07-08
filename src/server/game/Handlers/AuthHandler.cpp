@@ -26,9 +26,7 @@
 
 void WorldSession::SendAuthResponse(uint8 code, bool queued, uint32 queuePos)
 {
-    uint8 count5 = 1;
-    std::string realmName = sWorld->GetRealmName();
-    std::string trimmedName = sWorld->GetTrimmedRealmName();
+    std::map<uint32, std::string> realmNamesToSend;
 
     QueryResult classResult = LoginDatabase.PQuery("SELECT class, expansion FROM realm_classes WHERE realmId = %u", realmID);
     QueryResult raceResult = LoginDatabase.PQuery("SELECT race, expansion FROM realm_races WHERE realmId = %u", realmID);
@@ -39,20 +37,24 @@ void WorldSession::SendAuthResponse(uint8 code, bool queued, uint32 queuePos)
         return;
     }
 
-    TC_LOG_DEBUG("network", "SMSG_AUTH_RESPONSE");
+    RealmNameMap::const_iterator iter = realmNameStore.find(realmID);
+    if (iter != realmNameStore.end()) // Add local realm
+        realmNamesToSend[realmID] = iter->second;
+
+    TC_LOG_ERROR("network", "SMSG_AUTH_RESPONSE");
     WorldPacket packet(SMSG_AUTH_RESPONSE, 80);
 
     packet.WriteBit(code == AUTH_OK);
 
     if (code == AUTH_OK)
     {
-        packet.WriteBits(0, 21); // Send current realmId
+        packet.WriteBits(realmNamesToSend.size(), 21); // Send current realmId
 
-        for (uint8 i = 0; i < count5; ++i)
+        for (std::map<uint32, std::string>::const_iterator itr = realmNamesToSend.begin(); itr != realmNamesToSend.end(); itr++)
         {
-            packet.WriteString(realmName);
-            packet.WriteString(trimmedName);
-            packet << uint32(realmID);
+            packet.WriteBits(itr->second.size(), 8);
+            packet.WriteBits(itr->second.size(), 8);
+            packet.WriteBit(itr->first == realmID); // Home realm
         }
 
         packet.WriteBits(classResult->GetRowCount(), 23);
@@ -77,11 +79,11 @@ void WorldSession::SendAuthResponse(uint8 code, bool queued, uint32 queuePos)
 
     if (code == AUTH_OK)
     {
-        for (uint8 i = 0; i < count5; ++i)
+        for (std::map<uint32, std::string>::const_iterator itr = realmNamesToSend.begin(); itr != realmNamesToSend.end(); itr++)
         {
-            packet.WriteBit(1);
-            packet.WriteBits(realmName.size(), 8);
-            packet.WriteBits(trimmedName.size(), 8);
+            packet << uint32(itr->first);
+            packet.WriteString(itr->second);
+            packet.WriteString(itr->second);
         }
 
         do
