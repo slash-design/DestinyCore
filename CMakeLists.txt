@@ -1,4 +1,4 @@
-# Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+# This file is part of the DestinyCore Project. See AUTHORS file for Copyright information
 #
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -9,7 +9,7 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 # Set projectname (must be done AFTER setting configurationtypes)
-project(LegacyProjectMoP)
+project(DestinyCore)
 
 # CMake policies (can not be handled elsewhere)
 if( UNIX )
