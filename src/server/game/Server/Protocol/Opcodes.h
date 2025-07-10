@@ -140,7 +140,7 @@ enum Opcodes
     CMSG_CHANNEL_UNSILENCE_VOICE                      = 0x0CD4, // 5.4.1 17538
     CMSG_CHANNEL_VOICE_OFF                            = 0x00F0, // 5.4.1 17538
     CMSG_CHANNEL_VOICE_ON                             = 0x1158, // 5.4.1 17538
-    CMSG_CHAR_CREATE                                  = 0x08CD, // 5.4.1 17538
+    CMSG_CHAR_CREATE                                  = 0x0F1D, // 5.4.8 18414
     CMSG_CHAR_CUSTOMIZE                               = 0x0564, // 5.4.1 17538
     CMSG_CHAR_DELETE                                  = 0x09C0, // 5.4.1 17538
     CMSG_CHAR_ENUM                                    = 0x00E0, // 5.4.8 18414
@@ -474,7 +474,7 @@ enum Opcodes
     CMSG_SELECT_FACTION                               = 0x1766, // 5.4.1 17538
     CMSG_SELF_RES                                     = 0x03DE, // 5.4.1 17538
     CMSG_SELL_ITEM                                    = 0x0B7D, // 5.4.1 17538
-    CMSG_SEND_MAIL                                    = 0x0061, // 5.4.1 17538
+    CMSG_SEND_MAIL                                    = 0x1DBA, // 5.4.8 18414
     CMSG_SEND_SOR_REQUEST_VIA_ADDRESS                 = 0x046D, // 5.4.1 17538
     CMSG_SEND_SOR_REQUEST_VIA_BNET_ACCOUNT_ID         = 0x11E1, // 5.4.1 17538
     CMSG_SET_ACTION_BUTTON                            = 0x014C, // 5.4.1 17538
@@ -582,7 +582,7 @@ enum Opcodes
     SMSG_ATTACKERSTATEUPDATE                          = 0x182B, // 5.4.1 17538
     SMSG_ATTACKSTART                                  = 0x012F, // 5.4.1 17538
     SMSG_ATTACKSTOP                                   = 0x0D3C, // 5.4.1 17538
-    SMSG_ATTACKSWING_ERROR                            = 0x05BF, // 5.4.1 17538
+    SMSG_ATTACKSWING_ERROR                            = 0x11E1, // 5.4.8 18414
     SMSG_AUCTION_BIDDER_LIST_RESULT                   = 0x0992, // 5.4.1 17538
     SMSG_AUCTION_BIDDER_NOTIFICATION                  = 0x092E, // 5.4.1 17538
     SMSG_AUCTION_COMMAND_RESULT                       = 0x0C9D, // 5.4.1 17538
@@ -655,7 +655,7 @@ enum Opcodes
     SMSG_CHANNEL_NOTIFY                               = 0x1490, // 5.4.1 17538
     SMSG_CHANNEL_START                                = 0x0565, // 5.4.1 17538
     SMSG_CHANNEL_UPDATE                               = 0x1148, // 5.4.1 17538
-    SMSG_CHAR_CREATE                                  = 0x1007, // 5.4.1 17538
+    SMSG_CHAR_CREATE                                  = 0x1CAA, // 5.4.8 18414
     SMSG_CHAR_CUSTOMIZE                               = 0x041D, // 5.4.1 17538
     SMSG_CHAR_DELETE                                  = 0x0017, // 5.4.1 17538
     SMSG_CHAR_ENUM                                    = 0x11C3, // 5.4.8 18414
@@ -862,7 +862,7 @@ enum Opcodes
     SMSG_MOVE_SET_SWIM_SPEED                          = 0x0A0D, // 5.4.1 17538
     SMSG_MOVE_SET_TURN_RATE                           = 0x02BA, // 5.4.1 17538
     SMSG_MOVE_SET_WALK_SPEED                          = 0x0716, // 5.4.1 17538
-    SMSG_MOVE_SET_COMPOUND_STATE                      = 0xA98,  // 5.0.5 16048
+    SMSG_MOVE_SET_COMPOUND_STATE                      = 0x0061, // 5.4.8 18414
     SMSG_MOVE_SET_VEHICLE_REC_ID                      = 0x07BE, // 5.4.1 17538
     SMSG_MOVE_SPLINE_COLLISION_DISABLE                = 0xE81,  // 5.0.5 16048
     SMSG_MOVE_SPLINE_COLLISION_ENABLE                 = 0xE12,  // 5.0.5 16048
@@ -1034,12 +1034,12 @@ enum Opcodes
     SMSG_SET_FLAT_SPELL_MODIFIER                      = 0x10F2, // 5.4.8 18414
     SMSG_SET_FORCED_REACTIONS                         = 0x0025, // 5.4.1 17538
     SMSG_SET_MOVEFLAG2_0x1000                         = 0x0386, // 5.4.1 17538
-    SMSG_SET_PCT_SPELL_MODIFIER                       = 0x0061, // 5.4.1 17538
+    SMSG_SET_PCT_SPELL_MODIFIER                       = 0x09D3, // 5.4.8 18414
     SMSG_SET_PET_SPECIALIZATION                       = 0x1115, // 5.4.1 17538
     SMSG_SET_PHASE_SHIFT                              = 0x0426, // 5.4.1 17538
     SMSG_SET_PLAY_HOVER_ANIM                          = 0x04B4, // 5.4.1 17538
     SMSG_SET_PLAYER_DECLINED_NAMES_RESULT             = 0x0085, // 5.4.1 17538
-    SMSG_SET_PROFICIENCY                              = 0x05B6, // 5.4.1 17538
+    SMSG_SET_PROFICIENCY                              = 0x1440, // 5.4.8 18414
     SMSG_SET_TIME_ZONE_INFORMATION                    = 0x19C1, // 5.4.8 18414
     SMSG_SET_VEHICLE_REC_ID                           = 0x048E, // 5.4.1 17538
     SMSG_SHOW_BANK                                    = 0x008E, // 5.4.1 17538
@@ -1105,7 +1105,7 @@ enum Opcodes
     SMSG_UPDATE_INSTANCE_OWNERSHIP                    = 0x01BF, // 5.4.1 17538
     SMSG_UPDATE_LAST_INSTANCE                         = 0x112E, // 5.4.1 17538
     SMSG_UPDATE_OBJECT                                = 0x0C22, // 5.4.1 17538
-    SMSG_UPDATE_TALENT_DATA                           = 0x0494, // 5.4.1 17538
+    SMSG_UPDATE_TALENT_DATA                           = 0x0A9B, // 5.4.8 18414
     SMSG_UPDATE_WORLD_STATE                           = 0x1437, // 5.4.1 17538
     SMSG_VOID_ITEM_SWAP_RESPONSE                      = 0x0C2E, // 5.4.1 17538
     SMSG_VOID_STORAGE_CONTENTS                        = 0x098C, // 5.4.1 17538

@@ -24,25 +24,54 @@
 #include <set>
 #include <list>
 
+#define PLAYABLE_RACES_COUNT 15
+#define PLAYABLE_CLASSES_COUNT 11
+
+uint8 raceExpansion[PLAYABLE_RACES_COUNT][2] =
+{
+    { RACE_TAUREN,            EXP_VANILLA             },
+    { RACE_UNDEAD_PLAYER,     EXP_VANILLA             },
+    { RACE_ORC,               EXP_VANILLA             },
+    { RACE_GNOME,             EXP_VANILLA             },
+    { RACE_GOBLIN,            EXP_BC },
+    { RACE_HUMAN,             EXP_VANILLA             },
+    { RACE_TROLL,             EXP_VANILLA             },
+    { RACE_PANDAREN_NEUTRAL,  EXP_BC },
+    { RACE_DRAENEI,           EXP_BC },
+    { RACE_WORGEN,            EXP_BC },
+    { RACE_BLOODELF,          EXP_BC },
+    { RACE_NIGHTELF,          EXP_VANILLA             },
+    { RACE_DWARF,             EXP_VANILLA             },
+    { RACE_PANDAREN_ALLI, EXP_BC },
+    { RACE_PANDAREN_HORDE,    EXP_BC },
+};
+
+uint8 classExpansion[PLAYABLE_CLASSES_COUNT][2] =
+{
+    { CLASS_MONK,         EXP_PANDARIA      },
+    { CLASS_WARRIOR,      EXP_VANILLA                },
+    { CLASS_PALADIN,      EXP_VANILLA                },
+    { CLASS_HUNTER,       EXP_VANILLA                },
+    { CLASS_ROGUE,        EXP_VANILLA                },
+    { CLASS_PRIEST,       EXP_VANILLA                },
+    { CLASS_SHAMAN,       EXP_VANILLA                },
+    { CLASS_MAGE,         EXP_VANILLA                },
+    { CLASS_WARLOCK,      EXP_VANILLA                },
+    { CLASS_DRUID,        EXP_VANILLA                },
+    { CLASS_DEATH_KNIGHT, EXP_WOTLK },
+};
+
+
 void WorldSession::SendAuthResponse(uint8 code, bool queued, uint32 queuePos)
 {
     std::map<uint32, std::string> realmNamesToSend;
-
-    QueryResult classResult = LoginDatabase.PQuery("SELECT class, expansion FROM realm_classes WHERE realmId = %u", realmID);
-    QueryResult raceResult = LoginDatabase.PQuery("SELECT race, expansion FROM realm_races WHERE realmId = %u", realmID);
-
-    if (!classResult || !raceResult)
-    {
-        TC_LOG_ERROR("network", "Unable to retrieve class or race data.");
-        return;
-    }
 
     RealmNameMap::const_iterator iter = realmNameStore.find(realmID);
     if (iter != realmNameStore.end()) // Add local realm
         realmNamesToSend[realmID] = iter->second;
 
-    TC_LOG_ERROR("network", "SMSG_AUTH_RESPONSE");
-    WorldPacket packet(SMSG_AUTH_RESPONSE, 80);
+    TC_LOG_DEBUG("network", "SMSG_AUTH_RESPONSE");
+    WorldPacket packet(SMSG_AUTH_RESPONSE, 113);
 
     packet.WriteBit(code == AUTH_OK);
 
@@ -53,29 +82,31 @@ void WorldSession::SendAuthResponse(uint8 code, bool queued, uint32 queuePos)
         for (std::map<uint32, std::string>::const_iterator itr = realmNamesToSend.begin(); itr != realmNamesToSend.end(); itr++)
         {
             packet.WriteBits(itr->second.size(), 8);
-            packet.WriteBits(itr->second.size(), 8);
+            std::string normalized = itr->second;
+            normalized.erase(std::remove_if(normalized.begin(), normalized.end(), ::isspace), normalized.end());
+            packet.WriteBits(normalized.size(), 8);
             packet.WriteBit(itr->first == realmID); // Home realm
         }
 
-        packet.WriteBits(classResult->GetRowCount(), 23);
+        packet.WriteBits(PLAYABLE_CLASSES_COUNT, 23);
         packet.WriteBits(0, 21);
         packet.WriteBit(0);
         packet.WriteBit(0);
         packet.WriteBit(0);
         packet.WriteBit(0);
-        packet.WriteBits(raceResult->GetRowCount(), 23);
+        packet.WriteBits(PLAYABLE_RACES_COUNT, 23);
         packet.WriteBit(0);
     }
 
     packet.WriteBit(queued);
 
     if (queued)
-        packet.WriteBit(1);                             // Unknown
+        packet.WriteBit(1);
 
     packet.FlushBits();
 
     if (queued)
-        packet << uint32(0);                            // Unknown
+        packet << uint32(queuePos);
 
     if (code == AUTH_OK)
     {
@@ -83,39 +114,38 @@ void WorldSession::SendAuthResponse(uint8 code, bool queued, uint32 queuePos)
         {
             packet << uint32(itr->first);
             packet.WriteString(itr->second);
-            packet.WriteString(itr->second);
+            std::string normalized = itr->second;
+            normalized.erase(std::remove_if(normalized.begin(), normalized.end(), ::isspace), normalized.end());
+            packet.WriteString(normalized);
         }
 
-        do
+        for (int i = 0; i < PLAYABLE_RACES_COUNT; i++)
         {
-            Field* fields = raceResult->Fetch();
+            packet << uint8(raceExpansion[i][1]);
+            packet << uint8(raceExpansion[i][0]);
+        }
 
-            packet << fields[1].GetUInt8();
-            packet << fields[0].GetUInt8();
-        } while (raceResult->NextRow());
-
-        do
+        for (int i = 0; i < PLAYABLE_CLASSES_COUNT; i++)
         {
-            Field* fields = classResult->Fetch();
-
-            packet << fields[1].GetUInt8();
-            packet << fields[0].GetUInt8();
-        } while (classResult->NextRow());
+            packet << uint8(classExpansion[i][1]);
+            packet << uint8(classExpansion[i][0]);
+        }
 
         packet << uint32(0);
-        packet << uint8(Expansion());
-        packet << uint32(Expansion());
+        packet << uint8(Expansion()); // Active Expansion
         packet << uint32(0);
-        packet << uint8(Expansion());
+        packet << uint32(0); // unk time in ms
+        packet << uint8(Expansion()); // Server Expansion
         packet << uint32(0);
         packet << uint32(0);
         packet << uint32(0);
     }
 
-    packet << uint8(code);                             // Auth response ?
+    packet << uint8(code);
 
     SendPacket(&packet);
 }
+
 
 void WorldSession::SendClientCacheVersion(uint32 version)
 {
