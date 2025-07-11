@@ -30,6 +30,7 @@ add_executable(vmap4extractor ${sources})
 target_link_libraries(vmap4extractor
   ${BZIP2_LIBRARIES}
   ${ZLIB_LIBRARIES}
+  ${Boost_LIBRARIES}
   storm
 )
 

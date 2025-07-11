@@ -28,6 +28,7 @@ target_link_libraries(vmap4assembler
   collision
   g3dlib
   ${ZLIB_LIBRARIES}
+  ${Boost_LIBRARIES}
 )
 
 if( UNIX )

@@ -19,7 +19,7 @@
 #ifndef TRINITYCORE_STRING_FORMAT_H
 #define TRINITYCORE_STRING_FORMAT_H
 
-#include "fmt/printf.h"
+#include "fmt/format.h"
 
 namespace Trinity
 {
@@ -27,7 +27,7 @@ namespace Trinity
     template<typename Format, typename... Args>
     inline std::string StringFormat(Format&& fmt, Args&&... args)
     {
-        return fmt::sprintf(std::forward<Format>(fmt), std::forward<Args>(args)...);
+        return fmt::format(std::forward<Format>(fmt), std::forward<Args>(args)...);
     }
 
     /// Returns true if the given char pointer is null.

@@ -40,11 +40,13 @@
 #include <cstdlib>
 
 #ifdef G3D_WINDOWS
+
 #   include <conio.h>
 #   include <sys/timeb.h>
 #   include "G3D/RegistryUtil.h"
 #include <Ole2.h>
 #include <intrin.h>
+
 #elif defined(G3D_LINUX) 
 
 #   include <stdlib.h>
