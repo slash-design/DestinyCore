@@ -151,7 +151,7 @@ public:
             return false;
 
         // player's guild membership checked in AddMember before add
-        SQLTransaction trans(nullptr);
+        CharacterDatabaseTransaction trans(nullptr);
         return targetGuild->AddMember(trans, targetGuid);
     }
 
@@ -170,7 +170,7 @@ public:
         if (!targetGuild)
             return false;
 
-        SQLTransaction trans(nullptr);
+        CharacterDatabaseTransaction trans(nullptr);
         targetGuild->DeleteMember(trans, targetGuid, false, true, true);
         return true;
     }
@@ -198,7 +198,7 @@ public:
             return false;
 
         uint8 newRank = uint8(atoi(rankStr));
-        SQLTransaction trans(nullptr);
+        CharacterDatabaseTransaction trans(nullptr);
         return targetGuild->ChangeMemberRank(trans, targetGuid, newRank);
     }
 

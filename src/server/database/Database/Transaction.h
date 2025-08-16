@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -20,13 +20,28 @@
 
 #include "Define.h"
 #include "DatabaseEnvFwd.h"
-#include "SQLOperation.h"
 #include "StringFormat.h"
+#include <functional>
+#include <future>
 #include <mutex>
+#include <variant>
 #include <vector>
 
+class MySQLConnection;
+
+struct TransactionData
+{
+    std::variant<std::unique_ptr<PreparedStatementBase>, std::string> query;
+
+    template<typename... Args>
+    TransactionData(Args&&... args) : query(std::forward<Args>(args)...) { }
+
+    static PreparedStatementBase* ToExecutable(std::unique_ptr<PreparedStatementBase> const& stmt) { return stmt.get(); }
+    static char const* ToExecutable(std::string const& sql) { return sql.c_str(); }
+};
+
 /*! Transactions, high level class. */
-class TC_DATABASE_API Transaction
+class TC_DATABASE_API TransactionBase
 {
     friend class TransactionTask;
     friend class MySQLConnection;
@@ -35,43 +50,71 @@ class TC_DATABASE_API Transaction
     friend class DatabaseWorkerPool;
 
     public:
-        Transaction() : _cleanedUp(false) { }
-        ~Transaction() { Cleanup(); }
+        TransactionBase() : _cleanedUp(false) { }
+        TransactionBase(TransactionBase const&) = delete;
+        TransactionBase(TransactionBase &&) noexcept = default;
+        TransactionBase& operator=(TransactionBase const&) = delete;
+        TransactionBase& operator=(TransactionBase &&) noexcept = default;
+        virtual ~TransactionBase() { Cleanup(); }
 
-        void Append(PreparedStatement* statement);
-        void Append(const char* sql);
-        template<typename Format, typename... Args>
-        void PAppend(Format&& sql, Args&&... args)
+        void Append(char const* sql);
+        template<typename... Args>
+        void PAppend(std::string_view sql, Args&&... args)
         {
-            Append(Trinity::StringFormat(std::forward<Format>(sql), std::forward<Args>(args)...).c_str());
+            Append(Trinity::StringFormat(sql, std::forward<Args>(args)...).c_str());
         }
 
         std::size_t GetSize() const { return m_queries.size(); }
 
     protected:
+        void AppendPreparedStatement(PreparedStatementBase* statement);
         void Cleanup();
-        std::vector<SQLElementData> m_queries;
+        std::vector<TransactionData> m_queries;
 
     private:
         bool _cleanedUp;
+};
 
+template<typename T>
+class Transaction : public TransactionBase
+{
+public:
+    using TransactionBase::Append;
+    void Append(PreparedStatement<T>* statement)
+    {
+        AppendPreparedStatement(statement);
+    }
 };
 
 /*! Low level class*/
-class TC_DATABASE_API TransactionTask : public SQLOperation
+class TC_DATABASE_API TransactionTask
 {
-    template <class T> friend class DatabaseWorkerPool;
-    friend class DatabaseWorker;
+public:
+    static bool Execute(MySQLConnection* conn, std::shared_ptr<TransactionBase> trans);
 
-    public:
-        TransactionTask(SQLTransaction trans) : m_trans(trans) { }
-        ~TransactionTask() { }
+private:
+    static int TryExecute(MySQLConnection* conn, std::shared_ptr<TransactionBase> trans);
 
-    protected:
-        bool Execute() override;
+    static std::mutex _deadlockLock;
+};
 
-        SQLTransaction m_trans;
-        static std::mutex _deadlockLock;
+class TC_DATABASE_API TransactionCallback
+{
+public:
+    TransactionCallback(std::future<bool>&& future) : m_future(std::move(future)) { }
+    TransactionCallback(TransactionCallback&&) = default;
+
+    TransactionCallback& operator=(TransactionCallback&&) = default;
+
+    void AfterComplete(std::function<void(bool)> callback) &
+    {
+        m_callback = std::move(callback);
+    }
+
+    bool InvokeIfReady();
+
+    std::future<bool> m_future;
+    std::function<void(bool)> m_callback;
 };
 
 #endif

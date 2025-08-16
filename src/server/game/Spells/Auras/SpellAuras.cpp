@@ -171,7 +171,7 @@ void AuraApplication::SendFakeAuraUpdate(uint32 auraId, bool remove)
     WorldPackets::Spells::AuraInfo inf;
     BuildUpdatePacket(inf, remove);
 
-    if (inf.AuraData.is_initialized())
+    if (inf.AuraData.has_value())
         inf.AuraData->SpellID = auraId;
 
     data.Auras.push_back(inf);
@@ -187,11 +187,11 @@ void AuraApplication::BuildUpdatePacket(WorldPackets::Spells::AuraInfo& auraInfo
     if (remove)
         return;
 
-    auraInfo.AuraData = boost::in_place();
+    auraInfo.AuraData.emplace();
 
     Aura const* aura = GetBase();
 
-    WorldPackets::Spells::AuraDataInfo& auraData = auraInfo.AuraData.get();
+    WorldPackets::Spells::AuraDataInfo& auraData = *auraInfo.AuraData;
     auraData.CastID = aura->GetCastGUID();
     auraData.SpellID = aura->GetId();
     auraData.SpellXSpellVisualID = aura->GetSpellXSpellVisualId();

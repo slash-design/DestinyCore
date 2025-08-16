@@ -602,7 +602,7 @@ PEXCEPTION_POINTERS pExceptionInfo)
 // Given an exception code, returns a pointer to a static string with a
 // description of the exception
 //======================================================================
-LPTSTR WheatyExceptionReport::GetExceptionString(DWORD dwCode)
+LPCTSTR WheatyExceptionReport::GetExceptionString(DWORD dwCode)
 {
     #define EXCEPTION(x) case EXCEPTION_##x: return _T(#x);
 
@@ -951,8 +951,8 @@ DWORD64 modBase,
 DWORD dwTypeIndex,
 DWORD_PTR offset,
 bool & bHandled,
-const char* Name,
-char* /*suffix*/,
+char const* Name,
+char const* /*suffix*/,
 bool newSymbol,
 bool logChildren)
 {

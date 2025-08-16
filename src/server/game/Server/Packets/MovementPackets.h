@@ -189,6 +189,8 @@ namespace WorldPackets
         {
             struct ShipTransferPending
             {
+                ShipTransferPending() { } // allows emplace() with clang
+
                 uint32 ID = 0;              ///< gameobject_template.entry of the transport the player is teleporting on
                 int32 OriginMapID = -1;     ///< Map id the player is currently on (before teleport)
             };

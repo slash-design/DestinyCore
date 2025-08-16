@@ -355,7 +355,7 @@ const Position gaichoPos[GAI_CHO_CAPTIVE_COUNT][2] =
     }
 };
 
-struct BloodiedSelector : public std::unary_function<Unit*, bool>
+struct BloodiedSelector
 {
     public:
 

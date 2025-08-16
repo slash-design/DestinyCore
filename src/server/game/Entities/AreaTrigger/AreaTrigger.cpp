@@ -754,7 +754,7 @@ void AreaTrigger::InitSplines(std::vector<G3D::Vector3> splinePoints, uint32 tim
 
         WorldPackets::AreaTrigger::AreaTriggerReShape reshape;
         reshape.TriggerGUID = GetGUID();
-        reshape.AreaTriggerSpline = boost::in_place();
+        reshape.AreaTriggerSpline.emplace();
         reshape.AreaTriggerSpline->ElapsedTimeForMovement = GetElapsedTimeForMovement();
         reshape.AreaTriggerSpline->TimeToTarget = timeToTarget;
         for (auto point : _spline->getPoints())
@@ -807,7 +807,7 @@ bool AreaTrigger::SetDestination(Position const& pos, uint32 timeToTarget)
 void AreaTrigger::InitCircularMovement(AreaTriggerCircularMovementInfo const& cmi, uint32 timeToTarget)
 {
     // Circular movement requires either a center position or an attached unit
-    ASSERT(cmi.Center.is_initialized() || cmi.TargetGUID.is_initialized());
+    ASSERT(cmi.Center.has_value() || cmi.TargetGUID.has_value());
 
     // should be sent in object create packets only
     m_uint32Values[AREATRIGGER_TIME_TO_TARGET] = timeToTarget;
@@ -829,19 +829,19 @@ void AreaTrigger::InitCircularMovement(AreaTriggerCircularMovementInfo const& cm
 
 bool AreaTrigger::HasCircularMovement() const
 {
-    return _circularMovementInfo.is_initialized();
+    return _circularMovementInfo.has_value();
 }
 
 Position const* AreaTrigger::GetCircularMovementCenterPosition() const
 {
-    if (_circularMovementInfo.is_initialized())
+    if (_circularMovementInfo.has_value())
         return nullptr;
 
-    if (_circularMovementInfo->TargetGUID.is_initialized())
+    if (_circularMovementInfo->TargetGUID.has_value())
         if (WorldObject* center = ObjectAccessor::GetWorldObject(*this, *_circularMovementInfo->TargetGUID))
             return center;
 
-    if (_circularMovementInfo->Center.is_initialized())
+    if (_circularMovementInfo->Center.has_value())
         return &_circularMovementInfo->Center->Pos;
 
     return nullptr;

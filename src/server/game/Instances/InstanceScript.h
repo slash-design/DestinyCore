@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the DestinyCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -235,7 +234,7 @@ class TC_GAME_API InstanceScript : public ZoneScript
         void DoDelayedConversation(uint32 delay, uint32 conversationId);
 		
 		// Resurrect all players in instance
-        void InstanceScript::DoResurrectPlayers(float restore_percent);
+        void DoResurrectPlayers(float restore_percent);
 		
 		// Remove item on all players in instance
         void DoDestroyItemCountOnPlayers(uint32 item, uint32 count);

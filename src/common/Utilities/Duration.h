@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the DestinyCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -20,19 +20,19 @@
 
 #include <chrono>
 
-/// Milliseconds shorthand typedef.
-typedef std::chrono::milliseconds Milliseconds;
+using Milliseconds = std::chrono::milliseconds;
+using Seconds = std::chrono::seconds;
+using Minutes = std::chrono::minutes;
+using Hours = std::chrono::hours;
 
-/// Seconds shorthand typedef.
-typedef std::chrono::seconds Seconds;
+using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
+using SystemTimePoint = std::chrono::time_point<std::chrono::system_clock>;
 
-/// Minutes shorthand typedef.
-typedef std::chrono::minutes Minutes;
-
-/// Hours shorthand typedef.
-typedef std::chrono::hours Hours;
-
-/// Makes std::chrono_literals globally available.
 using namespace std::chrono_literals;
+
+constexpr std::chrono::hours operator"" _days(unsigned long long days)
+{
+    return std::chrono::hours(days * 24);
+}
 
 #endif // _DURATION_H_

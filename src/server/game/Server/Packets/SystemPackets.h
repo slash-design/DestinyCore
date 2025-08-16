@@ -39,6 +39,8 @@ namespace WorldPackets
 
             struct EuropaTicketConfig
             {
+                EuropaTicketConfig() { } // allows emplace() with clang
+
                 bool TicketsEnabled     = false;
                 bool BugsEnabled        = false;
                 bool ComplaintsEnabled  = false;

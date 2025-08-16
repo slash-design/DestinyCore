@@ -102,9 +102,9 @@ void LFGMgr::_SaveToDB(ObjectGuid guid, uint32 db_guid)
     if (!guid.IsParty())
         return;
 
-    SQLTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
 
-    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_LFG_DATA);
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_LFG_DATA);
     stmt->setUInt32(0, db_guid);
     trans->Append(stmt);
 
@@ -650,7 +650,7 @@ void LFGMgr::LeaveLfg(ObjectGuid guid, Optional<uint32> queueId /*= {}*/, bool d
         {
             if (!gguid.IsEmpty())
             {
-                if (queueId.is_initialized())
+                if (queueId.has_value())
                 {
                     LFGQueue& queue = GetQueue(gguid, *queueId);
                     queue.RemoveFromQueue(gguid);
@@ -671,7 +671,7 @@ void LFGMgr::LeaveLfg(ObjectGuid guid, Optional<uint32> queueId /*= {}*/, bool d
             }
             else
             {
-                if (queueId.is_initialized())
+                if (queueId.has_value())
                 {
                     LFGQueue& queue = GetQueue(guid, *queueId);
                     queue.RemoveFromQueue(guid);

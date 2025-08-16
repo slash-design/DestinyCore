@@ -15,8 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SHOPDATABASE_H
-#define SHOPDATABASE_H
+#ifndef _SHOPDATABASE_H
+#define _SHOPDATABASE_H
 
 #include "MySQLConnection.h"
 
@@ -37,8 +37,7 @@ public:
     typedef ShopDatabaseStatements Statements;
 
     //- Constructors for sync and async connections
-    ShopDatabaseConnection(MySQLConnectionInfo& connInfo);
-    ShopDatabaseConnection(ProducerConsumerQueue<SQLOperation*>* q, MySQLConnectionInfo& connInfo);
+    ShopDatabaseConnection(MySQLConnectionInfo& connInfo, ConnectionFlags connectionFlags);
     ~ShopDatabaseConnection();
 
     //- Loads database type specific prepared statements

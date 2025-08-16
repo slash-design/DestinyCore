@@ -115,7 +115,7 @@ ByteBuffer& operator<<(ByteBuffer& data, WorldPackets::GuildFinder::GuildPostDat
 
 WorldPacket const* WorldPackets::GuildFinder::LFGuildPost::Write()
 {
-    _worldPacket.WriteBit(Post.is_initialized());
+    _worldPacket.WriteBit(Post.has_value());
     _worldPacket.FlushBits();
     if (Post)
         _worldPacket << *Post;

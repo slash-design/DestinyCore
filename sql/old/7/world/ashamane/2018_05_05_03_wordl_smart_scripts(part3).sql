@@ -1326,7 +1326,7 @@ DELETE FROM `smart_scripts` WHERE  `entryorguid`=2448401 AND `id`=0 AND `action_
 
 UPDATE `smart_scripts` SET `link`='0' WHERE  `entryorguid`=6221 AND `source_type`=0 AND `id`=18 AND `link`=19;
 DELETE FROM `smart_scripts` WHERE  `entryorguid`=86697 AND `source_type`=0 AND `id`=11 AND `link`=0;
-DELETE FROM .`smart_scripts` WHERE  `entryorguid`=86697 AND `source_type`=0 AND `id`=11 AND `link`=12;
+DELETE FROM `smart_scripts` WHERE  `entryorguid`=86697 AND `source_type`=0 AND `id`=11 AND `link`=12;
 
 UPDATE `smart_scripts` SET `action_param2`='2', `action_param3`='18', `action_param4`='35', `target_type`='1', `target_param1`='0' WHERE  `entryorguid`=-204361 AND `source_type`=0 AND `id`=0 AND `action_type`=11;
 UPDATE `smart_scripts` SET `action_param2`='2', `action_param3`='18', `action_param4`='35', `target_type`='1', `target_param1`='0' WHERE  `entryorguid`=24170 AND `source_type`=0 AND `id`=1 AND `action_type`=11;

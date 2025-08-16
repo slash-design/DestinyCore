@@ -21,6 +21,7 @@
 #include "ScriptMgr.h"
 #include "World.h"
 #include <boost/property_tree/ptree.hpp>
+#include <future>
 
 class RestChannelPost : public RestScript
 {

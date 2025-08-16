@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the DestinyCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -73,15 +73,10 @@ void WorldSession::HandleHotfixRequest(WorldPackets::Hotfix::HotfixRequest& hotf
             WorldPackets::Hotfix::HotfixResponse::HotfixData hotfixData;
             hotfixData.ID = hotfixId;
             hotfixData.RecordID = *hotfix;
-            if (storage && storage->HasRecord(hotfixData.RecordID))
+            if (storage->HasRecord(hotfixData.RecordID))
             {
-                hotfixData.Data = boost::in_place();
+                hotfixData.Data.emplace();
                 storage->WriteRecord(hotfixData.RecordID, GetSessionDbcLocale(), *hotfixData.Data);
-            }
-            else if (std::vector<uint8> const* blobData = sDB2Manager.GetHotfixBlobData(PAIR64_HIPART(hotfixId), *hotfix))
-            {
-                hotfixData.Data = boost::in_place();
-                hotfixData.Data->append(blobData->data(), blobData->size());
             }
 
             hotfixQueryResponse.Hotfixes.emplace_back(std::move(hotfixData));

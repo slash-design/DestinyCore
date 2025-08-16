@@ -69,7 +69,7 @@ ByteBuffer& operator<<(ByteBuffer& data, WorldPackets::Hotfix::HotfixResponse::H
 {
     data << uint64(hotfixData.ID);
     data << int32(hotfixData.RecordID);
-    data.WriteBit(hotfixData.Data.is_initialized());
+    data.WriteBit(hotfixData.Data.has_value());
     if (hotfixData.Data)
     {
         data << uint32(hotfixData.Data->size());

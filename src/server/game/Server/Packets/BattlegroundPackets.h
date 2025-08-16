@@ -97,6 +97,8 @@ namespace WorldPackets
 
             struct RatingData
             {
+                RatingData() { } // allows emplace() with clang
+
                 int32 Prematch[2] = { };
                 int32 Postmatch[2] = { };
                 int32 PrematchMMR[2] = { };
@@ -104,6 +106,8 @@ namespace WorldPackets
 
             struct HonorData
             {
+                HonorData() { } // allows emplace() with clang
+
                 uint32 HonorKills = 0;
                 uint32 Deaths = 0;
                 uint32 ContributionPoints = 0;

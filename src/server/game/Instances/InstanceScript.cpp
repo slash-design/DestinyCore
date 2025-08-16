@@ -110,7 +110,7 @@ void InstanceScript::SaveToDB()
     if (data.empty())
         return;
 
-    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_INSTANCE_DATA);
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_INSTANCE_DATA);
     stmt->setUInt32(0, GetCompletedEncounterMask());
     stmt->setString(1, data);
     stmt->setUInt32(2, _entranceId);
@@ -1397,7 +1397,7 @@ void InstanceScript::StartChallengeMode(uint8 modeid, uint8 level, uint8 affix1,
         entranceLocation.Relocate(areaTrigger->target_X, areaTrigger->target_Y, areaTrigger->target_Z, areaTrigger->target_Orientation);
     DoNearTeleportPlayers(entranceLocation);
 
-    if (_challengeModeDoorPosition.is_initialized())
+    if (_challengeModeDoorPosition.has_value())
         instance->SummonGameObject(GOB_CHALLENGER_DOOR, *_challengeModeDoorPosition, QuaternionData(), WEEK);
 
     WorldPackets::ChallengeMode::ChangePlayerDifficultyResult changePlayerDifficultyResult(11);
@@ -1674,8 +1674,8 @@ void InstanceScript::DoResurrectPlayers(float restore_percent)
 
 void InstanceScript::SpawnFontOfPower()
 {
-    if (_challengeModeFontOfPowerPosition.is_initialized() && instance->IsMythic())
+    if (_challengeModeFontOfPowerPosition.has_value() && instance->IsMythic())
         instance->SummonGameObject(GO_FONT_OF_POWER, *_challengeModeFontOfPowerPosition, QuaternionData(), WEEK);
-    if (_challengeModeFontOfPowerPosition2.is_initialized() && instance->IsMythic())
+    if (_challengeModeFontOfPowerPosition2.has_value() && instance->IsMythic())
         instance->SummonGameObject(GO_FONT_OF_POWER, *_challengeModeFontOfPowerPosition2, QuaternionData(), WEEK);
 }

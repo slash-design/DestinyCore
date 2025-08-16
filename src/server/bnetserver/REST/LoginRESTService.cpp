@@ -47,7 +47,7 @@ public:
     bool InvokeIfReady()
     {
         ASSERT(_callback);
-        return _callback->InvokeIfReady() == QueryCallback::Completed;
+        return _callback->InvokeIfReady();
     }
 
     soap* GetClient() { return &_client; }
@@ -83,10 +83,10 @@ bool LoginRESTService::Start(Trinity::Asio::IoContext* ioContext)
     }
 
     boost::system::error_code ec;
-    boost::asio::ip::tcp::resolver resolver(*ioContext);
+    Trinity::Asio::Resolver resolver(*ioContext);
 
     std::string configuredAddress = sConfigMgr->GetStringDefault("LoginREST.ExternalAddress", "127.0.0.1");
-    Optional<boost::asio::ip::tcp::endpoint> externalAddress = Trinity::Net::Resolve(resolver, boost::asio::ip::tcp::v4(), configuredAddress, std::to_string(_port));
+    Optional<boost::asio::ip::tcp::endpoint> externalAddress = resolver.Resolve(boost::asio::ip::tcp::v4(), configuredAddress, std::to_string(_port));
     if (!externalAddress)
     {
         TC_LOG_ERROR("server.rest", "Could not resolve LoginREST.ExternalAddress %s", configuredAddress.c_str());
@@ -96,7 +96,7 @@ bool LoginRESTService::Start(Trinity::Asio::IoContext* ioContext)
     _externalAddress = *externalAddress;
 
     configuredAddress = sConfigMgr->GetStringDefault("LoginREST.LocalAddress", "127.0.0.1");
-    Optional<boost::asio::ip::tcp::endpoint> localAddress = Trinity::Net::Resolve(resolver, boost::asio::ip::tcp::v4(), configuredAddress, std::to_string(_port));
+    Optional<boost::asio::ip::tcp::endpoint> localAddress = resolver.Resolve(boost::asio::ip::tcp::v4(), configuredAddress, std::to_string(_port));
     if (!localAddress)
     {
         TC_LOG_ERROR("server.rest", "Could not resolve LoginREST.LocalAddress %s", configuredAddress.c_str());
@@ -255,7 +255,7 @@ int32 LoginRESTService::HandleGetGameAccounts(std::shared_ptr<AsyncRequest> requ
         return 401;
 
     request->SetCallback(Trinity::make_unique<QueryCallback>(LoginDatabase.AsyncQuery([&] {
-        PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BNET_GAME_ACCOUNT_LIST);
+        LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BNET_GAME_ACCOUNT_LIST);
         stmt->setString(0, request->GetClient()->userid);
         return stmt;
     }())
@@ -341,7 +341,7 @@ int32 LoginRESTService::HandlePostLogin(std::shared_ptr<AsyncRequest> request)
     Utf8ToUpperOnlyLatin(login);
     Utf8ToUpperOnlyLatin(password);
 
-    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BNET_AUTHENTICATION);
+    LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BNET_AUTHENTICATION);
     stmt->setString(0, login);
 
     std::string sentPasswordHash = CalculateShaPassHash(login, password);
@@ -369,7 +369,7 @@ int32 LoginRESTService::HandlePostLogin(std::shared_ptr<AsyncRequest> request)
                     loginTicket = "TC-" + ByteArrayToHexStr(ticket.AsByteArray(20).get(), 20);
                 }
 
-                PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_UPD_BNET_AUTHENTICATION);
+                LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_UPD_BNET_AUTHENTICATION);
                 stmt->setString(0, loginTicket);
                 stmt->setUInt32(1, time(nullptr) + _loginTicketDuration);
                 stmt->setUInt32(2, accountId);
@@ -392,8 +392,8 @@ int32 LoginRESTService::HandlePostLogin(std::shared_ptr<AsyncRequest> request)
 
                 if (maxWrongPassword)
                 {
-                    SQLTransaction trans = LoginDatabase.BeginTransaction();
-                    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_UPD_BNET_FAILED_LOGINS);
+                    LoginDatabaseTransaction trans = LoginDatabase.BeginTransaction();
+                    LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_UPD_BNET_FAILED_LOGINS);
                     stmt->setUInt32(0, accountId);
                     trans->Append(stmt);
 
@@ -446,7 +446,7 @@ int32 LoginRESTService::HandlePostRefreshLoginTicket(std::shared_ptr<AsyncReques
         return 401;
 
     request->SetCallback(Trinity::make_unique<QueryCallback>(LoginDatabase.AsyncQuery([&] {
-        PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BNET_EXISTING_AUTHENTICATION);
+        LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BNET_EXISTING_AUTHENTICATION);
         stmt->setString(0, request->GetClient()->userid);
         return stmt;
     }())
@@ -461,7 +461,7 @@ int32 LoginRESTService::HandlePostRefreshLoginTicket(std::shared_ptr<AsyncReques
             {
                 loginRefreshResult.set_login_ticket_expiry(now + _loginTicketDuration);
 
-                PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_UPD_BNET_EXISTING_AUTHENTICATION);
+                LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_UPD_BNET_EXISTING_AUTHENTICATION);
                 stmt->setUInt32(0, uint32(now + _loginTicketDuration));
                 stmt->setString(1, request->GetClient()->userid);
                 LoginDatabase.Execute(stmt);

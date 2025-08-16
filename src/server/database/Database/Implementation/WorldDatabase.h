@@ -106,16 +106,14 @@ enum WorldDatabaseStatements : uint32
 
 class TC_DATABASE_API WorldDatabaseConnection : public MySQLConnection
 {
-public:
-    typedef WorldDatabaseStatements Statements;
+    public:
+        typedef WorldDatabaseStatements Statements;
 
-    //- Constructors for sync and async connections
-    WorldDatabaseConnection(MySQLConnectionInfo& connInfo);
-    WorldDatabaseConnection(ProducerConsumerQueue<SQLOperation*>* q, MySQLConnectionInfo& connInfo);
-    ~WorldDatabaseConnection();
+        WorldDatabaseConnection(MySQLConnectionInfo& connInfo, ConnectionFlags connectionFlags);
+        ~WorldDatabaseConnection();
 
-    //- Loads database type specific prepared statements
-    void DoPrepareStatements() override;
+        //- Loads database type specific prepared statements
+        void DoPrepareStatements() override;
 };
 
 #endif

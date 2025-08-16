@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2017-2018 AshamaneProject <https://github.com/AshamaneProject>
- * Copyright (C) 2016 Firestorm Servers <https://firestorm-servers.com>
+ * This file is part of the DestinyCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -400,7 +399,7 @@ class boss_the_butcher : public CreatureScript
                 if (action == eAction::MaggotKilled)
                 {
                     std::vector<uint8> l_Indexes = { 0, 1, 2, 3, 4, 5 };
-                    std::random_shuffle(l_Indexes.begin(), l_Indexes.end());
+                    Trinity::Containers::RandomShuffle(l_Indexes);
 
                     for (uint8 l_I : l_Indexes)
                     {

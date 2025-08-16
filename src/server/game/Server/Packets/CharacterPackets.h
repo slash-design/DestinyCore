@@ -328,6 +328,8 @@ namespace WorldPackets
         public:
             struct CharFactionChangeDisplayInfo
             {
+                CharFactionChangeDisplayInfo() { } // allows emplace() with clang
+
                 std::string Name;
                 uint8 SexID             = 0;
                 uint8 SkinID            = 0;

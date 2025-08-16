@@ -16,7 +16,7 @@
  */
 
 #include "ShopDatabase.h"
-#include "PreparedStatement.h"
+#include "MySQLPreparedStatement.h"
 
 void ShopDatabaseConnection::DoPrepareStatements()
 {
@@ -24,11 +24,7 @@ void ShopDatabaseConnection::DoPrepareStatements()
         m_stmts.resize(MAX_SHOPDATABASE_STATEMENTS);
 }
 
-ShopDatabaseConnection::ShopDatabaseConnection(MySQLConnectionInfo& connInfo) : MySQLConnection(connInfo)
-{
-}
-
-ShopDatabaseConnection::ShopDatabaseConnection(ProducerConsumerQueue<SQLOperation*>* q, MySQLConnectionInfo& connInfo) : MySQLConnection(q, connInfo)
+ShopDatabaseConnection::ShopDatabaseConnection(MySQLConnectionInfo& connInfo, ConnectionFlags connectionFlags) : MySQLConnection(connInfo, connectionFlags)
 {
 }
 

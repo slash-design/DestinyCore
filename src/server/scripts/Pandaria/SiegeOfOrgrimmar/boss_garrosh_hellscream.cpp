@@ -1170,7 +1170,7 @@ class GarroshEnergyRegenerator
 #define CLUMP_CHECK_TARGET_COUNT_10 4
 #define CLUMP_CHECK_TARGET_COUNT_25 7
 
-struct ClumpCheckSelector : public std::unary_function<Unit*, bool>
+struct ClumpCheckSelector
 {
     public:
 
@@ -3530,7 +3530,7 @@ class spell_garrosh_hellscream_empowered_whirling_corruption: public SpellScript
         }
 };
 
-struct TouchOfYshaarjTargetSelector : public std::unary_function<Unit*, bool>
+struct TouchOfYshaarjTargetSelector
 {
     const Unit* me;
 

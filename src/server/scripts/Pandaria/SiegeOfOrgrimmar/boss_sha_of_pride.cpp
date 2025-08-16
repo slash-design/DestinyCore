@@ -1443,7 +1443,7 @@ class boss_sha_of_pride : public CreatureScript
 
         private:
 
-            struct ShadowPrisonTargetSelector : public std::unary_function<Unit*, bool>
+            struct ShadowPrisonTargetSelector
             {
                 const Unit* me;
                 float m_dist;
@@ -3359,7 +3359,7 @@ public:
     }
 };
 
-struct BanishmentSelector : public std::unary_function<Unit*, bool>
+struct BanishmentSelector
 {
     BanishmentSelector() {}
 

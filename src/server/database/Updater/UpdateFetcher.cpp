@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -16,13 +16,13 @@
  */
 
 #include "UpdateFetcher.h"
-#include "Common.h"
 #include "DBUpdater.h"
 #include "Field.h"
 #include "Log.h"
 #include "QueryResult.h"
 #include "Util.h"
 #include "SHA1.h"
+#include <boost/filesystem/directory.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <fstream>
 #include <sstream>
@@ -34,7 +34,6 @@ struct UpdateFetcher::DirectoryEntry
     DirectoryEntry(Path const& path_, State state_) : path(path_), state(state_) { }
 
     Path const path;
-
     State const state;
 };
 
@@ -42,7 +41,7 @@ UpdateFetcher::UpdateFetcher(Path const& sourceDirectory,
     std::function<void(std::string const&)> const& apply,
     std::function<void(Path const& path)> const& applyFile,
     std::function<QueryResult(std::string const&)> const& retrieve) :
-        _sourceDirectory(Trinity::make_unique<Path>(sourceDirectory)), _apply(apply), _applyFile(applyFile),
+        _sourceDirectory(std::make_unique<Path>(sourceDirectory)), _apply(apply), _applyFile(applyFile),
         _retrieve(retrieve)
 {
 }
@@ -307,7 +306,7 @@ UpdateResult UpdateFetcher::Update(bool const redundancyChecks,
         {
             case MODE_APPLY:
                 speed = Apply(availableQuery.first);
-                /*no break*/
+                [[fallthrough]];
             case MODE_REHASH:
                 UpdateEntry(file, speed);
                 break;
@@ -338,7 +337,7 @@ UpdateResult UpdateFetcher::Update(bool const redundancyChecks,
             CleanUp(applied);
         else
         {
-            TC_LOG_ERROR("sql.updates", "Cleanup is disabled! There were  " SZFMTD " dirty files applied to your database, " \
+            TC_LOG_ERROR("sql.updates", "Cleanup is disabled! There were %zu dirty files applied to your database, " \
                 "but they are now missing in your source directory!", applied.size());
         }
     }
@@ -413,7 +412,7 @@ void UpdateFetcher::CleanUp(AppliedFileStorage const& storage) const
 
 void UpdateFetcher::UpdateState(std::string const& name, State const state) const
 {
-    std::string const update = "UPDATE `updates` SET `state`=\'" + AppliedFileEntry::StateConvert(state) + "\' WHERE `name`=\"" + name + "\"";
+    std::string const update = Trinity::StringFormat(R"(UPDATE `updates` SET `state`='%s' WHERE `name`="%s")", AppliedFileEntry::StateConvert(state), name);
 
     // Update database
     _apply(update);

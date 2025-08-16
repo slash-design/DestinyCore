@@ -43,6 +43,8 @@ namespace WorldPackets
         public:
             struct GuildInfo
             {
+                GuildInfo() { } // allows emplace() with clang
+
                 ObjectGuid GuildGUID;
 
                 uint32 VirtualRealmAddress = 0; ///< a special identifier made from the Index, BattleGroup and Region.

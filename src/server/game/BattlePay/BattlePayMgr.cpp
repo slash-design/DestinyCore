@@ -82,7 +82,7 @@ bool BattlepayManager::IsAvailable() const
 void BattlepayManager::SavePurchase(Purchase * purchase)
 {
     auto displayInfo = sBattlePayDataStore->GetDisplayInfo(purchase->ProductID);
-    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_INS_PURCHASE);
+    LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_INS_PURCHASE);
     stmt->setUInt32(0, _session->GetAccountId());
     stmt->setUInt32(1, GetVirtualRealmAddress());
     stmt->setUInt32(2, _session->GetPlayer() ? _session->GetPlayer()->GetGUID().GetCounter() : 0);
@@ -477,7 +477,7 @@ void BattlepayManager::SendAccountCredits()
 {
     auto sessionId = _session->GetAccountId();
 
-    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BATTLE_PAY_ACCOUNT_CREDITS);
+    LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_BATTLE_PAY_ACCOUNT_CREDITS);
     stmt->setUInt32(0, _session->GetAccountId());
     PreparedQueryResult result = LoginDatabase.Query(stmt);
 

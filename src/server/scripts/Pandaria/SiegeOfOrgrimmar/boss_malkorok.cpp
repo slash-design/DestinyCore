@@ -1336,7 +1336,7 @@ class spell_malkorok_ancient_barrier : public SpellScriptLoader
         }
 };
 
-struct DisplacedEnergyTargetSelector : public std::unary_function<Unit*, bool>
+struct DisplacedEnergyTargetSelector
 {
     const Unit* me;
 

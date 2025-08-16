@@ -1470,7 +1470,7 @@ void Spell::DoCreateItem(uint32 /*i*/, uint32 itemtype, uint8 context /*= 0*/, s
         // bonus obliterum 0/10
         bonusesListIDs.push_back(596); // TODO get bonus from ItemBonusTree
         std::vector<int32> randomBonuses = { 1711, 1719, 1683, 1718, 1697, 1720, 1690, 1721, 1676, 1704 }; // for secondary stats
-        std::random_shuffle(randomBonuses.begin(), randomBonuses.end());
+        Trinity::Containers::RandomShuffle(randomBonuses);
         bonusesListIDs.push_back(randomBonuses[0]);
     }
 
@@ -2291,8 +2291,8 @@ void Spell::EffectDispel(SpellEffIndex effIndex)
         WorldPackets::CombatLog::SpellDispellData dispellData;
         dispellData.SpellID = dispelableAura.GetAura()->GetId();
         dispellData.Harmful = false;      // TODO: use me
-        dispellData.Rolled = boost::none; // TODO: use me
-        dispellData.Needed = boost::none; // TODO: use me
+        dispellData.Rolled = std::nullopt; // TODO: use me
+        dispellData.Needed = std::nullopt; // TODO: use me
 
         unitTarget->RemoveAurasDueToSpellByDispel(dispelableAura.GetAura()->GetId(), m_spellInfo->Id, dispelableAura.GetAura()->GetCasterGUID(), m_caster, dispelableAura.GetDispelCharges());
 
@@ -4628,7 +4628,7 @@ void Spell::EffectCharge(SpellEffIndex effIndex)
         Optional<Movement::SpellEffectExtraData> spellEffectExtraData;
         if (effectInfo->MiscValueB)
         {
-            spellEffectExtraData = boost::in_place();
+            spellEffectExtraData.emplace();
             spellEffectExtraData->Target = unitTarget->GetGUID();
             spellEffectExtraData->SpellVisualId = effectInfo->MiscValueB;
         }
@@ -4637,10 +4637,10 @@ void Spell::EffectCharge(SpellEffIndex effIndex)
         {
             //unitTarget->GetContactPoint(m_caster, pos.m_positionX, pos.m_positionY, pos.m_positionZ);
             Position pos = unitTarget->GetFirstCollisionPosition(unitTarget->GetObjectSize(), unitTarget->GetRelativeAngle(m_caster));
-            m_caster->GetMotionMaster()->MoveCharge(pos.m_positionX, pos.m_positionY, pos.m_positionZ, speed, EVENT_CHARGE, false, unitTarget, spellEffectExtraData.get_ptr());
+            m_caster->GetMotionMaster()->MoveCharge(pos.m_positionX, pos.m_positionY, pos.m_positionZ, speed, EVENT_CHARGE, false, unitTarget, std::to_address(spellEffectExtraData));
         }
         else
-            m_caster->GetMotionMaster()->MoveCharge(*m_preGeneratedPath, speed, unitTarget, spellEffectExtraData.get_ptr());
+            m_caster->GetMotionMaster()->MoveCharge(*m_preGeneratedPath, speed, unitTarget, std::to_address(spellEffectExtraData));
     }
 
     if (effectHandleMode == SPELL_EFFECT_HANDLE_HIT_TARGET)
@@ -5372,8 +5372,8 @@ void Spell::EffectStealBeneficialBuff(SpellEffIndex /*effIndex*/)
         WorldPackets::CombatLog::SpellDispellData dispellData;
         dispellData.SpellID = dispell.first;
         dispellData.Harmful = false;      // TODO: use me
-        dispellData.Rolled = boost::none; // TODO: use me
-        dispellData.Needed = boost::none; // TODO: use me
+        dispellData.Rolled = std::nullopt; // TODO: use me
+        dispellData.Needed = std::nullopt; // TODO: use me
 
         unitTarget->RemoveAurasDueToSpellBySteal(dispell.first, dispell.second, m_caster);
 

@@ -46,13 +46,13 @@
 #include "ScriptMgr.h"
 #include "ScriptReloadMgr.h"
 #include "TCSoap.h"
-#include "RESTService.h"
 #include "World.h"
 #include "WorldSocket.h"
 #include "WorldSocketMgr.h"
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
 #include <boost/asio/signal_set.hpp>
+#include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string/replace.hpp>
@@ -192,7 +192,7 @@ extern int main(int argc, char** argv)
         }
     );
 
-    OpenSSLCrypto::threadsSetup();
+    OpenSSLCrypto::threadsSetup(boost::dll::program_location().remove_filename());
 
     std::shared_ptr<void> opensslHandle(nullptr, [](void*) { OpenSSLCrypto::threadsCleanup(); });
 
@@ -325,17 +325,6 @@ extern int main(int argc, char** argv)
         return 1;
     }
 
-    if (sConfigMgr->GetBoolDefault("WorldREST.Enabled", false))
-    {
-        if (!sRestService.Start())
-        {
-            TC_LOG_ERROR("server.worldserver", "Failed to initialize Rest service");
-            return 1;
-        }
-    }
-
-    std::shared_ptr<void> sRestServiceHandle(nullptr, [](void*) { sRestService.Stop(); });
-
     std::shared_ptr<void> sWorldSocketMgrHandle(nullptr, [](void*)
     {
         sWorld->KickAll();                                       // save and kick all players
@@ -393,8 +382,6 @@ extern int main(int argc, char** argv)
 
     sLog->SetSynchronous();
 
-    sRestService.Stop();
-
     sScriptMgr->OnShutdown();
 
     // set server offline
@@ -427,7 +414,7 @@ void ShutdownCLIThread(std::thread* cliThread)
                 DWORD numCharsWritten = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS,
                     nullptr, errorCode, 0, (LPTSTR)&errorBuffer, 0, nullptr);
                 if (!numCharsWritten)
-                    errorBuffer = "Unknown error";
+                    errorBuffer = (char*)"Unknown error";
 
                 TC_LOG_DEBUG("server.worldserver", "Error cancelling I/O of CliThread, error code %u, detail: %s", uint32(errorCode), errorBuffer);
 

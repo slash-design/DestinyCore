@@ -131,6 +131,8 @@ namespace WorldPackets
         public:
             struct AuthSuccessInfo
             {
+                AuthSuccessInfo() { } // allows emplace() with clang
+
                 struct BillingInfo
                 {
                     uint32 BillingPlan = 0;

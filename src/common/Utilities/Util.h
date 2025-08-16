@@ -24,30 +24,42 @@
 #include <sstream>
 #include <vector>
 
-class TC_COMMON_API Tokenizer
+namespace Trinity
+{
+    TC_COMMON_API std::vector<std::string_view> Tokenize(std::string_view str, char sep, bool keepEmpty);
+
+    /* this would return string_view into temporary otherwise */
+    std::vector<std::string_view> Tokenize(std::string&&, char, bool) = delete;
+    std::vector<std::string_view> Tokenize(std::string const&&, char, bool) = delete;
+
+    /* the delete overload means we need to make this explicit */
+    inline std::vector<std::string_view> Tokenize(char const* str, char sep, bool keepEmpty) { return Tokenize(std::string_view(str ? str : ""), sep, keepEmpty); }
+}
+
+TC_COMMON_API bool StringEqualI(std::string_view str1, std::string_view str2);
+
+class Tokenizer
 {
 public:
     typedef std::vector<char const*> StorageType;
-
     typedef StorageType::size_type size_type;
-
     typedef StorageType::const_iterator const_iterator;
     typedef StorageType::reference reference;
     typedef StorageType::const_reference const_reference;
 
-public:
-    Tokenizer(const std::string &src, char const sep, uint32 vectorReserve = 0, bool keepEmptyStrings = true);
+    Tokenizer(const std::string &src, char sep, uint32 vectorReserve = 0, bool keepEmptyStrings = true);
     ~Tokenizer() { delete[] m_str; }
 
     const_iterator begin() const { return m_storage.begin(); }
     const_iterator end() const { return m_storage.end(); }
 
     size_type size() const { return m_storage.size(); }
+    bool empty() const { return m_storage.empty(); }
 
     reference operator [] (size_type i) { return m_storage[i]; }
     const_reference operator [] (size_type i) const { return m_storage[i]; }
 
-private:
+    private:
     char* m_str;
     StorageType m_storage;
 };

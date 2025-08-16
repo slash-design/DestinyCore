@@ -35,7 +35,7 @@ WorldPacket const* WorldPackets::CombatLog::SpellNonMeleeDamageLog::Write()
     WriteBits(Flags, 7);
     WriteBit(false); // Debug info
     WriteLogDataBit();
-    WriteBit(SandboxScaling.is_initialized());
+    WriteBit(SandboxScaling.has_value());
     FlushBits();
     WriteLogData();
     if (SandboxScaling)
@@ -122,10 +122,10 @@ WorldPacket const* WorldPackets::CombatLog::SpellHealLog::Write()
     *this << int32(OverHeal);
     *this << int32(Absorbed);
     WriteBit(Crit);
-    WriteBit(CritRollMade.is_initialized());
-    WriteBit(CritRollNeeded.is_initialized());
+    WriteBit(CritRollMade.has_value());
+    WriteBit(CritRollNeeded.has_value());
     WriteLogDataBit();
-    WriteBit(SandboxScaling.is_initialized());
+    WriteBit(SandboxScaling.has_value());
     FlushBits();
 
     WriteLogData();
@@ -160,8 +160,8 @@ WorldPacket const* WorldPackets::CombatLog::SpellPeriodicAuraLog::Write()
         *this << int32(effect.AbsorbedOrAmplitude);
         *this << int32(effect.Resisted);
         WriteBit(effect.Crit);
-        WriteBit(effect.DebugInfo.is_initialized());
-        WriteBit(effect.SandboxScaling.is_initialized());
+        WriteBit(effect.DebugInfo.has_value());
+        WriteBit(effect.SandboxScaling.has_value());
         FlushBits();
 
         if (effect.SandboxScaling)
@@ -227,7 +227,7 @@ ByteBuffer& operator<<(ByteBuffer& buffer, WorldPackets::CombatLog::SpellLogMiss
 {
     buffer << missEntry.Victim;
     buffer << uint8(missEntry.MissReason);
-    if (buffer.WriteBit(missEntry.Debug.is_initialized()))
+    if (buffer.WriteBit(missEntry.Debug.has_value()))
         buffer << *missEntry.Debug;
 
     buffer.FlushBits();
@@ -250,8 +250,8 @@ WorldPacket const* WorldPackets::CombatLog::ProcResist::Write()
     _worldPacket << Caster;
     _worldPacket << Target;
     _worldPacket << int32(SpellID);
-    _worldPacket.WriteBit(Rolled.is_initialized());
-    _worldPacket.WriteBit(Needed.is_initialized());
+    _worldPacket.WriteBit(Rolled.has_value());
+    _worldPacket.WriteBit(Needed.has_value());
     _worldPacket.FlushBits();
 
     if (Rolled)
@@ -298,7 +298,7 @@ WorldPacket const* WorldPackets::CombatLog::AttackerStateUpdate::Write()
     attackRoundInfo << VictimGUID;
     attackRoundInfo << int32(Damage);
     attackRoundInfo << int32(OverDamage);
-    attackRoundInfo << uint8(SubDmg.is_initialized());
+    attackRoundInfo << uint8(SubDmg.has_value());
     if (SubDmg)
     {
        attackRoundInfo << int32(SubDmg->SchoolMask);
@@ -363,11 +363,11 @@ ByteBuffer& operator<<(ByteBuffer& buffer, WorldPackets::CombatLog::SpellDispell
 {
     buffer << int32(dispellData.SpellID);
     buffer.WriteBit(dispellData.Harmful);
-    buffer.WriteBit(dispellData.Rolled.is_initialized());
-    buffer.WriteBit(dispellData.Needed.is_initialized());
-    if (dispellData.Rolled.is_initialized())
+    buffer.WriteBit(dispellData.Rolled.has_value());
+    buffer.WriteBit(dispellData.Needed.has_value());
+    if (dispellData.Rolled.has_value())
         buffer << int32(*dispellData.Rolled);
-    if (dispellData.Needed.is_initialized())
+    if (dispellData.Needed.has_value())
         buffer << int32(*dispellData.Needed);
 
     buffer.FlushBits();

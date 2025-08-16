@@ -39,7 +39,7 @@ bool WodGarrison::LoadFromDB()
 
     ObjectGuid::LowType lowGuid = _owner->GetGUID().GetCounter();
 
-    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_GARRISON_BLUEPRINTS);
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_GARRISON_BLUEPRINTS);
     stmt->setUInt64(0, lowGuid);
     stmt->setUInt8(1, _garrisonType);
     PreparedQueryResult blueprints = CharacterDatabase.Query(stmt);
@@ -80,7 +80,7 @@ bool WodGarrison::LoadFromDB()
             if (!sGarrBuildingStore.LookupEntry(buildingId))
                 continue;
 
-            plot->BuildingInfo.PacketInfo = boost::in_place();
+            plot->BuildingInfo.PacketInfo.emplace();
             plot->BuildingInfo.PacketInfo->GarrPlotInstanceID = plotInstanceId;
             plot->BuildingInfo.PacketInfo->GarrBuildingID = buildingId;
             plot->BuildingInfo.PacketInfo->TimeBuilt = timeBuilt;
@@ -92,13 +92,13 @@ bool WodGarrison::LoadFromDB()
     return true;
 }
 
-void WodGarrison::SaveToDB(SQLTransaction& trans)
+void WodGarrison::SaveToDB(CharacterDatabaseTransaction& trans)
 {
     Garrison::SaveToDB(trans);
 
     for (uint32 building : _knownBuildings)
     {
-        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_CHARACTER_GARRISON_BLUEPRINTS);
+        CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_CHARACTER_GARRISON_BLUEPRINTS);
         stmt->setUInt64(0, _owner->GetGUID().GetCounter());
         stmt->setUInt8(1, _garrisonType);
         stmt->setUInt32(2, building);
@@ -110,7 +110,7 @@ void WodGarrison::SaveToDB(SQLTransaction& trans)
         Plot const& plot = p.second;
         if (plot.BuildingInfo.PacketInfo)
         {
-            PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_CHARACTER_GARRISON_BUILDINGS);
+            CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_CHARACTER_GARRISON_BUILDINGS);
             stmt->setUInt64(0, _owner->GetGUID().GetCounter());
             stmt->setUInt8(1, _garrisonType);
             stmt->setUInt32(2, plot.BuildingInfo.PacketInfo->GarrPlotInstanceID);
@@ -202,7 +202,7 @@ void WodGarrison::TeleportOwnerAndPlayMovie() const
 
 void WodGarrison::Delete()
 {
-    SQLTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
     DeleteFromDB(trans);
     CharacterDatabase.CommitTransaction(trans);
 
@@ -687,7 +687,7 @@ void WodGarrison::Plot::ClearBuildingInfo(Player* owner)
     plotPlaced.PlotInfo = &PacketInfo;
     owner->SendDirectMessage(plotPlaced.Write());
 
-    BuildingInfo.PacketInfo = boost::none;
+    BuildingInfo.PacketInfo = std::nullopt;
 }
 
 void WodGarrison::Plot::SetBuildingInfo(WorldPackets::Garrison::GarrisonBuildingInfo const& buildingInfo, Player* owner)

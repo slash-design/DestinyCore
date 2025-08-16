@@ -96,7 +96,7 @@ struct PlayerFilter
     }
 };
 
-struct HealerSelector : public std::unary_function<Unit*, bool>
+struct HealerSelector
 {
     const Unit* _source;
     bool _playerOnly;

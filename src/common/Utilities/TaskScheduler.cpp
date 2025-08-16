@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -16,6 +16,7 @@
  */
 
 #include "TaskScheduler.h"
+#include <utility>
 #include "Errors.h"
 
 TaskScheduler& TaskScheduler::ClearValidator()
@@ -44,13 +45,12 @@ TaskScheduler& TaskScheduler::Async(std::function<void()> const& callable)
 
 TaskScheduler& TaskScheduler::CancelAll()
 {
-    /// Clear the task holder
     _task_holder.Clear();
     _asyncHolder = AsyncHolder();
     return *this;
 }
 
-TaskScheduler& TaskScheduler::CancelGroup(group_t const group)
+TaskScheduler& TaskScheduler::CancelGroup(uint32 const group)
 {
     _task_holder.RemoveIf([group](TaskContainer const& task) -> bool
     {
@@ -59,11 +59,9 @@ TaskScheduler& TaskScheduler::CancelGroup(group_t const group)
     return *this;
 }
 
-TaskScheduler& TaskScheduler::CancelGroupsOf(std::vector<group_t> const& groups)
+TaskScheduler& TaskScheduler::CancelGroupsOf(std::vector<uint32> const& groups)
 {
-    std::for_each(groups.begin(), groups.end(),
-        std::bind(&TaskScheduler::CancelGroup, this, std::placeholders::_1));
-
+    std::for_each(groups.begin(), groups.end(), std::bind(&TaskScheduler::CancelGroup, this, std::placeholders::_1));
     return *this;
 }
 
@@ -75,17 +73,13 @@ TaskScheduler& TaskScheduler::InsertTask(TaskContainer task)
 
 void TaskScheduler::Dispatch(success_t const& callback)
 {
-    // If the validation failed abort the dispatching here.
     if (!_predicate())
         return;
 
-    // Process all asyncs
     while (!_asyncHolder.empty())
     {
         _asyncHolder.front()();
         _asyncHolder.pop();
-
-        // If the validation failed abort the dispatching here.
         if (!_predicate())
             return;
     }
@@ -95,20 +89,43 @@ void TaskScheduler::Dispatch(success_t const& callback)
         if (_task_holder.First()->_end > _now)
             break;
 
-        // Perfect forward the context to the handler
-        // Use weak references to catch destruction before callbacks.
         TaskContext context(_task_holder.Pop(), std::weak_ptr<TaskScheduler>(self_reference), GetSchedulerUnit(), GetSchedulerGameObject());
-
-        // Invoke the context
         context.Invoke();
-
-        // If the validation failed abort the dispatching here.
         if (!_predicate())
             return;
     }
 
-    // On finish call the final callback
     callback();
+}
+
+TaskScheduler::Task::Task(timepoint_t const& end, duration_t const& duration, Optional<uint32>  group, uint32 const repeated, task_handler_t  task) :
+    _end(end), _duration(duration), _group(std::move(group)), _repeated(repeated), _task(std::move(task)) { }
+
+TaskScheduler::Task::Task(timepoint_t const& end, duration_t const& duration, task_handler_t  task) : _end(end), _duration(duration), _group(std::nullopt), _repeated(0), _task(std::move(task)) { }
+
+bool TaskScheduler::Task::operator<(Task const& other) const
+{
+    return _end < other._end;
+}
+
+bool TaskScheduler::Task::operator>(Task const& other) const
+{
+    return _end > other._end;
+}
+
+bool TaskScheduler::Task::operator==(Task const& other)
+{
+    return _end == other._end;
+}
+
+bool TaskScheduler::Task::IsInGroup(uint32 const group) const
+{
+    return _group == group;
+}
+
+bool TaskScheduler::Compare::operator()(TaskContainer const& left, TaskContainer const& right) const
+{
+    return *left.get() < *right.get();
 }
 
 void TaskScheduler::TaskQueue::Push(TaskContainer&& task)
@@ -118,7 +135,7 @@ void TaskScheduler::TaskQueue::Push(TaskContainer&& task)
 
 auto TaskScheduler::TaskQueue::Pop() -> TaskContainer
 {
-    TaskContainer result = *container.begin();
+    auto result = *container.begin();
     container.erase(container.begin());
     return result;
 }
@@ -175,12 +192,12 @@ bool TaskContext::IsExpired() const
     return _owner.expired();
 }
 
-bool TaskContext::IsInGroup(TaskScheduler::group_t const group) const
+bool TaskContext::IsInGroup(uint32 const group) const
 {
     return _task->IsInGroup(group);
 }
 
-TaskContext& TaskContext::SetGroup(TaskScheduler::group_t const group)
+TaskContext& TaskContext::SetGroup(uint32 const group)
 {
     _task->_group = group;
     return *this;
@@ -188,13 +205,18 @@ TaskContext& TaskContext::SetGroup(TaskScheduler::group_t const group)
 
 TaskContext& TaskContext::ClearGroup()
 {
-    _task->_group = boost::none;
+    _task->_group = std::nullopt;
     return *this;
 }
 
-TaskScheduler::repeated_t TaskContext::GetRepeatCounter() const
+uint32 TaskContext::GetRepeatCounter() const
 {
     return _task->_repeated;
+}
+
+TaskContext& TaskContext::Repeat()
+{
+    return Repeat(_task->_duration);
 }
 
 TaskContext& TaskContext::Async(std::function<void()> const& callable)
@@ -207,12 +229,12 @@ TaskContext& TaskContext::CancelAll()
     return Dispatch(std::mem_fn(&TaskScheduler::CancelAll));
 }
 
-TaskContext& TaskContext::CancelGroup(TaskScheduler::group_t const group)
+TaskContext& TaskContext::CancelGroup(uint32 const group)
 {
     return Dispatch(std::bind(&TaskScheduler::CancelGroup, std::placeholders::_1, group));
 }
 
-TaskContext& TaskContext::CancelGroupsOf(std::vector<TaskScheduler::group_t> const& groups)
+TaskContext& TaskContext::CancelGroupsOf(std::vector<uint32> const& groups)
 {
     return Dispatch(std::bind(&TaskScheduler::CancelGroupsOf, std::placeholders::_1, std::cref(groups)));
 }

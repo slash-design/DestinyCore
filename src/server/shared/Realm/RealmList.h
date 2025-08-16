@@ -21,6 +21,7 @@
 
 #include "Define.h"
 #include "Realm.h"
+#include "Resolver.h"
 #include <array>
 #include <map>
 #include <vector>
@@ -118,7 +119,7 @@ private:
     std::unordered_set<std::string> _subRegions;
     uint32 _updateInterval;
     std::unique_ptr<Trinity::Asio::DeadlineTimer> _updateTimer;
-    std::unique_ptr<boost::asio::ip::tcp_resolver> _resolver;
+    std::unique_ptr<Trinity::Asio::Resolver> _resolver;
 };
 
 #define sRealmList RealmList::Instance()

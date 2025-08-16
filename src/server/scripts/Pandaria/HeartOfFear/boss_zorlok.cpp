@@ -1405,7 +1405,7 @@ class spell_sonic_pulse : public SpellScriptLoader
         }
 };
 
-class ExhaleTargetFilter : public std::unary_function<Unit*, bool>
+class ExhaleTargetFilter
 {
     public:
         explicit ExhaleTargetFilter(Unit* caster) : _caster(caster) { }

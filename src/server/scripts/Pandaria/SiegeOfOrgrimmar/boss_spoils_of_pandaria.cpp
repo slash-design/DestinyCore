@@ -1861,7 +1861,7 @@ class BerserkController
         bool m_IsActive;
 };
 
-class PlayerInRoomTargetCheck : public std::unary_function<Unit*, bool>
+class PlayerInRoomTargetCheck
 {
     public:
 

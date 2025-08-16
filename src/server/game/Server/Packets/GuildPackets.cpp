@@ -29,7 +29,7 @@ WorldPackets::Guild::QueryGuildInfoResponse::QueryGuildInfoResponse()
 WorldPacket const* WorldPackets::Guild::QueryGuildInfoResponse::Write()
 {
     _worldPacket << GuildGuid;
-    _worldPacket.WriteBit(Info.is_initialized());
+    _worldPacket.WriteBit(Info.has_value());
     _worldPacket.FlushBits();
 
     if (Info)
@@ -715,7 +715,7 @@ WorldPacket const* WorldPackets::Guild::GuildBankLogQueryResults::Write()
 {
     _worldPacket << Tab;
     _worldPacket << uint32(Entry.size());
-    _worldPacket.WriteBit(WeeklyBonusMoney.is_initialized());
+    _worldPacket.WriteBit(WeeklyBonusMoney.has_value());
     _worldPacket.FlushBits();
 
     for (GuildBankLogEntry const& logEntry : Entry)
@@ -724,22 +724,22 @@ WorldPacket const* WorldPackets::Guild::GuildBankLogQueryResults::Write()
         _worldPacket << logEntry.TimeOffset;
         _worldPacket << logEntry.EntryType;
 
-        _worldPacket.WriteBit(logEntry.Money.is_initialized());
-        _worldPacket.WriteBit(logEntry.ItemID.is_initialized());
-        _worldPacket.WriteBit(logEntry.Count.is_initialized());
-        _worldPacket.WriteBit(logEntry.OtherTab.is_initialized());
+        _worldPacket.WriteBit(logEntry.Money.has_value());
+        _worldPacket.WriteBit(logEntry.ItemID.has_value());
+        _worldPacket.WriteBit(logEntry.Count.has_value());
+        _worldPacket.WriteBit(logEntry.OtherTab.has_value());
         _worldPacket.FlushBits();
 
-        if (logEntry.Money.is_initialized())
+        if (logEntry.Money.has_value())
             _worldPacket << *logEntry.Money;
 
-        if (logEntry.ItemID.is_initialized())
+        if (logEntry.ItemID.has_value())
             _worldPacket << *logEntry.ItemID;
 
-        if (logEntry.Count.is_initialized())
+        if (logEntry.Count.has_value())
             _worldPacket << *logEntry.Count;
 
-        if (logEntry.OtherTab.is_initialized())
+        if (logEntry.OtherTab.has_value())
             _worldPacket << *logEntry.OtherTab;
     }
 
@@ -793,7 +793,7 @@ ByteBuffer& operator<<(ByteBuffer& data, WorldPackets::Guild::GuildNewsEvent con
     for (ObjectGuid memberGuid : newsEvent.MemberList)
         data << memberGuid;
 
-    data.WriteBit(newsEvent.Item.is_initialized());
+    data.WriteBit(newsEvent.Item.has_value());
     data.FlushBits();
 
     if (newsEvent.Item)

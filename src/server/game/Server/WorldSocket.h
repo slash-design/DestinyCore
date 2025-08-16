@@ -19,11 +19,11 @@
 #ifndef __WORLDSOCKET_H__
 #define __WORLDSOCKET_H__
 
+#include "AsyncCallbackProcessor.h"
 #include "Common.h"
 #include "BigNumber.h"
 #include "DatabaseEnvFwd.h"
 #include "MessageBuffer.h"
-#include "QueryCallbackProcessor.h"
 #include "Socket.h"
 #include "WorldPacketCrypt.h"
 #include "MPSCQueue.h"

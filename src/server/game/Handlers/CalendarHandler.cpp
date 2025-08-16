@@ -155,7 +155,7 @@ void WorldSession::HandleCalendarAddEvent(WorldPackets::Calendar::CalendarAddEve
     }
     else
     {
-        SQLTransaction trans;
+        CharacterDatabaseTransaction trans;
         if (calendarAddEvent.EventInfo.Invites.size() > 1)
             trans = CharacterDatabase.BeginTransaction();
 
@@ -224,7 +224,7 @@ void WorldSession::HandleCalendarCopyEvent(WorldPackets::Calendar::CalendarCopyE
         sCalendarMgr->AddEvent(newEvent, CALENDAR_SENDTYPE_COPY);
 
         CalendarInviteStore invites = sCalendarMgr->GetEventInvites(calendarCopyEvent.EventID);
-        SQLTransaction trans;
+        CharacterDatabaseTransaction trans;
         if (invites.size() > 1)
             trans = CharacterDatabase.BeginTransaction();
 
@@ -257,7 +257,7 @@ void WorldSession::HandleCalendarEventInvite(WorldPackets::Calendar::CalendarEve
     else
     {
         // Invitee offline, get data from database
-        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_GUID_RACE_ACC_BY_NAME);
+        CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_GUID_RACE_ACC_BY_NAME);
         stmt->setString(0, calendarEventInvite.Name);
         if (PreparedQueryResult result = CharacterDatabase.Query(stmt))
         {

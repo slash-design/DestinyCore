@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -18,24 +18,17 @@
 #ifndef _ADHOCSTATEMENT_H
 #define _ADHOCSTATEMENT_H
 
-#include "Define.h"
 #include "DatabaseEnvFwd.h"
-#include "SQLOperation.h"
+#include "Define.h"
+
+class MySQLConnection;
 
 /*! Raw, ad-hoc query. */
-class TC_DATABASE_API BasicStatementTask : public SQLOperation
+class TC_DATABASE_API BasicStatementTask
 {
-    public:
-        BasicStatementTask(const char* sql, bool async = false);
-        ~BasicStatementTask();
-
-        bool Execute() override;
-        QueryResultFuture GetFuture() const { return m_result->get_future(); }
-
-    private:
-        const char* m_sql;      //- Raw query to be executed
-        bool m_has_result;
-        QueryResultPromise* m_result;
+public:
+    static QueryResult Query(MySQLConnection* conn, char const* sql);
+    static bool Execute(MySQLConnection* conn, char const* sql);
 };
 
 #endif

@@ -236,7 +236,7 @@ class boss_oondasta : public CreatureScript
         }
 };
 
-class TankCheck : public std::unary_function<Unit*, bool>
+class TankCheck
 {
     public:
         explicit TankCheck(Unit* _caster) : caster(_caster) { }

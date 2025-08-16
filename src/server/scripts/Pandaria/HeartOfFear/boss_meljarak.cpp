@@ -917,7 +917,7 @@ public:
 
 };
 
-struct NonAlreadyAmberPrisoner : public std::unary_function<Unit*, bool>
+struct NonAlreadyAmberPrisoner
 {
     public:
         NonAlreadyAmberPrisoner() { }

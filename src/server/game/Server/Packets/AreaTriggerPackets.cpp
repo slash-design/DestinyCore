@@ -33,8 +33,8 @@ ByteBuffer& operator<<(ByteBuffer& data, WorldPackets::AreaTrigger::AreaTriggerS
 
 ByteBuffer& operator<<(ByteBuffer& data, AreaTriggerCircularMovementInfo const& areaTriggerCircularMovement)
 {
-    data.WriteBit(areaTriggerCircularMovement.TargetGUID.is_initialized());
-    data.WriteBit(areaTriggerCircularMovement.Center.is_initialized());
+    data.WriteBit(areaTriggerCircularMovement.TargetGUID.has_value());
+    data.WriteBit(areaTriggerCircularMovement.Center.has_value());
     data.WriteBit(areaTriggerCircularMovement.CounterClockwise);
     data.WriteBit(areaTriggerCircularMovement.CanLoop);
 
@@ -83,8 +83,8 @@ WorldPacket const* WorldPackets::AreaTrigger::AreaTriggerReShape::Write()
 {
     _worldPacket << TriggerGUID;
 
-    _worldPacket.WriteBit(AreaTriggerSpline.is_initialized());
-    _worldPacket.WriteBit(AreaTriggerCircularMovement.is_initialized());
+    _worldPacket.WriteBit(AreaTriggerSpline.has_value());
+    _worldPacket.WriteBit(AreaTriggerCircularMovement.has_value());
     _worldPacket.FlushBits();
 
     if (AreaTriggerSpline)

@@ -144,7 +144,7 @@ void WorldSession::HandleGuildFinderGetGuildPost(WorldPackets::GuildFinder::LFGu
     if (guild->GetLeaderGUID() == player->GetGUID())
     {
         LFGuildSettings const& settings = sGuildFinderMgr->GetGuildSettings(guild->GetGUID());
-        lfGuildPost.Post = boost::in_place();
+        lfGuildPost.Post.emplace();
         lfGuildPost.Post->Active = settings.IsListed();
         lfGuildPost.Post->PlayStyle = settings.GetInterests();
         lfGuildPost.Post->Availability = settings.GetAvailability();

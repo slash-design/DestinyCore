@@ -682,7 +682,7 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
         }
 };
 
-class OrientationCheck : public std::unary_function<Unit*, bool>
+class OrientationCheck
 {
     public:
         explicit OrientationCheck(Unit* _orb1, Unit* _orb2) : orb1(_orb1), orb2(_orb2) { }
