@@ -17,7 +17,7 @@
 
 #include "Spell.h"
 #include "PetBattle.h"
-#include "PetbattleSystem.h"
+#include "PetBattleSystem.h"
 #include "PetBattleAbilityEffect.h"
 #include "AccountMgr.h"
 #include "ArchaeologyMgr.h"

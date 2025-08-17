@@ -11,6 +11,7 @@ jobs:
       CMAKE_BUILD_TYPE: RelWithDebInfo
       MYSQL_ROOT_DIR: C:/Program Files/MySQL/MySQL Server 8.0
       OPENSSL_ROOT_DIR: C:/libs/openssl
+
     steps:
     - uses: actions/checkout@v4
 
@@ -51,8 +52,6 @@ jobs:
       run: |
         (New-Object System.Net.WebClient).DownloadFile("${{ steps.openssl-info.outputs.url }}", "${{ env.TEMP }}\openssl.exe")
         Start-Process -Wait -FilePath "${{ env.TEMP }}\openssl.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES",/DIR=${{ env.OPENSSL_ROOT_DIR }}
-
-        # Quick Openssl install test
         & ${{ env.OPENSSL_ROOT_DIR }}/bin/openssl.exe version
 
     - name: Download and install Boost
@@ -65,6 +64,7 @@ jobs:
         toolset: msvc
         platform: windows
         distribution: zip
+        extract_options: -snl   # ✅ Fix für "dangerous link path"
 
     - name: Initialize Visual Studio Environment
       uses: egor-tensin/vs-shell@v2
