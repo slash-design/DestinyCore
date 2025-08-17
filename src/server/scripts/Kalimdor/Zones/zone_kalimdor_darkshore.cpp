@@ -17,7 +17,7 @@
 #include "Player.h"
 #include "ScriptedCreature.h"
 #include "ScriptMgr.h"
-#include "creature.h"
+#include "Creature.h"
 #include "ObjectAccessor.h"
 #include "Object.h"
 #include "CellImpl.h"

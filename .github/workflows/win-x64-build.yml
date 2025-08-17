@@ -64,7 +64,7 @@ jobs:
         toolset: msvc
         platform: windows
         distribution: zip
-        extract_options: -snl   # ✅ Fix für "dangerous link path"
+        extract_options: -snl -snh
 
     - name: Initialize Visual Studio Environment
       uses: egor-tensin/vs-shell@v2

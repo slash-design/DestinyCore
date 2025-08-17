@@ -2,7 +2,7 @@
 #include "ScriptedCreature.h"
 #include "AreaTriggerTemplate.h"
 #include "AreaTriggerAI.h"
-#include "GameObjectAi.h"
+#include "GameObjectAI.h"
 #include "GameObject.h"
 #include "eye_of_azshara.h"
 

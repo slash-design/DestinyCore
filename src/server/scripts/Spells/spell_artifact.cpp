@@ -25,7 +25,7 @@
 #include "ScriptedCreature.h"
 #include "ScriptMgr.h"
 #include "Spell.h"
-#include "item.h"
+#include "Item.h"
 #include "SpellScript.h"
 #include "SpellMgr.h"
 #include "SpellAuraEffects.h"
