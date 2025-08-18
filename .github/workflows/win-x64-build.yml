@@ -3,7 +3,6 @@ name: Windows x64
 on:
   push:
       branches:
-      - deps
   pull_request:
 
 jobs:
