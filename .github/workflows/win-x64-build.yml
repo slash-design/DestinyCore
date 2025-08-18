@@ -63,6 +63,7 @@ jobs:
         link: static
         platform_version: 2022
         toolset: msvc
+        arch: x64
 
     - name: Initialize Visual Studio Environment
       uses: egor-tensin/vs-shell@v2
