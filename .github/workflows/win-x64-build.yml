@@ -11,6 +11,7 @@ jobs:
       CMAKE_BUILD_TYPE: RelWithDebInfo
       MYSQL_ROOT_DIR: C:/Program Files/MySQL/MySQL Server 8.0
       OPENSSL_ROOT_DIR: C:/libs/openssl
+      BOOST_ROOT: C:/boost_1_84_0
     steps:
     - uses: actions/checkout@v4
 
@@ -46,23 +47,19 @@ jobs:
         path: ${{ env.OPENSSL_ROOT_DIR }}
         key: ${{ steps.openssl-info.outputs.cache-key }}
 
-    - name: Download and install Openssl 3.x
+    - name: Download and install OpenSSL 3.x
       if: ${{ steps.cache-openssl.outputs.cache-hit != 'true' }}
       run: |
         (New-Object System.Net.WebClient).DownloadFile("${{ steps.openssl-info.outputs.url }}", "${{ env.TEMP }}\openssl.exe")
         Start-Process -Wait -FilePath "${{ env.TEMP }}\openssl.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES",/DIR=${{ env.OPENSSL_ROOT_DIR }}
 
-        # Quick Openssl install test
+        # Quick OpenSSL install test
         & ${{ env.OPENSSL_ROOT_DIR }}/bin/openssl.exe version
 
-    - name: Download and install Boost
-      uses: MarkusJx/install-boost@v2.4.5
-      id: install-boost
-      with:
-        boost_version: 1.84.0
-        link: static
-        platform_version: 2022
-        toolset: msvc
+    - name: Download and extract Boost 1.84.0
+      run: |
+        Invoke-WebRequest -Uri https://sourceforge.net/projects/boost/files/boost/1.84.0/boost_1_84_0.zip -OutFile boost.zip
+        Expand-Archive boost.zip -DestinationPath C:\boost_1_84_0
 
     - name: Initialize Visual Studio Environment
       uses: egor-tensin/vs-shell@v2
@@ -71,7 +68,7 @@ jobs:
 
     - name: Configure CMake
       env:
-        BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+        BOOST_ROOT: ${{ env.BOOST_ROOT }}
       run: >
         cmake -GNinja -S ${{ github.workspace }} -B ${{ steps.strings.outputs.build-output-dir }}
         -DTOOLS=ON
@@ -87,7 +84,7 @@ jobs:
         copy "${{ env.OPENSSL_ROOT_DIR }}/bin/libssl-3-x64.dll" libssl-3-x64.dll
         copy "${{ env.OPENSSL_ROOT_DIR }}/bin/libcrypto-3-x64.dll" libcrypto-3-x64.dll
         copy "${{ env.OPENSSL_ROOT_DIR }}/bin/legacy.dll" legacy.dll
-      
+
     - name: Check binaries
       run: |
         cd ${{ steps.strings.outputs.build-output-dir }}/bin/${{ env.CMAKE_BUILD_TYPE }}
@@ -99,5 +96,3 @@ jobs:
       with:
         path: ${{ steps.strings.outputs.build-output-dir }}/bin/${{ env.CMAKE_BUILD_TYPE }}
         name: DestinyCoreMasterWin64VS2022
-        # Set a custom retention for artifacts
-        #retention-days: 7
