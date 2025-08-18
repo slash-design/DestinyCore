@@ -34,29 +34,25 @@ if(WIN32)
 endif()
 
 if (WIN32)
-  # On windows the requirements are higher according to the wiki.
   set(BOOST_REQUIRED_VERSION 1.78)
 else()
   set(BOOST_REQUIRED_VERSION 1.74)
 endif()
 
-if(WIN32)
-    set(FIND_PACKAGE_ARGS CONFIG HINTS ${BOOST_SEARCH_HINTS})
-else()
-    set(FIND_PACKAGE_ARGS)
-endif()
-
+# Direkt wie im funktionierenden Branch
 find_package(Boost ${BOOST_REQUIRED_VERSION}
-    REQUIRED
-    COMPONENTS
-        system
-        filesystem
-        thread
-        program_options
-        iostreams
-        regex
-        locale
-    ${FIND_PACKAGE_ARGS})
+  REQUIRED
+  COMPONENTS
+    system
+    filesystem
+    thread
+    program_options
+    iostreams
+    regex
+    locale
+  CONFIG
+  HINTS
+    ${BOOST_SEARCH_HINTS})
 
 # Find if Boost was compiled in C++03 mode because it requires -DBOOST_NO_CXX11_SCOPED_ENUMS
 
