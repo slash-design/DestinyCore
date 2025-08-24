@@ -22,6 +22,10 @@
 #include "CompilerDefs.h"
 
 #if TRINITY_COMPILER == TRINITY_COMPILER_GNU
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <features.h>
 #  if !defined(__STDC_FORMAT_MACROS)
 #    define __STDC_FORMAT_MACROS
 #  endif
