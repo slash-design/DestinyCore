@@ -15,6 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Define.h"
 #include <iostream>
 #include <json/value.h>
 #include <json/writer.h>
@@ -22,17 +23,10 @@
 #include <stdexcept>
 #include <cstring>
 #include <cassert>
-
 #ifdef JSON_USE_CPPTL
 # include <cpptl/conststring.h>
 #endif
-
-#ifdef __linux__
-# include <features.h>
-#endif
-
-#include <cstddef>    // size_t
-
+//#include <cstddef>    // size_t
 #ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
 # include "json_batchallocator.h"
 #endif // #ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
