@@ -155,6 +155,27 @@ void BattlegroundEY::StartingEventOpenDoors()
 
     // Achievement: Flurry
     StartCriteriaTimer(CRITERIA_TIMED_TYPE_EVENT, BG_EY_EVENT_START_BATTLE);
+
+    for (BattlegroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
+    {
+        if (Player* player = ObjectAccessor::FindPlayer(itr->first))
+        {
+            TC_LOG_ERROR("bg.battleground", "BATTLEGROUND: start tele %s ok (map: %u) ", player->GetName().c_str(), GetMapId());
+            if (player && player->IsInWorld() && player->IsPlayerBot())
+                if (player->GetTeamId() == TEAM_ALLIANCE)
+                {
+
+                    player->TeleportTo(566, 2456.89f, 1602.02f, 1206.45f, 0);
+                    player->Relocate(2456.89f, 1602.02f, 1206.45f, 0);
+                }
+                else
+                {
+                    player->TeleportTo(566, 1875.77f, 1530.65f, 1206.87f, 0);
+                    player->Relocate(1875.77f, 1530.65f, 1206.87f, 0);
+                }
+
+        }
+    }
 }
 
 void BattlegroundEY::AddPoints(uint32 Team, uint32 Points)
@@ -969,6 +990,66 @@ WorldSafeLocsEntry const* BattlegroundEY::GetClosestGraveYard(Player* player)
 WorldSafeLocsEntry const* BattlegroundEY::GetExploitTeleportLocation(Team team)
 {
     return sWorldSafeLocsStore.LookupEntry(team == ALLIANCE ? EY_EXPLOIT_TELEPORT_LOCATION_ALLIANCE : EY_EXPLOIT_TELEPORT_LOCATION_HORDE);
+}
+
+Creature const* BattlegroundEY::GetClosestGraveCreature(const Player* player)
+{
+    uint32 g_id = 0;
+    switch (player->GetTeam())
+    {
+    case ALLIANCE: g_id = EY_GRAVEYARD_MAIN_ALLIANCE; break;
+    case HORDE:    g_id = EY_GRAVEYARD_MAIN_HORDE;    break;
+    default:       return NULL;
+    }
+
+    float distance, nearestDistance;
+    WorldSafeLocsEntry const* entry = NULL;
+    //WorldSafeLocsEntry const* nearestEntry = NULL;
+    entry = sWorldSafeLocsStore.LookupEntry(g_id);
+    //nearestEntry = entry;
+    if (!entry)
+    {
+        TC_LOG_ERROR("bg.battleground", "BattlegroundEY: The main team graveyard could not be found. The graveyard system will not be operational!");
+        return NULL;
+    }
+
+    float plr_x = player->GetPositionX();
+    float plr_y = player->GetPositionY();
+    float plr_z = player->GetPositionZ();
+    distance = (entry->Loc.X - plr_x) * (entry->Loc.X - plr_x) + (entry->Loc.Y - plr_y) * (entry->Loc.Y - plr_y) + (entry->Loc.Z - plr_z) * (entry->Loc.Z - plr_z);
+    nearestDistance = distance;
+    uint32 creatureIndex = (player->GetTeamId() == TeamId::TEAM_ALLIANCE) ? EYBattlegroundCreaturesTypes::EY_SPIRIT_MAIN_ALLIANCE : EYBattlegroundCreaturesTypes::EY_SPIRIT_MAIN_HORDE;
+
+    for (uint8 i = 0; i < EY_POINTS_MAX; ++i)
+    {
+        if (m_PointOwnedByTeam[i] == player->GetTeam() && m_PointState[i] == EY_POINT_UNDER_CONTROL)
+        {
+            entry = sWorldSafeLocsStore.LookupEntry(m_CapturingPointTypes[i].GraveYardId);
+            if (!entry)
+                TC_LOG_ERROR("bg.battleground", "BattlegroundEY: Graveyard %u could not be found.", m_CapturingPointTypes[i].GraveYardId);
+            else
+            {
+                distance = (entry->Loc.X - plr_x) * (entry->Loc.X - plr_x) + (entry->Loc.Y - plr_y) * (entry->Loc.Y - plr_y) + (entry->Loc.Z - plr_z) * (entry->Loc.Z - plr_z);
+                if (distance < nearestDistance)
+                {
+                    nearestDistance = distance;
+                    //nearestEntry = entry;
+                    creatureIndex = i;
+                }
+            }
+        }
+    }
+
+    if (BgCreatures[creatureIndex].IsEmpty())
+        return NULL;
+    return GetBGCreature(creatureIndex);
+}
+
+bool BattlegroundEY::EYPointIsControl(uint32 team, uint32 pointIndex)
+{
+    if (pointIndex >= EY_POINTS_MAX)
+        return false;
+    return (m_PointOwnedByTeam[pointIndex] == team && m_PointState[pointIndex] == EY_POINT_UNDER_CONTROL);
 }
 
 bool BattlegroundEY::IsAllNodesControlledByTeam(uint32 team) const

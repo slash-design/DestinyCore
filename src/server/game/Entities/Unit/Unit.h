@@ -924,6 +924,14 @@ enum ReactiveType
 
 #define MAX_GAMEOBJECT_SLOT 4
 
+enum PlayerTotemType
+{
+    SUMMON_TYPE_TOTEM_FIRE  = 63,
+    SUMMON_TYPE_TOTEM_EARTH = 81,
+    SUMMON_TYPE_TOTEM_WATER = 82,
+    SUMMON_TYPE_TOTEM_AIR   = 83
+};
+
 // delay time next attack to prevent client attack animation problems
 #define ATTACK_DISPLAY_DELAY 200
 #define MAX_PLAYER_STEALTH_DETECT_RANGE 30.0f               // max distance for detection targets by player
@@ -1449,6 +1457,7 @@ class TC_GAME_API Unit : public WorldObject
         CharmInfo* GetCharmInfo() { return m_charmInfo; }
         CharmInfo* InitCharmInfo();
         void DeleteCharmInfo();
+        bool IsPlayerBot();
         void UpdateCharmAI();
         // returns the unit that this player IS CONTROLLING
         Unit* GetUnitBeingMoved() const;

@@ -17,6 +17,8 @@
  */
 
 #include "BattlegroundAV.h"
+#include "BotAITool.h"
+#include "Config.h"
 #include "Creature.h"
 #include "CreatureAI.h"
 #include "DB2Stores.h"
@@ -251,6 +253,8 @@ void BattlegroundAV::UpdateScore(uint16 team, int16 points)
 { //note: to remove reinforcementpoints points must be negative, for adding reinforcements points must be positive
     ASSERT(team == ALLIANCE || team == HORDE);
     uint8 teamindex = GetTeamIndexByTeamId(team); //0=ally 1=horde
+    int32 isok = sConfigMgr->GetIntDefault("bav", 1);
+    if (isok >= 1)
     m_Team_Scores[teamindex] += points;
 
     UpdateWorldState(((teamindex == TEAM_HORDE)?AV_Horde_Score:AV_Alliance_Score), m_Team_Scores[teamindex]);
@@ -296,8 +300,20 @@ Creature* BattlegroundAV::AddAVCreature(uint16 cinfoid, uint16 type)
     }
     if (!creature)
         return NULL;
-    if (creature->GetEntry() == BG_AV_CreatureInfo[AV_NPC_A_CAPTAIN] || creature->GetEntry() == BG_AV_CreatureInfo[AV_NPC_H_CAPTAIN])
+    if (creature->GetEntry() == BG_AV_CreatureInfo[AV_NPC_A_CAPTAIN])
+    {
+        m_AllianceCaptainGUID = creature->GetGUID();
         creature->SetRespawnDelay(RESPAWN_ONE_DAY); /// @todo look if this can be done by database + also add this for the wingcommanders
+    }
+    else if (creature->GetEntry() == BG_AV_CreatureInfo[AV_NPC_H_CAPTAIN])
+    {
+        m_HordeCaptainGUID = creature->GetGUID();
+        creature->SetRespawnDelay(RESPAWN_ONE_DAY); /// @todo look if this can be done by database + also add this for the wingcommanders
+        creature->SetMaxHealth(creature->GetMaxHealth() / 2);
+        creature->SetFullHealth();
+    }
+    //if (creature->GetEntry() == BG_AV_CreatureInfo[AV_NPC_A_CAPTAIN] || creature->GetEntry() == BG_AV_CreatureInfo[AV_NPC_H_CAPTAIN])
+    //    creature->SetRespawnDelay(RESPAWN_ONE_DAY); /// @todo look if this can be done by database + also add this for the wingcommanders
 
     if ((isStatic && cinfoid >= 10 && cinfoid <= 14) || (!isStatic && ((cinfoid >= AV_NPC_A_GRAVEDEFENSE0 && cinfoid <= AV_NPC_A_GRAVEDEFENSE3) ||
         (cinfoid >= AV_NPC_H_GRAVEDEFENSE0 && cinfoid <= AV_NPC_H_GRAVEDEFENSE3))))
@@ -1157,6 +1173,387 @@ WorldSafeLocsEntry const* BattlegroundAV::GetExploitTeleportLocation(Team team)
     return sWorldSafeLocsStore.LookupEntry(team == ALLIANCE ? AV_EXPLOIT_TELEPORT_LOCATION_ALLIANCE: AV_EXPLOIT_TELEPORT_LOCATION_HORDE);
 }
 
+Creature const* BattlegroundAV::GetClosestGraveCreature(const Player* player)
+{
+    WorldSafeLocsEntry const* pGraveyard = sWorldSafeLocsStore.LookupEntry(BG_AV_GraveyardIds[GetTeamIndexByTeamId(player->GetTeam()) + 7]);
+    float dist = 0;
+    float minDist = 0;
+    float x, y;
+    player->GetPosition(x, y);
+    int32 creatureIndex = (player->GetTeamId() == TEAM_ALLIANCE) ? BG_AV_CreaturePlace::AV_CPLACE_SPIRIT_MAIN_ALLIANCE : BG_AV_CreaturePlace::AV_CPLACE_SPIRIT_MAIN_HORDE;
+    if (pGraveyard)
+    {
+        minDist = (pGraveyard->Loc.X - x) * (pGraveyard->Loc.X - x) + (pGraveyard->Loc.Y - y) * (pGraveyard->Loc.Y - y);
+        for (uint8 i = BG_AV_NODES_FIRSTAID_STATION; i <= BG_AV_NODES_FROSTWOLF_HUT; ++i)
+        {
+            if (m_Nodes[i].Owner == player->GetTeam() && m_Nodes[i].State == POINT_CONTROLED)
+            {
+                WorldSafeLocsEntry const* entry = sWorldSafeLocsStore.LookupEntry(BG_AV_GraveyardIds[i]);
+                if (entry)
+                {
+                    dist = (entry->Loc.X - x) * (entry->Loc.X - x) + (entry->Loc.Y - y) * (entry->Loc.Y - y);
+                    if (dist < minDist)
+                    {
+                        minDist = dist;
+                        creatureIndex = i;
+                    }
+                }
+            }
+        }
+    }
+    if (BgCreatures[creatureIndex].IsEmpty())
+        return NULL;
+    return GetBGCreature(creatureIndex);
+}
+
+GameObject const* BattlegroundAV::GetClosestEnemyNodeObject(Player* player)
+{
+    float closestDistance = 9999999;
+    GameObject const* pClosestGameObject = NULL;
+    for (uint32 nodeType = BG_AV_Nodes::BG_AV_NODES_FIRSTAID_STATION; nodeType < BG_AV_Nodes::BG_AV_NODES_MAX; nodeType++)
+    {
+        GameObject const* pGameObject = GetNodeObjectByEnemyType(player, BG_AV_Nodes(nodeType));
+        if (!pGameObject)
+            continue;
+        float distance = player->GetDistance(pGameObject->GetPosition());
+        if (distance < closestDistance)
+        {
+            pClosestGameObject = pGameObject;
+            closestDistance = distance;
+        }
+    }
+    return pClosestGameObject;
+}
+
+GameObject const* BattlegroundAV::GetEnemyNodeObjectByRange(Player* player, uint32 range)
+{
+    for (uint32 nodeType = BG_AV_Nodes::BG_AV_NODES_FIRSTAID_STATION; nodeType < BG_AV_Nodes::BG_AV_NODES_MAX; nodeType++)
+    {
+        GameObject const* pGameObject = GetNodeObjectByEnemyType(player, BG_AV_Nodes(nodeType));
+        if (!pGameObject)
+            continue;
+        if (player->GetDistance(pGameObject->GetPosition()) > range)
+            continue;
+        return pGameObject;
+    }
+    return NULL;
+}
+
+GameObject const* BattlegroundAV::GetNodeObjectByEnemyType(Player* player, BG_AV_Nodes nodeType)
+{
+    if (nodeType >= BG_AV_Nodes::BG_AV_NODES_MAX)
+        return NULL;
+    BG_AV_NodeInfo& nodeInfo = m_Nodes[nodeType];
+    if (nodeInfo.Owner == player->GetTeam())
+        return NULL;
+    int32 objectIndex = -1;
+    /*if (nodeInfo.State == POINT_NEUTRAL)
+        objectIndex = BG_AV_OBJECT_FLAG_N_SNOWFALL_GRAVE;
+        else */if (nodeInfo.State == POINT_DESTROYED)
+    return NULL;
+        else if (nodeInfo.State == POINT_ASSAULTED)
+        {
+            if (player->GetTeamId() == TEAM_ALLIANCE)
+            {
+                switch (nodeType)
+                {
+                case BG_AV_NODES_FIRSTAID_STATION:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_H_FIRSTAID_STATION;
+                    break;
+                case BG_AV_NODES_STORMPIKE_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_H_STORMPIKE_GRAVE;
+                    break;
+                case BG_AV_NODES_STONEHEART_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_H_STONEHEART_GRAVE;
+                    break;
+                case BG_AV_NODES_SNOWFALL_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_H_SNOWFALL_GRAVE;
+                    break;
+                case BG_AV_NODES_ICEBLOOD_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_H_ICEBLOOD_GRAVE;
+                    break;
+                case BG_AV_NODES_FROSTWOLF_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_H_FROSTWOLF_GRAVE;
+                    break;
+                case BG_AV_NODES_FROSTWOLF_HUT:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_H_FROSTWOLF_HUT;
+                    break;
+                case BG_AV_NODES_DUNBALDAR_SOUTH:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_H_DUNBALDAR_SOUTH;
+                    break;
+                case BG_AV_NODES_DUNBALDAR_NORTH:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_H_DUNBALDAR_NORTH;
+                    break;
+                case BG_AV_NODES_ICEWING_BUNKER:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_H_ICEWING_BUNKER;
+                    break;
+                case BG_AV_NODES_STONEHEART_BUNKER:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_H_STONEHEART_BUNKER;
+                    break;
+                default:
+                    return NULL;
+                }
+            }
+            else
+            {
+                switch (nodeType)
+                {
+                case BG_AV_NODES_FIRSTAID_STATION:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_A_FIRSTAID_STATION;
+                    break;
+                case BG_AV_NODES_STORMPIKE_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_A_STORMPIKE_GRAVE;
+                    break;
+                case BG_AV_NODES_STONEHEART_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_A_STONEHEART_GRAVE;
+                    break;
+                case BG_AV_NODES_SNOWFALL_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_A_SNOWFALL_GRAVE;
+                    break;
+                case BG_AV_NODES_ICEBLOOD_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_A_ICEBLOOD_GRAVE;
+                    break;
+                case BG_AV_NODES_FROSTWOLF_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_A_FROSTWOLF_GRAVE;
+                    break;
+                case BG_AV_NODES_FROSTWOLF_HUT:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_A_FROSTWOLF_HUT;
+                    break;
+                case BG_AV_NODES_ICEBLOOD_TOWER:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_A_ICEBLOOD_TOWER;
+                    break;
+                case BG_AV_NODES_TOWER_POINT:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_A_TOWER_POINT;
+                    break;
+                case BG_AV_NODES_FROSTWOLF_ETOWER:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_A_FROSTWOLF_ETOWER;
+                    break;
+                case BG_AV_NODES_FROSTWOLF_WTOWER:
+                    objectIndex = BG_AV_OBJECT_FLAG_C_A_FROSTWOLF_WTOWER;
+                    break;
+                default:
+                    return NULL;
+                }
+            }
+        }
+        else if (nodeInfo.State == POINT_CONTROLED)
+        {
+            if (nodeInfo.Owner == 0)
+                objectIndex = BG_AV_OBJECT_FLAG_N_SNOWFALL_GRAVE;
+            else if (player->GetTeamId() == TEAM_ALLIANCE)
+            {
+                switch (nodeType)
+                {
+                case BG_AV_NODES_FIRSTAID_STATION:
+                    objectIndex = BG_AV_OBJECT_FLAG_H_FIRSTAID_STATION;
+                    break;
+                case BG_AV_NODES_STORMPIKE_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_H_STORMPIKE_GRAVE;
+                    break;
+                case BG_AV_NODES_STONEHEART_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_H_STONEHEART_GRAVE;
+                    break;
+                case BG_AV_NODES_SNOWFALL_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_H_SNOWFALL_GRAVE;
+                    break;
+                case BG_AV_NODES_ICEBLOOD_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_H_ICEBLOOD_GRAVE;
+                    break;
+                case BG_AV_NODES_FROSTWOLF_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_H_FROSTWOLF_GRAVE;
+                    break;
+                case BG_AV_NODES_FROSTWOLF_HUT:
+                    objectIndex = BG_AV_OBJECT_FLAG_H_FROSTWOLF_HUT;
+                    break;
+                case BG_AV_NODES_ICEBLOOD_TOWER:
+                    objectIndex = BG_AV_OBJECT_FLAG_H_ICEBLOOD_TOWER;
+                    break;
+                case BG_AV_NODES_TOWER_POINT:
+                    objectIndex = BG_AV_OBJECT_FLAG_H_TOWER_POINT;
+                    break;
+                case BG_AV_NODES_FROSTWOLF_ETOWER:
+                    objectIndex = BG_AV_OBJECT_FLAG_H_FROSTWOLF_ETOWER;
+                    break;
+                case BG_AV_NODES_FROSTWOLF_WTOWER:
+                    objectIndex = BG_AV_OBJECT_FLAG_H_FROSTWOLF_WTOWER;
+                    break;
+                default:
+                    return NULL;
+                }
+            }
+            else
+            {
+                switch (nodeType)
+                {
+                case BG_AV_NODES_FIRSTAID_STATION:
+                    objectIndex = BG_AV_OBJECT_FLAG_A_FIRSTAID_STATION;
+                    break;
+                case BG_AV_NODES_STORMPIKE_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_A_STORMPIKE_GRAVE;
+                    break;
+                case BG_AV_NODES_STONEHEART_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_A_STONEHEART_GRAVE;
+                    break;
+                case BG_AV_NODES_SNOWFALL_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_A_SNOWFALL_GRAVE;
+                    break;
+                case BG_AV_NODES_ICEBLOOD_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_A_ICEBLOOD_GRAVE;
+                    break;
+                case BG_AV_NODES_FROSTWOLF_GRAVE:
+                    objectIndex = BG_AV_OBJECT_FLAG_A_FROSTWOLF_GRAVE;
+                    break;
+                case BG_AV_NODES_FROSTWOLF_HUT:
+                    objectIndex = BG_AV_OBJECT_FLAG_A_FROSTWOLF_HUT;
+                    break;
+                case BG_AV_NODES_DUNBALDAR_SOUTH:
+                    objectIndex = BG_AV_OBJECT_FLAG_A_DUNBALDAR_SOUTH;
+                    break;
+                case BG_AV_NODES_DUNBALDAR_NORTH:
+                    objectIndex = BG_AV_OBJECT_FLAG_A_DUNBALDAR_NORTH;
+                    break;
+                case BG_AV_NODES_ICEWING_BUNKER:
+                    objectIndex = BG_AV_OBJECT_FLAG_A_ICEWING_BUNKER;
+                    break;
+                case BG_AV_NODES_STONEHEART_BUNKER:
+                    objectIndex = BG_AV_OBJECT_FLAG_A_STONEHEART_BUNKER;
+                    break;
+                default:
+                    return NULL;
+                }
+            }
+        }
+
+        if (objectIndex < 0 || objectIndex >= (int32)BgObjects.size())
+            return NULL;
+        ObjectGuid& guid = BgObjects[objectIndex];
+        GameObject const* pGameObject = GetBgMap()->GetGameObject(guid);
+        if (pGameObject && pGameObject->isSpawned())
+            return pGameObject;
+        return NULL;
+}
+
+GameObject const* BattlegroundAV::GetNodeObjectByPosType(BG_AV_Nodes nodeType)
+{
+    int32 objectIndex = -1;
+    switch (nodeType)
+    {
+    case BG_AV_NODES_FIRSTAID_STATION:
+        objectIndex = BG_AV_OBJECT_FLAG_A_FIRSTAID_STATION;
+        break;
+    case BG_AV_NODES_STORMPIKE_GRAVE:
+        objectIndex = BG_AV_OBJECT_FLAG_A_STORMPIKE_GRAVE;
+        break;
+    case BG_AV_NODES_STONEHEART_GRAVE:
+        objectIndex = BG_AV_OBJECT_FLAG_A_STONEHEART_GRAVE;
+        break;
+    case BG_AV_NODES_SNOWFALL_GRAVE:
+        objectIndex = BG_AV_OBJECT_FLAG_N_SNOWFALL_GRAVE;
+        break;
+    case BG_AV_NODES_ICEBLOOD_GRAVE:
+        objectIndex = BG_AV_OBJECT_FLAG_H_ICEBLOOD_GRAVE;
+        break;
+    case BG_AV_NODES_FROSTWOLF_GRAVE:
+        objectIndex = BG_AV_OBJECT_FLAG_H_FROSTWOLF_GRAVE;
+        break;
+    case BG_AV_NODES_FROSTWOLF_HUT:
+        objectIndex = BG_AV_OBJECT_FLAG_H_FROSTWOLF_HUT;
+        break;
+    case BG_AV_NODES_DUNBALDAR_SOUTH:
+        objectIndex = BG_AV_OBJECT_FLAG_A_DUNBALDAR_SOUTH;
+        break;
+    case BG_AV_NODES_DUNBALDAR_NORTH:
+        objectIndex = BG_AV_OBJECT_FLAG_A_DUNBALDAR_NORTH;
+        break;
+    case BG_AV_NODES_ICEWING_BUNKER:
+        objectIndex = BG_AV_OBJECT_FLAG_A_ICEWING_BUNKER;
+        break;
+    case BG_AV_NODES_STONEHEART_BUNKER:
+        objectIndex = BG_AV_OBJECT_FLAG_A_STONEHEART_BUNKER;
+        break;
+    case BG_AV_NODES_ICEBLOOD_TOWER:
+        objectIndex = BG_AV_OBJECT_FLAG_H_ICEBLOOD_TOWER;
+        break;
+    case BG_AV_NODES_TOWER_POINT:
+        objectIndex = BG_AV_OBJECT_FLAG_H_TOWER_POINT;
+        break;
+    case BG_AV_NODES_FROSTWOLF_ETOWER:
+        objectIndex = BG_AV_OBJECT_FLAG_H_FROSTWOLF_ETOWER;
+        break;
+    case BG_AV_NODES_FROSTWOLF_WTOWER:
+        objectIndex = BG_AV_OBJECT_FLAG_H_FROSTWOLF_WTOWER;
+        break;
+    default:
+        return NULL;
+    }
+    if (objectIndex < 0 || objectIndex >= (int32)BgObjects.size())
+        return NULL;
+    ObjectGuid& guid = BgObjects[objectIndex];
+    GameObject const* pGameObject = GetBgMap()->GetGameObject(guid);
+    if (pGameObject)
+        return pGameObject;
+    return NULL;
+}
+
+bool BattlegroundAV::NodeIsOccupyByTeamType(TeamId team, BG_AV_Nodes nodeType)
+{
+    BG_AV_NodeInfo& nodeInfo = m_Nodes[nodeType];
+    if (nodeInfo.State == POINT_NEUTRAL || nodeInfo.State == POINT_ASSAULTED)
+        return false;
+    else if (nodeInfo.State == POINT_DESTROYED)
+        return true;
+    else if (nodeInfo.State == POINT_CONTROLED)//Team: ALLIANCE HORDE
+    {
+        if (team == TEAM_ALLIANCE)
+            return (nodeInfo.Owner == Team::ALLIANCE);
+        else
+            return (nodeInfo.Owner == Team::HORDE);
+    }
+    return true;
+}
+
+Creature const* BattlegroundAV::GetAVAliveCaptainByTeam(TeamId team)
+{
+    if (team == TEAM_ALLIANCE)
+    {
+        if (m_AllianceCaptainGUID.IsEmpty())
+        {
+            TC_LOG_ERROR("BattlegroundAV", "BattlegroundAV not find alliance captain, creature guid is null.");
+            return NULL;
+        }
+        Creature* pCaptain = GetBgMap()->GetCreature(m_AllianceCaptainGUID);
+        if (pCaptain && pCaptain->IsAlive())
+            return pCaptain;
+    }
+    else
+    {
+        if (m_HordeCaptainGUID.IsEmpty())
+        {
+            TC_LOG_ERROR("BattlegroundAV", "BattlegroundAV not find horde captain, creature guid is null.");
+            return NULL;
+        }
+        Creature* pCaptain = GetBgMap()->GetCreature(m_HordeCaptainGUID);
+        if (pCaptain && pCaptain->IsAlive())
+            return pCaptain;
+    }
+    return NULL;
+}
+
+uint32 BattlegroundAV::GetBGCreatureIndexByGUID(ObjectGuid& guid)
+{
+    uint32 index = 0;
+    for (ObjectGuid id : BgCreatures)
+    {
+        if (id != guid)
+        {
+            ++index;
+            continue;
+        }
+        return index;
+    }
+    return -1;
+}
+
 bool BattlegroundAV::SetupBattleground()
 {
     // Create starting objects
@@ -1505,7 +1902,9 @@ void BattlegroundAV::ResetBGSubclass()
     {
         for (uint8 j=0; j<9; j++)
             m_Team_QuestStatus[i][j]=0;
-        m_Team_Scores[i]=BG_AV_SCORE_INITIAL_POINTS;
+        float scoreFinal = BG_AV_SCORE_INITIAL_POINTS * BotUtility::BattlegroundScoreRate;
+        if (scoreFinal < 40) scoreFinal = 40;
+        m_Team_Scores[i] = scoreFinal;
         m_IsInformedNearVictory[i]=false;
         m_CaptainAlive[i] = true;
         m_CaptainBuffTimer[i] = 120000 + urand(0, 4)* 60; //as far as i could see, the buff is randomly so i make 2minutes (thats the duration of the buff itself) + 0-4minutes @todo get the right times

@@ -232,6 +232,7 @@ class TC_GAME_API Channel
         void LeaveNotify(Player const* player);
         void SetOwnership(bool ownership) { _ownershipEnabled = ownership; }
         static void CleanOldChannelsInDB();
+        bool IsOn(ObjectGuid who) const { return _playersStore.count(who) != 0; }
 
         void SendToAllInChannel(std::string senderName, std::string message, bool showGMLogo);
 
@@ -249,7 +250,6 @@ class TC_GAME_API Channel
         template <class Builder>
         void SendToAllWithAddon(Builder& builder, std::string const& addonPrefix, ObjectGuid const& guid = ObjectGuid::Empty) const;
 
-        bool IsOn(ObjectGuid const& who) const { return _playersStore.count(who) != 0; }
         bool IsBanned(ObjectGuid const& guid) const { return _bannedStore.count(guid) != 0; }
 
         void UpdateChannelInDB() const;

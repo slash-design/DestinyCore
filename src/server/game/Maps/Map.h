@@ -67,6 +67,7 @@ class Transport;
 struct WildBattlePetPool;
 enum Difficulty : uint8;
 enum WeatherState : uint32;
+class CommandBG;
 
 namespace Trinity { struct ObjectUpdater; }
 namespace G3D { class Plane; }
@@ -589,6 +590,13 @@ class TC_GAME_API Map : public GridRefManager<NGridType>
             _updateObjects.erase(obj);
         }
 
+        virtual void InsureCommander(BattlegroundTypeId bgType) {}
+        virtual void InitCommander() {}
+        virtual void ResetCommander() {}
+        virtual void ReadyCommander() {}
+        virtual void StartCommander() {}
+        virtual CommandBG* GetCommander(TeamId team) { return NULL; }
+
         void AddBattlePet(Creature* creature);
         void RemoveBattlePet(Creature* creature);
         WildBattlePetPool* GetWildBattlePetPool(Creature* creature);
@@ -833,6 +841,7 @@ class TC_GAME_API BattlegroundMap : public Map
         BattlegroundMap(uint32 id, time_t, uint32 InstanceId, Map* _parent, Difficulty spawnMode);
         ~BattlegroundMap();
 
+        void Update(const uint32 diff) override;
         bool AddPlayerToMap(Player* player, bool initPlayer = true) override;
         void RemovePlayerFromMap(Player*, bool) override;
         EnterState CannotEnter(Player* player) override;
@@ -843,8 +852,17 @@ class TC_GAME_API BattlegroundMap : public Map
         virtual void InitVisibilityDistance() override;
         Battleground* GetBG() { return m_bg; }
         void SetBG(Battleground* bg) { m_bg = bg; }
+
+        void InsureCommander(BattlegroundTypeId bgType) override;
+        void InitCommander() override;
+        void ResetCommander() override;
+        void ReadyCommander() override;
+        void StartCommander() override;
+        CommandBG* GetCommander(TeamId team) override;
     private:
         Battleground* m_bg;
+        CommandBG* m_pAllianceCommander;
+        CommandBG* m_pHordeCommander;
 };
 
 template<class T, class CONTAINER>

@@ -678,6 +678,93 @@ WorldSafeLocsEntry const* BattlegroundAB::GetExploitTeleportLocation(Team team)
     return sWorldSafeLocsStore.LookupEntry(team == ALLIANCE ? AB_EXPLOIT_TELEPORT_LOCATION_ALLIANCE : AB_EXPLOIT_TELEPORT_LOCATION_HORDE);
 }
 
+Creature const* BattlegroundAB::GetClosestGraveCreature(const Player* player)
+{
+    TeamId teamIndex = GetTeamIndexByTeamId(player->GetTeam());
+    std::vector<uint8> nodes;
+    for (uint8 i = 0; i < BG_AB_DYNAMIC_NODES_COUNT; ++i)
+    {
+        if (m_Nodes[i] == teamIndex + 3)
+            nodes.push_back(i);
+    }
+    int32 creatureIndex = (player->GetTeamId() == TEAM_ALLIANCE) ? BG_AB_BattlegroundNodes::BG_AB_SPIRIT_ALIANCE : BG_AB_BattlegroundNodes::BG_AB_SPIRIT_HORDE;
+    if (!nodes.empty())
+    {
+        float plr_x = player->GetPositionX();
+        float plr_y = player->GetPositionY();
+
+        float mindist = 999999.0f;
+        for (uint8 i = 0; i < nodes.size(); ++i)
+        {
+            WorldSafeLocsEntry const* entry = sWorldSafeLocsStore.LookupEntry(BG_AB_GraveyardIds[nodes[i]]);
+            if (!entry)
+                continue;
+            float dist = (entry->Loc.X - plr_x) * (entry->Loc.X - plr_x) + (entry->Loc.Y - plr_y) * (entry->Loc.Y - plr_y);
+            if (mindist > dist && !(BgCreatures[nodes[i]].IsEmpty()))
+            {
+                mindist = dist;
+                creatureIndex = nodes[i];
+            }
+        }
+        nodes.clear();
+    }
+    if (BgCreatures[creatureIndex].IsEmpty())
+        return NULL;
+    return GetBGCreature(creatureIndex);
+}
+
+GameObject const* BattlegroundAB::GetNearGameObjectFlag(const Player* player)
+{
+    if (!player)
+        return NULL;
+    uint8 node = BG_AB_NODE_STABLES;
+    GameObject* nearObject = GetBgMap()->GetGameObject(BgObjects[node * 8 + 7]);
+    while ((node < BG_AB_DYNAMIC_NODES_COUNT) && ((!nearObject) || (!player->IsWithinDistInMap(nearObject, 6))))
+    {
+        ++node;
+        nearObject = GetBgMap()->GetGameObject(BgObjects[node * 8 + BG_AB_OBJECT_SPEEDBUFF_STABLES]);
+    }
+
+    if (node == BG_AB_DYNAMIC_NODES_COUNT)
+        return NULL;
+    TeamId teamIndex = GetTeamIndexByTeamId(player->GetTeam());
+    if (!(m_Nodes[node] == 0 || teamIndex == m_Nodes[node] % 2))
+        return NULL;
+    if (m_Nodes[node] == BG_AB_NODE_TYPE_NEUTRAL)
+    {
+        ObjectGuid nearFlagGuid = BgObjects[node * 8 + BG_AB_NODE_TYPE_NEUTRAL];
+        GameObject* nearFlag = GetBgMap()->GetGameObject(nearFlagGuid);
+        if (nearFlag && nearFlag->isSpawned())
+            return nearFlag;
+        return NULL;
+    }
+    else if ((m_Nodes[node] == BG_AB_NODE_STATUS_ALLY_CONTESTED) ||
+        (m_Nodes[node] == BG_AB_NODE_STATUS_HORDE_CONTESTED))
+    {
+        ObjectGuid nearFlagGuid = BgObjects[node * 8 + BG_AB_NODE_TYPE_CONTESTED + !teamIndex];
+        GameObject* nearFlag = GetBgMap()->GetGameObject(nearFlagGuid);
+        if (nearFlag && nearFlag->isSpawned())
+            return nearFlag;
+        return NULL;
+    }
+    else
+    {
+        ObjectGuid nearFlagGuid = BgObjects[node * 8 + BG_AB_NODE_TYPE_OCCUPIED + !teamIndex];
+        GameObject* nearFlag = GetBgMap()->GetGameObject(nearFlagGuid);
+        if (nearFlag && nearFlag->isSpawned())
+            return nearFlag;
+        return NULL;
+    }
+    return NULL;
+}
+
+uint8 BattlegroundAB::GetABNodeState(uint32 abNode)
+{
+    if (abNode >= BG_AB_BattlegroundNodes::BG_AB_DYNAMIC_NODES_COUNT)
+        return 0;
+    return m_Nodes[abNode];
+}
+
 bool BattlegroundAB::UpdatePlayerScore(Player* player, uint32 type, uint32 value, bool doAddHonor)
 {
     if (!Battleground::UpdatePlayerScore(player, type, value, doAddHonor))

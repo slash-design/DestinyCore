@@ -21,6 +21,7 @@
 #include "Define.h"
 #include <string>
 #include <cmath>
+#include <G3D/Vector3.h>
 
 class ByteBuffer;
 
@@ -143,6 +144,11 @@ public:
     }
 
     Position GetPosition() const { return *this; }
+
+    G3D::Vector3 GetVector3() const
+    {
+        return G3D::Vector3(m_positionX, m_positionY, m_positionZ);
+    }
 
     Streamer<XY> PositionXYStream() { return Streamer<XY>(*this); }
     ConstStreamer<XY> PositionXYStream() const { return ConstStreamer<XY>(*this); }

@@ -89,6 +89,8 @@ enum BattlegroundDSEvents
     BG_DS_EVENT_PIPE_KNOCKBACK          = 5
 };
 
+struct AIWaypoint;
+
 class BattlegroundDS : public Arena
 {
     public:
@@ -109,5 +111,8 @@ class BattlegroundDS : public Arena
 
         uint32 _pipeKnockBackTimer;
         uint8 _pipeKnockBackCount;
+
+        AIWaypoint* m_LMStartPoint;
+        AIWaypoint* m_BLStartPoint;
 };
 #endif

@@ -324,6 +324,36 @@ enum SpellEffectHandleMode
 
 typedef std::vector<std::pair<uint32, ObjectGuid>> DispelList;
 
+enum SpellInterruptConditionType
+{
+    SICT_NONE = 0,
+    SICT_LIFE_PCT
+};
+
+struct SpellInterruptCondition
+{
+    SpellInterruptConditionType conditionType;
+    ObjectGuid castTarget;
+    uint32 conditionValue;
+
+    SpellInterruptCondition()
+    {
+        conditionType = SICT_NONE;
+        castTarget = ObjectGuid::Empty;
+        conditionValue = 0;
+    }
+
+    SpellInterruptCondition(SpellInterruptConditionType conType, ObjectGuid& target, uint32 value)
+    {
+        conditionType = conType;
+        castTarget = target;
+        conditionValue = value;
+    }
+
+    void ClearInterruptCondition();
+    bool CheckInterruptCondition(Unit* caster);
+};
+
 static const uint32 SPELL_INTERRUPT_NONPLAYER = 32747;
 
 class TC_GAME_API Spell
@@ -531,7 +561,7 @@ class TC_GAME_API Spell
 
         GameObject* SearchSpellFocus();
 
-        bool prepare(SpellCastTargets const* targets, AuraEffect const* triggeredByAura = NULL);
+        SpellCastResult prepare(SpellCastTargets const* targets, AuraEffect const* triggeredByAura = NULL);
         void cancel();
         void update(uint32 difftime);
         void cast(bool skipCheck = false);
@@ -714,6 +744,8 @@ class TC_GAME_API Spell
         int32 GetTimer() const { return m_timer; }
 
         void CallScriptCalcCritChanceHandlers(Unit* victim, float& chance);
+
+        void SetInterruptConditionByLifePCT(ObjectGuid& target, uint32 pct = 99);
 
     protected:
         bool HasGlobalCooldown() const;
@@ -918,6 +950,8 @@ class TC_GAME_API Spell
         std::vector<SpellLogEffectGenericVictimParams> _genericVictimTargets[MAX_SPELL_EFFECTS];
         std::vector<SpellLogEffectTradeSkillItemParams> _tradeSkillTargets[MAX_SPELL_EFFECTS];
         std::vector<SpellLogEffectFeedPetParams> _feedPetTargets[MAX_SPELL_EFFECTS];
+
+        SpellInterruptCondition m_SpellInterruptCondition;
 
         Spell(Spell const& right) = delete;
         Spell& operator=(Spell const& right) = delete;

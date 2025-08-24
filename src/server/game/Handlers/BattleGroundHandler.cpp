@@ -37,6 +37,8 @@
 #include "ObjectMgr.h"
 #include "Opcodes.h"
 #include "Player.h"
+#include "PlayerBotMgr.h"
+#include "FieldBotMgr.h"
 
 void WorldSession::HandleBattlemasterHelloOpcode(WorldPackets::NPC::Hello& hello)
 {
@@ -64,6 +66,13 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPackets::Battleground::Batt
     bool isPremade = false;
     Group* grp = NULL;
     uint32 bgTypeId_ = battlemasterJoin.QueueID & 0xFFFF;
+
+    if (bgTypeId_ >= 32 || bgTypeId_ == 9)
+    {
+        ChatHandler(this).PSendSysMessage(LANG_BG_DISABLED);
+        return;
+    }
+
     if (!sBattlemasterListStore.LookupEntry(bgTypeId_))
     {
         TC_LOG_ERROR("network", "Battleground: invalid bgtype (%u) received. possible cheater? %s", bgTypeId_, _player->GetGUID().ToString().c_str());
@@ -154,6 +163,14 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPackets::Battleground::Batt
         if (_player->HasAura(9454))
             return;
 
+        if (sFieldBotMgr->ExistWarfare())
+        {
+            std::string outString;
+            consoleToUtf8(std::string("????????????????????"), outString);
+            sWorld->SendGlobalText(outString.c_str(), NULL);
+            return;
+        }
+
         BattlegroundQueue& bgQueue = sBattlegroundMgr->GetBattlegroundQueue(bgQueueTypeId);
         GroupQueueInfo* ginfo = bgQueue.AddGroup(_player, NULL, bgTypeId, bracketEntry, 0, false, isPremade, 0, 0);
 
@@ -176,6 +193,14 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPackets::Battleground::Batt
 
         if (grp->GetLeaderGUID() != _player->GetGUID())
             return;
+
+        if (sFieldBotMgr->ExistWarfare() || grp->GroupExistPlayerBot())
+        {
+            std::string outString;
+            consoleToUtf8(std::string("??j???????????"), outString);
+            _player->Whisper(outString, Language::LANG_COMMON, _player);
+            return;
+        }
 
         ObjectGuid errorGuid;
         err = grp->CanJoinBattlegroundQueue(bg, bgQueueTypeId, 0, bg->GetMaxPlayersPerTeam(), false, 0, errorGuid);
@@ -219,6 +244,8 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPackets::Battleground::Batt
     }
 
     sBattlegroundMgr->ScheduleQueueUpdate(0, 0, bgQueueTypeId, bgTypeId, bracketEntry->GetBracketId());
+    if (!IsBotSession())
+        sPlayerBotMgr->OnRealPlayerJoinBattlegroundQueue(bgTypeId_, _player->getLevel());
 }
 
 void WorldSession::HandlePVPLogDataOpcode(WorldPackets::Battleground::PVPLogDataRequest& /*pvpLogDataRequest*/)
@@ -383,6 +410,9 @@ void WorldSession::HandleBattleFieldPortOpcode(WorldPackets::Battleground::Battl
         // add only in HandleMoveWorldPortAck()
         // bg->AddPlayer(_player, team);
         TC_LOG_DEBUG("bg.battleground", "Battleground: player %s (%s) joined battle for bg %u, bgtype %u, queue type %u.", _player->GetName().c_str(), _player->GetGUID().ToString().c_str(), bg->GetInstanceID(), bg->GetTypeID(), bgQueueTypeId);
+
+        if (!IsBotSession())
+            sPlayerBotMgr->OnRealPlayerEnterBattleground(bgTypeId, _player->getLevel());
     }
     else // leave queue
     {
@@ -410,6 +440,14 @@ void WorldSession::HandleBattleFieldPortOpcode(WorldPackets::Battleground::Battl
 
         TC_LOG_DEBUG("bg.battleground", "Battleground: player %s (%s) left queue for bgtype %u, queue type %u.", _player->GetName().c_str(), _player->GetGUID().ToString().c_str(), bg->GetTypeID(), bgQueueTypeId);
     }
+
+    if (!IsBotSession())
+    {
+        if (bgTypeId != BattlegroundTypeId::BATTLEGROUND_AA)
+            sPlayerBotMgr->OnRealPlayerLeaveBattlegroundQueue(bgTypeId, _player->getLevel());
+        else
+            sPlayerBotMgr->OnRealPlayerLeaveArenaQueue(bgTypeId, _player->getLevel(), 0);
+    }
 }
 
 void WorldSession::HandleBattlefieldLeaveOpcode(WorldPackets::Battleground::BattlefieldLeave& /*battlefieldLeave*/)
@@ -420,6 +458,8 @@ void WorldSession::HandleBattlefieldLeaveOpcode(WorldPackets::Battleground::Batt
             if (bg->GetStatus() != STATUS_WAIT_LEAVE)
                 return;
 
+    if (!_player->IsPlayerBot())
+        sPlayerBotMgr->OnRealPlayerLeaveBattleground(_player);
     _player->LeaveBattleground();
 }
 

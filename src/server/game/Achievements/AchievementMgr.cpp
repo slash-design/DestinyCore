@@ -34,6 +34,8 @@
 #include "ObjectMgr.h"
 #include "World.h"
 #include "WorldSession.h"
+#include "Player.h"
+#include "Unit.h"
 
 struct VisibleAchievementCheck
 {

@@ -994,11 +994,17 @@ void Spell::EffectTeleportUnits(SpellEffIndex /*effIndex*/)
 
     if (Player* player = unitTarget->ToPlayer())
     {
-        // Custom loading screen
-        if (uint32 customLoadingScreenId = effectInfo->MiscValue)
-            player->SendDirectMessage(WorldPackets::Spells::CustomLoadScreen(m_spellInfo->Id, customLoadingScreenId).Write());
+        if (unitTarget->IsPlayerBot())
+        {
+        }
+        else
+        {
+            // Custom loading screen
+            if (uint32 customLoadingScreenId = effectInfo->MiscValue)
+                player->SendDirectMessage(WorldPackets::Spells::CustomLoadScreen(m_spellInfo->Id, customLoadingScreenId).Write());
 
-        player->TeleportTo(mapid, x, y, z, orientation, unitTarget == m_caster ? TELE_TO_SPELL | TELE_TO_NOT_LEAVE_COMBAT : 0);
+            player->TeleportTo(mapid, x, y, z, orientation, unitTarget == m_caster ? TELE_TO_SPELL | TELE_TO_NOT_LEAVE_COMBAT : 0);
+        }
     }
     else if (mapid == unitTarget->GetMapId())
         unitTarget->NearTeleportTo(x, y, z, orientation, unitTarget == m_caster);
@@ -4300,6 +4306,18 @@ void Spell::EffectLeap(SpellEffIndex /*effIndex*/)
 
     if (!m_targets.HasDst())
         return;
+
+    if (Player* playerCaster = m_caster->ToPlayer())
+    {
+        if (playerCaster->IsPlayerBot())
+        {
+            if (playerCaster->getClass() == Classes::CLASS_MAGE ||
+                playerCaster->getClass() == Classes::CLASS_ROGUE ||
+                playerCaster->getClass() == Classes::CLASS_WARLOCK ||
+                playerCaster->getClass() == Classes::CLASS_WARRIOR)
+                return;
+        }
+    }
 
     Position pos = destTarget->GetPosition();
     pos = unitTarget->GetFirstCollisionPosition(unitTarget->GetDistance(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ()), 0.0f);

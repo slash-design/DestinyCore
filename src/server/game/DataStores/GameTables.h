@@ -22,6 +22,8 @@
 #include "Common.h"
 #include <vector>
 
+enum InventoryType : uint8;
+
 struct GtArmorMitigationByLvlEntry
 {
     float Mitigation = 0.0f;

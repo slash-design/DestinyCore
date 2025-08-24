@@ -99,8 +99,15 @@
 #include "WorldSession.h"
 #include "WorldSocket.h"
 #include "PetBattleSystem.h"
-
+#include "PlayerBotMgr.h"
+#include "FieldBotMgr.h"
+#include "PlayerBotTalkMgr.h"
+#include "AIWaypointsMgr.h"
+#include "PathfindingMgr.h"
+#include "ToolSocket.h"
+#include "SHA1.h"
 #include <boost/algorithm/string.hpp>
+#include "CustomTalkMenu.h"
 
 TC_GAME_API std::atomic<bool> World::m_stopEvent(false);
 TC_GAME_API uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
@@ -114,6 +121,236 @@ TC_GAME_API float World::m_MaxVisibleDistanceInBGArenas   = DEFAULT_VISIBILITY_B
 TC_GAME_API int32 World::m_visibility_notify_periodOnContinents = DEFAULT_VISIBILITY_NOTIFY_PERIOD;
 TC_GAME_API int32 World::m_visibility_notify_periodInInstances  = DEFAULT_VISIBILITY_NOTIFY_PERIOD;
 TC_GAME_API int32 World::m_visibility_notify_periodInBGArenas   = DEFAULT_VISIBILITY_NOTIFY_PERIOD;
+
+#define _WIN32_DCOM  
+#include <iostream>
+#include <comdef.h>
+#include <Wbemidl.h>
+#pragma comment(lib, "wbemuuid.lib")
+
+uint32 World::GetOnlineRealPlayerCount()
+{
+    uint32 count = 0;
+    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
+        WorldSession* pSession = itr->second;
+        if (!pSession)
+            continue;
+        if (pSession->IsBotSession())
+            continue;
+        ++count;
+    }
+    return count;
+}
+
+std::string World::BuildWMICode()
+{
+#ifndef INCOMPLETE_BOT
+    CoUninitialize();
+    HRESULT hres = CoInitializeEx(0, COINIT_MULTITHREADED);
+    if (FAILED(hres))
+    {
+        //exit(-1);
+        return std::string("uncode0+");
+    }
+    hres = CoInitializeSecurity(
+        NULL,
+        -1,                          // COM authentication  
+        NULL,                        // Authentication services  
+        NULL,                        // Reserved  
+        RPC_C_AUTHN_LEVEL_DEFAULT,   // Default authentication   
+        RPC_C_IMP_LEVEL_IMPERSONATE, // Default Impersonation    
+        NULL,                        // Authentication info  
+        EOAC_NONE,                   // Additional capabilities   
+        NULL                         // Reserved  
+    );
+    if (FAILED(hres))
+    {
+        CoUninitialize();
+        //exit(-1);
+        return std::string("uncode1+");
+    }
+    IWbemLocator* pLoc = NULL;
+    hres = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&pLoc);
+    if (FAILED(hres))
+    {
+        CoUninitialize();
+        //exit(-1);
+        return std::string("uncode2+");
+    }
+    IWbemServices* pSvc = NULL;
+    hres = pLoc->ConnectServer(
+        _bstr_t(L"ROOT\\CIMV2"), // Object path of WMI namespace  
+        NULL,                    // User name. NULL = current user  
+        NULL,                    // User password. NULL = current  
+        0,                       // Locale. NULL indicates current  
+        NULL,                    // Security flags.  
+        0,                       // Authority (e.g. Kerberos)  
+        0,                       // Context object   
+        &pSvc                    // pointer to IWbemServices proxy  
+    );
+    if (FAILED(hres))
+    {
+        pLoc->Release();
+        CoUninitialize();
+        //exit(-1);
+        return std::string("uncode3+");
+    }
+    hres = CoSetProxyBlanket(
+        pSvc,                        // Indicates the proxy to set  
+        RPC_C_AUTHN_WINNT,           // RPC_C_AUTHN_xxx  
+        RPC_C_AUTHZ_NONE,            // RPC_C_AUTHZ_xxx  
+        NULL,                        // Server principal name   
+        RPC_C_AUTHN_LEVEL_CALL,      // RPC_C_AUTHN_LEVEL_xxx   
+        RPC_C_IMP_LEVEL_IMPERSONATE, // RPC_C_IMP_LEVEL_xxx  
+        NULL,                        // client identity  
+        EOAC_NONE                    // proxy capabilities   
+    );
+    if (FAILED(hres))
+    {
+        pSvc->Release();
+        pLoc->Release();
+        CoUninitialize();
+        //exit(-1);
+        return std::string("uncode4+");
+    }
+
+    IEnumWbemClassObject* pEnumerator = NULL;
+    hres = pSvc->ExecQuery(
+        bstr_t("WQL"),
+        bstr_t("SELECT * FROM CIM_BIOSElement"),//Win32_OperatingSystem"),
+        WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+        NULL,
+        &pEnumerator);
+    if (FAILED(hres))
+    {
+        pSvc->Release();
+        pLoc->Release();
+        CoUninitialize();
+        //exit(-1);
+        return std::string("uncode5+");
+    }
+    IWbemClassObject* pclsObj;
+    ULONG uReturn = 0;
+    std::string checkstring;
+    if (pEnumerator)
+    {
+        hres = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
+        if (0 == uReturn)
+        {
+            pSvc->Release();
+            pLoc->Release();
+            CoUninitialize();
+            //exit(-1);
+            return std::string("uncode6+");
+        }
+        VARIANT vtProp;
+        hres = pclsObj->Get(L"Name", 0, &vtProp, 0, 0);
+        WStrToUtf8(vtProp.bstrVal, checkstring);
+        VariantClear(&vtProp);
+        pclsObj->Release();
+    }
+
+    pSvc->Release();
+    pLoc->Release();
+    CoUninitialize();
+    if (checkstring.size() > 7)
+        checkstring = checkstring.substr(6);
+    else if (checkstring.size() > 1)
+        checkstring = checkstring.substr(1);
+    checkstring += "+";
+    return checkstring;
+#else
+    return "";
+#endif
+}
+
+std::string World::GetMachineCode()
+{
+    //#ifndef INCOMPLETE_BOT //Ñô¹â-´ý¶¨
+#if defined(G3D_WINDOWS) && defined(_M_IX86) && !defined(__MINGW32__) /* G3DFIX: Don't check if on 64-bit Windows platforms or using MinGW */
+    if (m_MachineSoleCode.empty())
+    {
+        std::string checkstring = BuildWMICode();
+        uint32 deax;
+        uint32 debx;
+        uint32 decx;
+        uint32 dedx;
+        __asm
+        {
+            mov eax, 1;
+            cpuid;
+            mov deax, eax;
+            mov debx, ebx;
+            mov decx, ecx;
+            mov dedx, edx;
+        }
+        uint8 serials[12] = { 0 };
+        //bool isSupport = dedx & (1 << 18);
+        memcpy(serials, &deax, 4);
+        //memcpy(serials + 4, &debx, 4);
+        memcpy(serials + 4, &decx, 4);
+        memcpy(serials + 8, &dedx, 4);
+
+        checkstring += ByteArrayToHexStr(serials, 12);
+        SHA1Hash cryptography;
+        cryptography.UpdateData(checkstring);
+        cryptography.Finalize();
+        std::string result = ByteArrayToHexStr(cryptography.GetDigest(), cryptography.GetLength());
+        m_MachineSoleCode = result.substr(2, result.size() - 4);
+        //m_MachineSoleCode = "ACEB3480568ABE21667901275036CD0EB40A";
+    }
+#endif
+    return m_MachineSoleCode;
+}
+
+void World::CheckAuthorization()
+{
+#ifndef INCOMPLETE_BOT
+    uint32 checkLen = m_CheckAuthorization.size();
+    if (checkLen != 35 && checkLen != 36)
+    {
+        StopNow(-1);
+    }
+    std::string mcode = GetMachineCode();
+    printf("CheckAuthorization out text : %s", mcode.c_str());
+
+    uint32 len = mcode.size() / 2;
+    uint8* code = new uint8[len + 1];
+    code[len] = 0;
+    HexStrToByteArray(mcode, code);
+    for (uint32 i = 0; i < len; i++)
+    {
+        if (code[i] == 0xff)
+            code[i] = 0;
+        else
+            code[i] = code[i] + 1;
+        code[i] = ~code[i];
+    }
+    std::string matchString = ByteArrayToHexStr(code, len);
+    SHA1Hash cryptography;
+    cryptography.UpdateData(matchString);
+    cryptography.Finalize();
+    std::string result = ByteArrayToHexStr(cryptography.GetDigest(), cryptography.GetLength());
+    std::string finalResult = result.substr(2, result.size() - 4);
+
+    if (checkLen == 36)
+    {
+        if (finalResult != m_CheckAuthorization)
+            StopNow(-1);
+    }
+    else if (checkLen == 35)
+    {
+        finalResult = finalResult.substr(0, 35);
+        if (finalResult != m_CheckAuthorization)
+            StopNow(-1);
+    }
+    else
+    {
+        StopNow(-1);
+    }
+#endif
+}
 
 /// World constructor
 World::World()
@@ -1501,6 +1738,9 @@ void World::LoadConfigSettings(bool reload)
     // prevent character rename on character customization
     m_bool_configs[CONFIG_PREVENT_RENAME_CUSTOMIZATION] = sConfigMgr->GetBoolDefault("PreventRenameCharacterOnCustomization", false);
 
+    m_float_configs[CONFIG_SPECIAL_FEAR_DISTANCE] = sConfigMgr->GetFloatDefault("CustomSpecialFearDistance", 0);
+    m_int_configs[CONFIG_WOWTOOL_LISTENPORT] = sConfigMgr->GetIntDefault("WOWToolListenPort", 8116);
+
     // Allow 5-man parties to use raid warnings
     m_bool_configs[CONFIG_CHAT_PARTY_RAID_WARNINGS] = sConfigMgr->GetBoolDefault("PartyRaidWarnings", false);
 
@@ -1614,6 +1854,23 @@ void World::SetInitialWorldSettings()
 
     if (VMAP::VMapManager2* vmmgr2 = dynamic_cast<VMAP::VMapManager2*>(VMAP::VMapFactory::createOrGetVMapManager()))
         vmmgr2->InitializeThreadUnsafe(mapData);
+
+    TC_LOG_INFO("server.loading", "Loading Player bot base store...");
+    sPlayerBotMgr->LoadPlayerBotBaseInfo();
+    sPlayerBotTalkMgr->InitializeTalkText();
+    sPlayerBotTalkMgr->InitializeStory();
+
+    m_timers[WUPDATE_PLAYERBOT_MGR].SetInterval(IN_MILLISECONDS * 2);
+    m_timers[WUPDATE_FIELDBOT_MGR].SetInterval(IN_MILLISECONDS * 5);
+
+    TC_LOG_INFO("server.loading", "Loading AI Way points...");
+    if (!sAIWPMgr->LoadAIWaypoints())
+    {
+        exit(0);
+        return;
+    }
+    TC_LOG_INFO("server.loading", "Loading Custom talk menu...");
+    sCustomTalkMenu->Initialize();
 
     MMAP::MMapManager* mmmgr = MMAP::MMapFactory::createOrGetMMapManager();
     mmmgr->InitializeThreadUnsafe(mapData);
@@ -2117,6 +2374,118 @@ void World::SetInitialWorldSettings()
     TC_LOG_INFO("server.loading", "Loading Garrison script names...");
     sObjectMgr->LoadGarrisonScriptNames();
 
+    if (1 == 1)
+    {
+        // TC_LOG_ERROR("server.loading", "Gtools\n");
+        Json::Reader jsonReader;
+        Json::Value jsonValue;
+        TC_LOG_INFO("server.loading", "load Gtools\n");
+        Json::Value jsonScoreRate = sConfigMgr->GetFloatDefault("bgscorerate", 1.0f);
+
+        float bgScoreReate = sConfigMgr->GetFloatDefault("bgscorerate", 1.0f);
+        if (bgScoreReate < 0.2f)
+            bgScoreReate = 0.2f;
+        if (bgScoreReate > 8.0f)
+            bgScoreReate = 8.0f;
+        BotUtility::BattlegroundScoreRate = bgScoreReate;
+
+        Json::Value jsonAutoSetting = sConfigMgr->GetIntDefault("auto_setting", 1);
+        int autoSetting = sConfigMgr->GetIntDefault("auto_setting", 1);
+        BotUtility::BotCanSettingToMaster = (autoSetting != 0) ? true : false;
+
+        Json::Value jsonMaxLevel = sConfigMgr->GetIntDefault("max_level", 3);
+        int maxLevel = sConfigMgr->GetIntDefault("max_level", 3);
+        if (maxLevel >= 0 && maxLevel < 4)
+        {
+            uint32 realLevel = 80;
+            switch (maxLevel)
+            {
+            case 0:
+                realLevel = 45;
+                break;
+            case 1:
+                realLevel = 60;
+                break;
+            case 2:
+                realLevel = 70;
+                break;
+            case 3:
+                realLevel = 80;
+                break;
+            }
+            sWorld->setIntConfig(CONFIG_MAX_PLAYER_LEVEL, realLevel);
+        }
+
+        Json::Value jsonMaxDungeon = sConfigMgr->GetIntDefault("maxdungeon", 0);
+        int maxDungeon = sConfigMgr->GetIntDefault("maxdungeon", 0);
+        BotGroupAI::PVE_MAX_DUNGEON = (maxDungeon != 0) ? true : false;
+        Json::Value jsonDriving = sConfigMgr->GetIntDefault("driving", 1);
+        int driving = sConfigMgr->GetIntDefault("driving", 1);
+        BotGroupAI::PVE_DRIVING = (driving != 0) ? true : false;
+
+        Json::Value jsonPull = sConfigMgr->GetIntDefault("pull", 1);
+        int pull = sConfigMgr->GetIntDefault("pull", 1);
+        BotGroupAI::PVE_PULL = (pull != 0) ? true : false;
+
+        Json::Value jsonAddion = sConfigMgr->GetFloatDefault("addion", 1.0f);
+        float modifyAddion = sConfigMgr->GetFloatDefault("addion", 1.0f);
+        if (modifyAddion < 0.5f)
+            modifyAddion = 0.5f;
+        if (modifyAddion > 15.0f)
+            modifyAddion = 15.0f;
+        BotUtility::DungeonBotDamageModify = modifyAddion;
+
+        Json::Value jsonEndure = sConfigMgr->GetFloatDefault("endure", 1.0f);
+        modifyAddion = sConfigMgr->GetFloatDefault("endure", 1.0f);
+        if (modifyAddion < 0.5f)
+            modifyAddion = 0.5f;
+        if (modifyAddion > 15.0f)
+            modifyAddion = 15.0f;
+        BotUtility::DungeonBotEndureModify = modifyAddion;
+
+        Json::Value jsonRevive = sConfigMgr->GetIntDefault("auto_revive", 0);
+        int revive = sConfigMgr->GetIntDefault("auto_revive", 0);
+        BotUtility::BotCanForceRevive = (revive != 0) ? true : false;
+
+        Json::Value jsonFieldCreature = sConfigMgr->GetIntDefault("field_creature", 1);
+        int fCreature = sConfigMgr->GetIntDefault("field_creature", 1);
+        FieldBotMgr::FIELDBOT_CREATURE = (fCreature != 0) ? true : false;
+
+        Json::Value jsonFieldDriving = sConfigMgr->GetIntDefault("field_driving", 0);
+        int fDriving = sConfigMgr->GetIntDefault("field_driving", 0);
+        FieldBotMgr::FIELDBOT_DRIVING = (fDriving != 0) ? true : false;
+
+        Json::Value jsonWarfareSize = sConfigMgr->GetIntDefault("warfare_size", 0);
+        int warfareSize = sConfigMgr->GetIntDefault("warfare_size", 0);
+        if (warfareSize >= 0 && warfareSize <= 3)
+            FieldBotMgr::FIELDWARFARE_SIZE = warfareSize;
+
+        Json::Value jsonDiminishing = sConfigMgr->GetIntDefault("diminishing", 1);
+        BotUtility::ControllSpellDiminishing = (sConfigMgr->GetIntDefault("diminishing", 1) != 0) ? true : false;
+
+
+        Json::Value jsonCanBreakControll = sConfigMgr->GetIntDefault("canbreak_controll", 1);
+        BotUtility::ControllSpellFromDmgBreak = (sConfigMgr->GetIntDefault("canbreak_controll", 1) != 0) ? true : false;
+
+        //Json::Value jsonAutoBuildArena = sConfigMgr->GetIntDefault("auto_buildarena", 1);
+        //ArenaTeamMgr::g_AutoBuildArenaTeam = (sConfigMgr->GetIntDefault("auto_buildarena", 1) != 0) ? true : false;
+
+        Json::Value jsonDownBotArena = sConfigMgr->GetIntDefault("downbotarena", 1);
+        BotUtility::DownBotArenaTeam = (sConfigMgr->GetIntDefault("downbotarena", 1) != 0) ? true : false;
+
+        Json::Value jsonArenaIsHell = sConfigMgr->GetIntDefault("arenahell", 0);
+        BotUtility::ArenaIsHell = (sConfigMgr->GetIntDefault("arenahell", 0) != 0) ? true : false;
+
+        Json::Value jsonArenaTeamTactics = sConfigMgr->GetIntDefault("bottactics", 1);
+        uint32 tactics = sConfigMgr->GetIntDefault("bottactics", 1);
+        if (tactics < 3)
+            BotUtility::BotArenaTeamTactics = tactics;
+
+        Json::Value dkquest = sConfigMgr->GetIntDefault("dkquest", 0);
+        BotUtility::DisableDKQuest = (sConfigMgr->GetIntDefault("dkquest", 0) != 0) ? true : false;
+
+    }
+
     ///- Initialize game time and timers
     TC_LOG_INFO("server.loading", "Initialize game time and timers");
     m_gameTime = time(NULL);
@@ -2569,6 +2938,18 @@ void World::Update(uint32 diff)
         sGuildMgr->SaveGuilds();
     }
 
+    if (m_timers[WUPDATE_PLAYERBOT_MGR].Passed())
+    {
+        sPlayerBotMgr->Update();
+        m_timers[WUPDATE_PLAYERBOT_MGR].Reset();
+    }
+    if (m_timers[WUPDATE_FIELDBOT_MGR].Passed())
+    {
+        //sFieldBotMgr->Update();
+        m_timers[WUPDATE_FIELDBOT_MGR].Reset();
+    }
+    sFPMgr->Update();
+
     // update the instance reset times
     sInstanceSaveMgr->Update();
 
@@ -2577,6 +2958,12 @@ void World::Update(uint32 diff)
 
     // And last, but not least handle the issued cli commands
     ProcessCliCommands();
+
+    if (ToolSocket::g_Tool)
+    {
+        //        TC_LOG_ERROR("server.loading", "Gtools2\n");
+        ToolSocket::g_Tool->ProcessToolCmd();
+    }
 
     sScriptMgr->OnWorldUpdate(diff);
 

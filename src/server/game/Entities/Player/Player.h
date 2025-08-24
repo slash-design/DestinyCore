@@ -21,6 +21,7 @@
 #include "Arena.h"
 #include "ArenaHelper.h"
 #include "ArchaeologyPlayerMgr.h"
+#include "PlayerBotSetting.h"
 #include "Unit.h"
 #include "CUFProfile.h"
 #include "DatabaseEnvFwd.h"
@@ -69,6 +70,7 @@ struct TalentEntry;
 struct TrainerSpell;
 struct VendorItem;
 
+class PlayerAI;
 class AELootResult;
 class Bag;
 class Battleground;
@@ -83,7 +85,7 @@ class Item;
 class LootStore;
 class OutdoorPvP;
 class Pet;
-class PlayerAI;
+class PlayerBotSetting;
 class PlayerAchievementMgr;
 class PlayerMenu;
 class PlayerSocial;
@@ -1150,7 +1152,25 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         explicit Player(WorldSession* session);
         ~Player();
 
+        bool m_bot;
+        int32 FakerMoveTimer;
+
         PlayerAI* AI() const { return reinterpret_cast<PlayerAI*>(i_AI); }
+
+        uint32 FindTalentType();
+        bool AIEquipItem(uint32 entry);
+        bool CheckNeedTenacityFlush();
+        bool ResetPlayerToLevel(uint32 level, uint32 talent = 3, bool needTenacity = false);
+        bool IsSettingFinish();
+        void SupplementAmmo();
+        void OnLevelupToBotAI();
+        uint32 ReupdateTalents();
+        uint32 SwitchTalent(uint32 talent);
+        PlayerBotSetting* m_PlayerBotSetting;
+        bool IsTankPlayer();
+        int32 GetEquipCombatPower() { return m_EquipCombatPower; }
+        void FlushEquipCombatPower(uint8 eSlot, bool apply, const ItemTemplate* pEquipTemplate);
+        bool EquipIsTidiness();
 
         void CleanupsBeforeDelete(bool finalCleanup = true) override;
 
@@ -1319,7 +1339,7 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         InventoryResult CanTakeMoreSimilarItems(uint32 entry, uint32 count, uint32* offendingItemId = nullptr) const { return CanTakeMoreSimilarItems(entry, count, nullptr, nullptr, offendingItemId); }
         InventoryResult CanStoreNewItem(uint8 bag, uint8 slot, ItemPosCountVec& dest, uint32 item, uint32 count, uint32* no_space_count = nullptr) const;
         InventoryResult CanStoreItem(uint8 bag, uint8 slot, ItemPosCountVec& dest, Item* pItem, bool swap = false, bool removeFromBank = false) const;
-        InventoryResult CanStoreItems(Item** items, int count, uint32* offendingItemId) const;
+        InventoryResult CanStoreItems(Item** items, int count, uint32* offendingItemId, Player* otherPlayer);
         InventoryResult CanEquipNewItem(uint8 slot, uint16& dest, uint32 item, bool swap) const;
         InventoryResult CanEquipItem(uint8 slot, uint16& dest, Item* pItem, bool swap, bool not_loading = true) const;
 
@@ -2249,7 +2269,7 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
 
         void CastItemCombatSpell(DamageInfo const& damageInfo);
         void CastItemCombatSpell(DamageInfo const& damageInfo, Item* item, ItemTemplate const* proto);
-        void CastItemUseSpell(Item* item, SpellCastTargets const& targets, ObjectGuid castCount, int32* misc);
+        SpellCastResult CastItemUseSpell(Item* item, SpellCastTargets const& targets, ObjectGuid castCount, int32* misc);
 
         void SendEquipmentSetList();
         void SetEquipmentSet(EquipmentSetInfo::EquipmentSetData const& newEqSet);
@@ -2984,9 +3004,12 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
 
         void AdjustQuestReqItemCount(Quest const* quest);
 
+    public:
         bool IsCanDelayTeleport() const { return m_bCanDelayTeleport; }
-        void SetCanDelayTeleport(bool setting) { m_bCanDelayTeleport = setting; }
         bool IsHasDelayedTeleport() const { return m_bHasDelayedTeleport; }
+
+    private:
+        void SetCanDelayTeleport(bool setting) { m_bCanDelayTeleport = setting; }
         void SetDelayedTeleportFlag(bool setting) { m_bHasDelayedTeleport = setting; }
         //void ScheduleDelayedOperation(uint32 operation) { if (operation < DELAYED_END) m_DelayedOperations |= operation; }
 
@@ -3049,6 +3072,8 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         uint32 manaBeforeDuel;
 
         WorldLocation _corpseLocation;
+
+        int32 m_EquipCombatPower;
 
         SceneMgr m_sceneMgr;
 

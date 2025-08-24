@@ -734,6 +734,16 @@ void WorldSocket::HandleAuthSessionCallback(std::shared_ptr<WorldPackets::Auth::
         return;
     }
 
+    WorldSession* pExistSession = sWorld->FindSession(account.Game.Id);
+    if (pExistSession && pExistSession->IsBotSession())
+    {
+        //hxsd
+        //SendAuthResponseError(AUTH_ALREADY_ONLINE);
+        //TC_LOG_ERROR("network", "WorldSocket::HandleAuthSession: Is bot session, denying client (%s).", GetRemoteIpAddress().to_string().c_str());
+        //DelayedCloseSocket();
+        //return;
+    }
+
     if (authSession->RealmID != realm.Id.Realm)
     {
         SendAuthResponseError(ERROR_DENIED);

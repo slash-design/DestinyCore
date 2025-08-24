@@ -1652,6 +1652,14 @@ class BattlegroundAV : public Battleground
 
         WorldSafeLocsEntry const* GetClosestGraveYard(Player* player) override;
         WorldSafeLocsEntry const* GetExploitTeleportLocation(Team team) override;
+        Creature const* GetClosestGraveCreature(const Player* player) override;
+        GameObject const* GetClosestEnemyNodeObject(Player* player);
+        GameObject const* GetEnemyNodeObjectByRange(Player* player, uint32 range);
+        GameObject const* GetNodeObjectByEnemyType(Player* player, BG_AV_Nodes nodeType);
+        GameObject const* GetNodeObjectByPosType(BG_AV_Nodes nodeType);
+        bool NodeIsOccupyByTeamType(TeamId team, BG_AV_Nodes nodeType);
+        Creature const* GetAVAliveCaptainByTeam(TeamId team);
+        uint32 GetBGCreatureIndexByGUID(ObjectGuid& guid);
 
         bool IsBothMinesControlledByTeam(uint32 team) const;
         bool IsAllTowersControlledAndCaptainAlive(uint32 team) const;
@@ -1716,6 +1724,9 @@ class BattlegroundAV : public Battleground
         bool m_CaptainAlive[2];
 
         bool m_IsInformedNearVictory[2];
+
+        ObjectGuid m_AllianceCaptainGUID;
+        ObjectGuid m_HordeCaptainGUID;
 
         int32 m_CheatersCheckTimer;
 };

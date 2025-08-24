@@ -357,6 +357,32 @@ struct TC_GAME_API ScriptedAI : public CreatureAI
     bool IsMythic() const { return me->GetMap()->IsMythic(); }
     bool IsChallengeMode() const { return _difficulty == DIFFICULTY_MYTHIC_KEYSTONE; }
 
+    void GetInViewBotPlayers(std::list<Player*>& outPlayers, float range);
+    void SearchTargetPlayerAllGroup(std::list<Player*>& players, float range);
+    void PickBotPullMeToPosition(Position pullPos, ObjectGuid fliterTarget);
+    bool ExistPlayerBotByRange(float range);
+    void BotBlockCastingMe();
+    void ClearBotMeTarget(bool all);
+    void BotAllMovetoFarByDistance(Unit* pUnit, float range, float dist, float offset);
+    void BotCruxFlee(uint32 durTime, ObjectGuid fliter);
+    void BotRndCruxMovement(float dist);
+    void BotCruxFleeByRange(float range);
+    void BotCruxFleeByRange(float range, Unit* pCenter);
+    void BotCruxFleeByArea(float range, float fleeDist, Unit* pCenter);
+    void BotAllTargetMe(bool all);
+    void BotPhysicsDPSTargetMe(Unit* pUnit);
+    void BotMagicDPSTargetMe(Unit* pUnit);
+    void BotAverageCreatureTarget(std::vector<Creature*>& targets, float searchRange);
+    void BotAllotCreatureTarget(std::vector<Creature*>& targets, float searchRange, uint32 onceCount);
+    void BotAllToSelectionTarget(Unit* pUnit, float searchRange, bool all);
+    void BotAllFullDispel(bool enables = true);
+    void BotAllFullDispelByDecPoison(bool enables = true);
+    void BotFleeLineByAngle(Unit* center, float angle, bool force = true);
+    void BotSwitchPullTarget(Unit* pTarget);
+    void BotVehicleChaseTarget(Unit* pTarget, float distance);
+    void BotUseGOTarget(GameObject* pGO);
+
+
     template<class T> inline
     const T& DUNGEON_MODE(const T& normal5, const T& heroic10) const
     {
@@ -415,6 +441,62 @@ struct TC_GAME_API ScriptedAI : public CreatureAI
         Difficulty _difficulty;
         bool _isCombatMovementAllowed;
         bool _isHeroic;
+};
+
+class NeedBotAttackCreature
+{
+public:
+    NeedBotAttackCreature(Map* map, int32 count, ObjectGuid guid)
+    {
+        atMap = map;
+        needCount = count;
+        needCreature = guid;
+    }
+
+    bool UpdateProcess(std::list<ObjectGuid>& freeBots);
+
+    bool IsThisUsedBot(ObjectGuid& guid)
+    {
+        for (ObjectGuid id : allUsedBots)
+        {
+            if (id == guid)
+                return true;
+        }
+        return false;
+    }
+    bool IsThisCreature(ObjectGuid& guid) { return guid == needCreature; }
+
+private:
+    Map* atMap;
+    int32 needCount;
+    ObjectGuid needCreature;
+    std::list<ObjectGuid> allUsedBots;
+};
+
+struct BotAttackCreature
+{
+    BotAttackCreature(Creature* creature, int32 gap) : mainCreature(creature), updateGap(gap), currentTick(gap), attackState(0) {}
+    ~BotAttackCreature()
+    {
+        for (NeedBotAttackCreature* pNeed : allNeedCreatures)
+            delete pNeed;
+        allNeedCreatures.clear();
+    }
+
+    uint32 GetState() { return attackState; }
+    void SetState(uint32 state) { attackState = state; }
+    bool MatchMainCreature(Creature* creature) { return creature == mainCreature; }
+    Creature* GetMainCreature() { return mainCreature; }
+    void UpdateNeedAttackCreatures(uint32 diff, ScriptedAI* affiliateAI, bool attackMain);
+    void AddNewCreatureNeedAttack(Creature* pCreature, int32 needBotCount);
+    void ClearCreatures() { allNeedCreatures.clear(); mainCreature = NULL; }
+
+private:
+    int32 updateGap;
+    int32 currentTick;
+    uint32 attackState;
+    Creature* mainCreature;
+    std::list<NeedBotAttackCreature*> allNeedCreatures;
 };
 
 struct TC_GAME_API Scripted_NoMovementAI : public ScriptedAI

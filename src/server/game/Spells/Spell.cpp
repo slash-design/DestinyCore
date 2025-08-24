@@ -56,6 +56,7 @@
 #include "World.h"
 #include "WorldSession.h"
 #include <numeric>
+#include "BotAITool.h"
 
 extern pEffect SpellEffects[TOTAL_SPELL_EFFECTS];
 
@@ -544,6 +545,34 @@ SpellValue::SpellValue(Difficulty diff, SpellInfo const* proto)
     MaxAffectedTargets = proto->MaxAffectedTargets;
     RadiusMod = 1.0f;
     AuraStackAmount = 1;
+}
+
+void SpellInterruptCondition::ClearInterruptCondition()
+{
+    conditionType = SICT_NONE;
+    castTarget = ObjectGuid::Empty;
+    conditionValue = 0;
+}
+
+bool SpellInterruptCondition::CheckInterruptCondition(Unit* caster)
+{
+    if (conditionType == SICT_NONE)
+        return false;
+    if (!caster || castTarget == ObjectGuid::Empty)
+    {
+        ClearInterruptCondition();
+        return false;
+    }
+    Unit* pTarget = ObjectAccessor::GetUnit(*caster, castTarget);
+    if (!pTarget)
+    {
+        ClearInterruptCondition();
+        return false;
+    }
+    uint32 lifePCT = uint32(pTarget->GetHealthPct());
+    if (lifePCT >= conditionValue)
+        return true;
+    return false;
 }
 
 class TC_GAME_API SpellEvent : public BasicEvent
@@ -3099,7 +3128,7 @@ bool Spell::UpdateChanneledTargetList()
     return channelTargetEffectMask == 0;
 }
 
-bool Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggeredByAura)
+SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggeredByAura)
 {
     if (m_CastItem)
     {
@@ -3114,7 +3143,7 @@ bool Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggered
         {
             SendCastResult(SPELL_FAILED_EQUIPPED_ITEM);
             finish(false);
-            return false;
+            return SpellCastResult::SPELL_FAILED_SPELL_IN_PROGRESS;
         }
     }
 
@@ -3158,14 +3187,14 @@ bool Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggered
     {
         SendCastResult(SPELL_FAILED_SPELL_IN_PROGRESS);
         finish(false);
-        return false;
+        return SpellCastResult::SPELL_FAILED_SPELL_IN_PROGRESS;
     }
 
     if (DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, m_spellInfo->Id, m_caster))
     {
         SendCastResult(SPELL_FAILED_SPELL_UNAVAILABLE);
         finish(false);
-        return false;
+        return SpellCastResult::SPELL_FAILED_SPELL_UNAVAILABLE;
     }
     LoadScripts();
 
@@ -3212,7 +3241,7 @@ bool Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggered
             SendCastResult(result);
 
         finish(false);
-        return false;
+        return result;
     }
 
     // Prepare data for triggers
@@ -3258,7 +3287,7 @@ bool Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggered
         {
             SendCastResult(SPELL_FAILED_MOVING);
             finish(false);
-            return false;
+            return SpellCastResult::SPELL_FAILED_MOVING;
         }
     }
 
@@ -3271,7 +3300,10 @@ bool Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggered
     /// @todoApply this to all cast spells if needed
     // Why check duration? 29350: channelled triggers channelled
     if ((_triggeredCastFlags & TRIGGERED_CAST_DIRECTLY) && (!m_spellInfo->IsChanneled() || !m_spellInfo->GetMaxDuration()))
+    {
         cast(true);
+        return SPELL_CAST_OK;
+    }
     else
     {
         // stealth must be removed at cast starting (at show channel bar)
@@ -3302,7 +3334,7 @@ bool Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggered
             cast(true);
     }
 
-    return true;
+    return SPELL_CAST_OK;
 }
 
 void Spell::cancel()
@@ -3846,9 +3878,23 @@ void Spell::update(uint32 difftime)
             if (m_timer > 0)
             {
                 if (difftime >= (uint32)m_timer)
+                {
                     m_timer = 0;
+                    if (m_SpellInterruptCondition.CheckInterruptCondition(m_caster))
+                    {
+                        cancel();
+                        return;
+                    }
+                }
                 else
+                {
                     m_timer -= difftime;
+                    if (m_timer <= 200 && m_SpellInterruptCondition.CheckInterruptCondition(m_caster))
+                    {
+                        cancel();
+                        return;
+                    }
+                }
             }
 
             if (m_timer == 0 && !m_spellInfo->IsNextMeleeSwingSpell() && !IsAutoRepeat())
@@ -3875,9 +3921,23 @@ void Spell::update(uint32 difftime)
                 if (m_timer > 0)
                 {
                     if (difftime >= (uint32)m_timer)
+                    {
                         m_timer = 0;
+                        if (m_SpellInterruptCondition.CheckInterruptCondition(m_caster))
+                        {
+                            cancel();
+                            return;
+                        }
+                    }
                     else
+                    {
                         m_timer -= difftime;
+                        if (m_timer <= 200 && m_SpellInterruptCondition.CheckInterruptCondition(m_caster))
+                        {
+                            cancel();
+                            return;
+                        }
+                    }
                 }
             }
 
@@ -3895,6 +3955,8 @@ void Spell::update(uint32 difftime)
 
 void Spell::finish(bool ok)
 {
+    m_SpellInterruptCondition.ClearInterruptCondition();
+
     if (!m_caster)
         return;
 
@@ -5260,7 +5322,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
                     return SPELL_FAILED_VISION_OBSCURED;
         }
 
-        if (target != m_caster)
+        if (target != m_caster && (!m_caster->IsPlayerBot() || m_caster->getClass() != Classes::CLASS_ROGUE))
         {
             // Must be behind the target
             if ((m_spellInfo->HasAttribute(SPELL_ATTR0_CU_REQ_CASTER_BEHIND_TARGET)) && target->HasInArc(static_cast<float>(M_PI), m_caster))
@@ -5385,7 +5447,15 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
     // script hook
     castResult = CallScriptCheckCastHandlers();
     if (castResult != SPELL_CAST_OK)
-        return castResult;
+    {
+        if (m_caster->IsPlayerBot())
+        {
+            if (castResult != SPELL_FAILED_DONT_REPORT)
+                return castResult;
+        }
+        else
+            return castResult;
+    }
 
     for (SpellEffectInfo const* effect : GetEffects())
     {
@@ -6403,6 +6473,8 @@ SpellCastResult Spell::CheckRange(bool strict) const
     if (!strict && m_casttime == 0)
         return SPELL_CAST_OK;
 
+    bool isBot = m_caster->IsPlayerBot();
+
     float minRange, maxRange;
     std::tie(minRange, maxRange) = GetMinMaxRange(strict);
 
@@ -6423,7 +6495,7 @@ SpellCastResult Spell::CheckRange(bool strict) const
         if (minRange > 0.0f && m_caster->GetExactDistSq(target) < minRange)
             return SPELL_FAILED_OUT_OF_RANGE;
 
-        if (m_caster->GetTypeId() == TYPEID_PLAYER &&
+        if (m_caster->GetTypeId() == TYPEID_PLAYER && !isBot &&
             (((m_spellInfo->FacingCasterFlags & SPELL_FACING_FLAG_INFRONT) && !m_caster->HasInArc(static_cast<float>(M_PI), target))
                 && !m_caster->IsWithinBoundaryRadius(target)))
             return SPELL_FAILED_UNIT_NOT_INFRONT;
@@ -6483,7 +6555,7 @@ std::pair<float, float> Spell::GetMinMaxRange(bool strict) const
 
     if (m_spellInfo->HasAttribute(SPELL_ATTR0_REQ_AMMO) && m_caster->GetTypeId() == TYPEID_PLAYER)
         if (Item* ranged = m_caster->ToPlayer()->GetWeaponForAttack(RANGED_ATTACK, true))
-            maxRange *= ranged->GetTemplate()->GetRangedModRange() * 0.01f;
+            maxRange += ranged->GetTemplate()->GetRangedModRange() * 0.01f;
 
     if (Player* modOwner = m_caster->GetSpellModOwner())
         modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RANGE, maxRange, const_cast<Spell*>(this));
@@ -6626,8 +6698,15 @@ SpellCastResult Spell::CheckItems(uint32* param1 /*= nullptr*/, uint32* param2 /
     else
     {
         if (!(_triggeredCastFlags & TRIGGERED_IGNORE_EQUIPPED_ITEM_REQUIREMENT))
-            if (!player->HasItemFitToSpellRequirements(m_spellInfo))
-                return SPELL_FAILED_EQUIPPED_ITEM_CLASS;
+        {
+            if (!player->IsPlayerBot() || player->getClass() != Classes::CLASS_ROGUE)
+            {
+                if (!player->HasItemFitToSpellRequirements(m_spellInfo))
+                {
+                    return SPELL_FAILED_EQUIPPED_ITEM_CLASS;
+                }
+            }
+        }
     }
 
     // do not take reagents for these item casts
@@ -8165,6 +8244,22 @@ bool Spell::HasEffect(SpellEffectName effect) const
             return true;
     }
     return false;
+}
+
+void Spell::SetInterruptConditionByLifePCT(ObjectGuid& target, uint32 pct)
+{
+    if (pct < 1)
+        return;
+    if (pct > 99)
+        pct = 99;
+    if (target == ObjectGuid::Empty)
+    {
+        m_SpellInterruptCondition.ClearInterruptCondition();
+        return;
+    }
+    m_SpellInterruptCondition.conditionType = SICT_LIFE_PCT;
+    m_SpellInterruptCondition.castTarget = target;
+    m_SpellInterruptCondition.conditionValue = pct;
 }
 
 namespace Trinity

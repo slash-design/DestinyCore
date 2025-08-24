@@ -59,6 +59,11 @@
 #include "SystemPackets.h"
 #include "Util.h"
 #include "World.h"
+#include "PlayerBotMgr.h"
+#include "FieldBotMgr.h"
+#include "OnlineMgr.h"
+#include "BotMovementAI.h"
+#include <Config.h>
 
 class LoginQueryHolder : public CharacterDatabaseQueryHolder
 {
@@ -737,6 +742,12 @@ void WorldSession::HandleCharCreateOpcode(WorldPackets::Character::CreateCharact
             sWorld->AddCharacterInfo(newChar.GetGUID(), GetAccountId(), newChar.GetName(), newChar.GetByteValue(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_GENDER), newChar.getRace(), newChar.getClass(), newChar.getLevel(), false);
 
             newChar.CleanupsBeforeDelete();
+
+            if (IsBotSession())
+                sPlayerBotMgr->OnPlayerBotCreate(newChar.GetGUID(), GetAccountId(), newChar.GetName(), newChar.GetByteValue(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_GENDER), newChar.getRace(), newChar.getClass(), newChar.getLevel());
+            else
+                sPlayerBotMgr->OnAccountBotCreate(newChar.GetGUID(), GetAccountId(), newChar.GetName(), newChar.GetByteValue(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_GENDER), newChar.getRace(), newChar.getClass(), newChar.getLevel());
+            //break;
         };
 
         if (allowTwoSideAccounts && !skipCinematics && createInfo->Class != CLASS_DEMON_HUNTER)
@@ -806,6 +817,7 @@ void WorldSession::HandleCharDeleteOpcode(WorldPackets::Character::CharDelete& c
     sGuildFinderMgr->RemoveAllMembershipRequestsFromPlayer(charDelete.Guid);
     sCalendarMgr->RemoveAllPlayerEventsAndInvites(charDelete.Guid);
     Player::DeleteFromDB(charDelete.Guid, accountId);
+    sPlayerBotMgr->OnAccountBotDelete(charDelete.Guid, accountId);
 
     SendCharDelete(CHAR_DELETE_SUCCESS);
 }
@@ -823,7 +835,7 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPackets::Character::PlayerLogin&
 
     TC_LOG_DEBUG("network", "Character %s logging in", playerLogin.Guid.ToString().c_str());
 
-    if (!IsLegitCharacterForAccount(playerLogin.Guid))
+    if (!IsBotSession() && !IsLegitCharacterForAccount(playerLogin.Guid))
     {
         TC_LOG_ERROR("network", "Account (%u) can't login with that character (%s).", GetAccountId(), playerLogin.Guid.ToString().c_str());
         KickPlayer();
@@ -1158,6 +1170,27 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder const& holder)
     sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
 
     TC_METRIC_EVENT("player_events", "Login", pCurrChar->GetName());
+
+    if (IsBotSession())
+    {
+        sPlayerBotMgr->OnPlayerBotLogin(this, pCurrChar);
+    }
+    else
+    {
+        pCurrChar->IsAIEnabled = true;
+        pCurrChar->NeedChangeAI = false;
+        pCurrChar->SetAI(new BotMovementAI(pCurrChar));
+        int32 isok = sConfigMgr->GetIntDefault("pbot", 1);
+        if (isok >= 1)
+        {
+            sPlayerBotMgr->LoginFriendBotByPlayer(pCurrChar);
+            sPlayerBotMgr->LoginGroupBotByPlayer(pCurrChar);
+        }
+        sFieldBotMgr->OnRealPlayerLogin(pCurrChar);
+    }
+    uint32 talent = PlayerBotSetting::FindPlayerTalentType(pCurrChar);
+    sOnlineMgr->CharaterOnline(GetAccountId(), uint32(pCurrChar->GetGUID()),
+        pCurrChar->GetName(), pCurrChar->getRace(), pCurrChar->getClass(), pCurrChar->getLevel(), talent);
 }
 
 void WorldSession::SendFeatureSystemStatus()

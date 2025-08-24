@@ -23,6 +23,7 @@
 #include "ChatPackets.h"
 #include "DB2Stores.h"
 #include "Player.h"
+#include "PlayerBotTalkMgr.h"
 #include "World.h"
 #include "WorldSession.h"
 
@@ -95,6 +96,9 @@ Channel* ChannelMgr::GetJoinChannel(uint32 channelId, std::string const& name, A
     }
     else // custom
     {
+        if (channelId == 0 && defaultChannel)
+            return defaultChannel;
+
         std::wstring channelName;
         if (!Utf8toWStr(name, channelName))
             return nullptr;
@@ -107,6 +111,11 @@ Channel* ChannelMgr::GetJoinChannel(uint32 channelId, std::string const& name, A
 
         Channel* newChannel = new Channel(name, _team);
         _customChannels[channelName] = newChannel;
+        if (channelId == 0)
+        {
+            defaultChannel = newChannel;
+            sPlayerBotTalkMgr->SetDefaultChannel(newChannel);
+        }
         return newChannel;
     }
 }
@@ -162,6 +171,8 @@ void ChannelMgr::LeftChannel(std::string const& name)
         return;
 
     Channel* channel = itr->second;
+    if (channel == defaultChannel)
+        return;
     if (!channel->GetNumPlayers())
     {
         _customChannels.erase(itr);

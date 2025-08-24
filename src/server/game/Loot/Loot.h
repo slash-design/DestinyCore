@@ -279,8 +279,9 @@ struct TC_GAME_API Loot
     void NotifyItemRemoved(uint8 lootIndex);
     void NotifyQuestItemRemoved(uint8 questIndex);
     void NotifyMoneyRemoved();
-    void AddLooter(ObjectGuid GUID) { PlayersLooting.insert(GUID); }
+    void AddLooter(ObjectGuid GUID) { PlayersLooting.insert(GUID); LootedPlayers.insert(GUID); }
     void RemoveLooter(ObjectGuid GUID) { PlayersLooting.erase(GUID); }
+    bool PlayerBotCanLoot(ObjectGuid GUID) { return (LootedPlayers.find(GUID) == LootedPlayers.end()); }
 
     void generateMoneyLoot(uint32 minAmount, uint32 maxAmount);
     bool FillLoot(uint32 lootId, LootStore const& store, Player* lootOwner, bool personal, bool noEmptyError = false, uint16 lootMode = LOOT_MODE_DEFAULT, bool specOnly = false);
@@ -309,6 +310,7 @@ private:
     NotNormalLootItemList* FillNonQuestNonFFAConditionalLoot(Player* player, bool presentAtLooting);
 
     GuidSet PlayersLooting;
+    GuidSet LootedPlayers;
     NotNormalLootItemMap PlayerCurrencies;
     NotNormalLootItemMap PlayerQuestItems;
     NotNormalLootItemMap PlayerFFAItems;

@@ -160,6 +160,8 @@ class TC_GAME_API Pet : public Guardian
 
         void InitPetCreateSpells();
 
+        void SettingAllSpellAutocast(bool autocast, uint32 excludeSpell = 0);
+
         uint16 GetSpecialization() { return m_petSpecialization; }
         void SetSpecialization(uint16 spec);
         void LearnSpecializationSpells();

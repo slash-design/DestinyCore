@@ -28,6 +28,7 @@
 #include "Opcodes.h"
 #include "PetitionPackets.h"
 #include "Player.h"
+#include "PlayerBotSession.h"
 #include "World.h"
 #include "WorldPacket.h"
 #include <sstream>
@@ -420,29 +421,45 @@ void WorldSession::HandleOfferPetition(WorldPackets::Petition::OfferPetition& pa
     if (result)
         signs = uint8(result->GetRowCount());
 
-    WorldPackets::Petition::ServerPetitionShowSignatures signaturesPacket;
-    signaturesPacket.Item = packet.ItemGUID;
-    signaturesPacket.Owner = _player->GetGUID();
-    signaturesPacket.OwnerAccountID = ObjectGuid::Create<HighGuid::WowAccount>(player->GetSession()->GetAccountId());
-    signaturesPacket.PetitionID = int32(packet.ItemGUID.GetCounter());  // @todo verify that...
-
-    signaturesPacket.Signatures.reserve(signs);
-    for (uint8 i = 0; i < signs; ++i)
+    if (player->IsPlayerBot())
     {
-        Field* fields2 = result->Fetch();
-        ObjectGuid signerGUID = ObjectGuid::Create<HighGuid::Player>(fields2[0].GetUInt64());
-
-        WorldPackets::Petition::ServerPetitionShowSignatures::PetitionSignature signature;
-        signature.Signer = signerGUID;
-        signature.Choice = 0;
-        signaturesPacket.Signatures.push_back(signature);
-
-        // Checking the return value just to be double safe
-        if (!result->NextRow())
-            break;
+        if (PlayerBotSession* pSession = dynamic_cast<PlayerBotSession*>(player->GetSession()))
+        {
+            //uint64 fullguid = uint64(petitionguid);
+            //uint32 lowguid = uint32(fullguid);
+            //uint32 highguid = uint32(fullguid >> 32);
+            //BotGlobleSchedule schedule1(BotGlobleScheduleType::BGSType_OfferPetitionSign, 0);
+            //schedule1.parameter1 = lowguid;
+            //schedule1.parameter2 = highguid;
+            //pSession->PushScheduleToQueue(schedule1);
+        }
     }
+    else
+    {
+        WorldPackets::Petition::ServerPetitionShowSignatures signaturesPacket;
+        signaturesPacket.Item = packet.ItemGUID;
+        signaturesPacket.Owner = _player->GetGUID();
+        signaturesPacket.OwnerAccountID = ObjectGuid::Create<HighGuid::WowAccount>(player->GetSession()->GetAccountId());
+        signaturesPacket.PetitionID = int32(packet.ItemGUID.GetCounter());  // @todo verify that...
 
-    player->GetSession()->SendPacket(signaturesPacket.Write());
+        signaturesPacket.Signatures.reserve(signs);
+        for (uint8 i = 0; i < signs; ++i)
+        {
+            Field* fields2 = result->Fetch();
+            ObjectGuid signerGUID = ObjectGuid::Create<HighGuid::Player>(fields2[0].GetUInt64());
+
+            WorldPackets::Petition::ServerPetitionShowSignatures::PetitionSignature signature;
+            signature.Signer = signerGUID;
+            signature.Choice = 0;
+            signaturesPacket.Signatures.push_back(signature);
+
+            // Checking the return value just to be double safe
+            if (!result->NextRow())
+                break;
+        }
+
+        player->GetSession()->SendPacket(signaturesPacket.Write());
+    }
 }
 
 void WorldSession::HandleTurnInPetition(WorldPackets::Petition::TurnInPetition& packet)

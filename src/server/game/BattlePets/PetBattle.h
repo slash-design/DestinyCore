@@ -18,6 +18,7 @@
 #pragma once
 
 #include "Common.h"
+#include "UnitDefines.h"
 
 class TC_GAME_API Field;
 

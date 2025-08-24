@@ -43,6 +43,7 @@
 #	 BATTLEPAY
 #	 SOLOCRAFT
 #	 CHALLENGE MYTHIC
+#    PLAYERBOT SETTINGS
 #
 ###################################################################################################
 
@@ -4234,6 +4235,238 @@ Solocraft.Raid40 = 40
 
 Challenge.Key.Reset = 7
 Challenge.Enabled = 1
+
+#
+####################################################################################################
+
+####################################################################################################
+# PLAYERBOT SETTINGS
+#
+# Fear Distance
+#
+#   CustomSpecialFearDistance
+#        Description: Defines the custom distance in yards at which PlayerBots will react to fear effects.
+#        Default:     0.0 - Disabled (use core default)
+#                     >0  - Custom distance in yards
+#
+
+CustomSpecialFearDistance = 0.000000
+
+#
+# WoWTool Port
+#
+#   WOWToolListenPort
+#        Description: TCP port used for external tool connections to PlayerBot system (e.g. WoWTool).
+#        Default:     8116
+#
+
+WOWToolListenPort = 8116
+
+#
+# Battleground Score Rate
+#
+#   bgscorerate
+#        Description: Multiplier for score gained by PlayerBots in battlegrounds.
+#        Default:     1.0 - Normal score rate
+#                     2.0 - Double score rate
+#
+
+bgscorerate = 1.000000
+
+#
+# Auto Setting
+#
+#   auto_setting
+#        Description: Enables automatic default configuration of PlayerBots.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+auto_setting = 1
+
+#
+# Maximum Level
+#
+#   max_level
+#        Description: Maximum level a PlayerBot can reach.
+#        Default:     3
+#
+
+max_level = 3
+
+#
+# Maximum Dungeon Access
+#
+#   maxdungeon
+#        Description: Restricts the maximum dungeon difficulty PlayerBots can enter.
+#        Default:     0 - No dungeon access
+#                     1 - Normal
+#                     2 - Heroic
+#
+
+maxdungeon = 0
+
+#
+# Driving
+#
+#   driving
+#        Description: Enables PlayerBot vehicle/driving control.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+driving = 1
+
+#
+# Pull System
+#
+#   pull
+#        Description: Allows PlayerBots to automatically pull nearby creatures into combat.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+pull = 1
+
+#
+# Additional Damage Multiplier
+#
+#   addion
+#        Description: Damage multiplier applied to PlayerBots' abilities.
+#        Default:     1.0 - Normal damage
+#
+
+addion = 1.000000
+
+#
+# Endurance Multiplier
+#
+#   endure
+#        Description: Multiplier applied to PlayerBots' health/endurance.
+#        Default:     1.0 - Normal endurance
+#
+
+endure = 1.000000
+
+#
+# Auto Revive
+#
+#   auto_revive
+#        Description: Enables automatic revival of PlayerBots after death.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+auto_revive = 0
+
+#
+# Field Creature Combat
+#
+#   field_creature
+#        Description: Determines if PlayerBots can engage open-world creatures.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+field_creature = 1
+
+#
+# Field Driving
+#
+#   field_driving
+#        Description: Allows PlayerBots to use vehicles in open-world fields.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+field_driving = 0
+
+#
+# Warfare Group Size
+#
+#   warfare_size
+#        Description: Maximum number of PlayerBots allowed in warfare/large-scale battles.
+#        Default:     0 - Disabled
+#
+
+warfare_size = 0
+
+#
+# Diminishing Returns
+#
+#   diminishing
+#        Description: Enables diminishing returns system for PlayerBots in PvP combat.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+diminishing = 1
+
+#
+# Crowd Control Break
+#
+#   canbreak_controll
+#        Description: Allows PlayerBots to attempt breaking out of crowd-control effects.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+canbreak_controll = 1
+
+#
+# Arena Bots
+#
+#   downbotarena
+#        Description: Enables PlayerBots to participate in arena matches.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+downbotarena = 1
+
+#
+# Arena Hell Mode
+#
+#   arenahell
+#        Description: Enables a harder arena mode for PlayerBots with increased difficulty.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+arenahell = 0
+
+#
+# Tactics System
+#
+#   bottactics
+#        Description: Enables tactical AI system for PlayerBots in combat.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+bottactics = 1
+
+#
+# Death Knight Starting Quest
+#
+#   dkquest
+#        Description: Enables PlayerBots to automatically complete Death Knight starting questline.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+dkquest = 0
+
+#
+# Core Enable
+#
+#   pbot
+#        Description: Master switch for enabling/disabling the PlayerBot system.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+pbot = 1
 
 #
 ####################################################################################################

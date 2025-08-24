@@ -85,6 +85,7 @@ namespace ObjectAccessor
     // ACCESS LIKE THAT IS NOT THREAD SAFE
     TC_GAME_API Creature* FindCreature(ObjectGuid const&);
     TC_GAME_API Player* FindPlayer(ObjectGuid const&);
+    TC_GAME_API Player* FindUnit(ObjectGuid const&);
     TC_GAME_API Player* FindPlayerByName(std::string const& name);
     TC_GAME_API GameObject* FindGameObject(ObjectGuid const& guid);
     TC_GAME_API Pet* FindPet(ObjectGuid const& g);

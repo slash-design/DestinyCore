@@ -33,6 +33,7 @@
 #include "SplineChainMovementGenerator.h"
 #include "MoveSpline.h"
 #include "MoveSplineInit.h"
+#include "Pathfinding.h"
 
 inline bool IsStatic(MovementGenerator* movement)
 {
@@ -320,7 +321,7 @@ void MotionMaster::MovePoint(uint32 id, float x, float y, float z, bool generate
     if (_owner->GetTypeId() == TYPEID_PLAYER)
     {
         TC_LOG_DEBUG("misc", "Player (%s) targeted point (Id: %u X: %f Y: %f Z: %f).", _owner->GetGUID().ToString().c_str(), id, x, y, z);
-        Mutate(new PointMovementGenerator<Player>(id, x, y, z, generatePath), MOTION_SLOT_ACTIVE);
+        Mutate(new PointMovementGenerator<Player>(id, x, y, z, generatePath, _owner->GetSpeed(UnitMoveType::MOVE_RUN)), MOTION_SLOT_ACTIVE);
     }
     else
     {
@@ -442,6 +443,21 @@ void MotionMaster::MoveCharge(PathGenerator const& path, float speed /*= SPEED_C
         init.SetFacing(target);
     if (spellEffectExtraData)
         init.SetSpellEffectExtraData(*spellEffectExtraData);
+    init.Launch();
+}
+
+void MotionMaster::MovePathfinding(PathParameter* pathParam)
+{
+    if (!pathParam)
+        return;
+    UnitMoveType curMoveType = UnitMoveType::MOVE_RUN;
+    G3D::Vector3 dest = pathParam->destPosition;
+    Mutate(new PointMovementGenerator<Player>(0, dest.x, dest.y, dest.z, false, _owner->GetSpeed(curMoveType)), MOTION_SLOT_CONTROLLED);// MOTION_SLOT_ACTIVE);
+
+    Movement::MoveSplineInit init(_owner);
+    init.MovebyPath(pathParam->finishPaths);
+    init.SetSmooth();
+    init.SetWalk(false);
     init.Launch();
 }
 

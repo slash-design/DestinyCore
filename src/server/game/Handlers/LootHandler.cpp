@@ -545,9 +545,17 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket& recvData)
     item.count = 0;
     item.is_looted = true;
 
-    loot->NotifyItemRemoved(slotid);
-    --loot->unlootedCount;
-}
+        loot->NotifyItemRemoved(slotid);
+        --loot->unlootedCount;
+
+        if (target->IsPlayerBot())
+        {
+            if (BotGroupAI* pAI = dynamic_cast<BotGroupAI*>(target->GetAI()))
+            {
+                pAI->OnLootedItem(newitem->GetEntry());
+            }
+        }
+    }
 
 void WorldSession::HandleSetLootSpecialization(WorldPackets::Loot::SetLootSpecialization& packet)
 {

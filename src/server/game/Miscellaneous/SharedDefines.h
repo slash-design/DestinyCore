@@ -4771,6 +4771,7 @@ enum DiminishingGroup : uint16
     DIMINISHING_AOE_KNOCKBACK    = 6,
     DIMINISHING_TAUNT            = 7,
     DIMINISHING_LIMITONLY        = 8,
+    DIMINISHING_DRAGONS_BREATH   = 20,
 
     DIMINISHING_MAX
 };

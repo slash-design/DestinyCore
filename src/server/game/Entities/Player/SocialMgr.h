@@ -123,6 +123,8 @@ class TC_GAME_API PlayerSocial
 
         uint32 GetNumberOfSocialsWithFlag(SocialFlag flag);
 
+        std::vector<ObjectGuid> GetAllFriends();
+
     private:
         bool _HasContact(ObjectGuid const& guid, SocialFlag flags);
 

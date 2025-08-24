@@ -50,6 +50,9 @@
 #include "WardenWin.h"
 #include "World.h"
 #include "WorldSocket.h"
+#include "PlayerBotMgr.h"
+#include "FieldBotMgr.h"
+#include "OnlineMgr.h"
 
 namespace {
 
@@ -330,7 +333,7 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
 
     ///- Before we process anything:
     /// If necessary, kick the player from the character select screen
-    if (IsConnectionIdle())
+    if (!IsBotSession() && IsConnectionIdle())
         m_Socket[CONNECTION_TYPE_REALM]->CloseSocket();
 
     ///- Retrieve packets from the receive queue and call the appropriate handlers
@@ -488,7 +491,7 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
             }
         }
 
-        if (!m_Socket[CONNECTION_TYPE_REALM])
+        if (!IsBotSession() && !m_Socket[CONNECTION_TYPE_REALM])
             return false;                                       //Will remove this session from the world session map
     }
 
@@ -583,6 +586,8 @@ void WorldSession::LogoutPlayer(bool save)
             _player->SaveToDB();
         }
 
+        ObjectGuid logoutPlayerGUID = _player->GetGUID();
+
         ///- Leave all channels before player delete...
         _player->CleanupChannels();
 
@@ -599,6 +604,8 @@ void WorldSession::LogoutPlayer(bool save)
         {
             _player->GetGroup()->SendUpdate();
             _player->GetGroup()->ResetMaxEnchantingLevel();
+            if (!IsBotSession())
+                sPlayerBotMgr->LogoutAllGroupPlayerBot(_player->GetGroup(), false);
         }
 
         //! Broadcast a logout message to the player's friends
@@ -632,6 +639,12 @@ void WorldSession::LogoutPlayer(bool save)
         CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_ACCOUNT_ONLINE);
         stmt->setUInt32(0, GetAccountId());
         CharacterDatabase.Execute(stmt);
+
+        if (IsBotSession())
+            sPlayerBotMgr->OnPlayerBotLogout(this);
+        else
+            sFieldBotMgr->OnRealPlayerLogout(logoutPlayerGUID);
+        sOnlineMgr->CharaterOffline(GetAccountId());
     }
 
     if (m_Socket[CONNECTION_TYPE_INSTANCE])

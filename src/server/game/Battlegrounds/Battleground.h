@@ -258,7 +258,7 @@ class TC_GAME_API Battleground
         Battleground();
         virtual ~Battleground();
 
-        void Update(uint32 diff);
+        virtual void Update(uint32 diff);
 
         virtual bool SetupBattleground()                    // must be implemented in BG subclass
         {
@@ -514,6 +514,9 @@ class TC_GAME_API Battleground
 
         // because BattleGrounds with different types and same level range has different m_BracketId
         uint8 GetUniqueBracketId() const;
+        bool ExistRealPlayer();
+        virtual bool HasJoinNearGrave(Player* player);
+        virtual Creature const* GetClosestGraveCreature(const Player* player) { return NULL; }
 		
 		virtual void RewardArena(Player* player, bool win);
         virtual void RewardBattleground(Player* player, bool win);

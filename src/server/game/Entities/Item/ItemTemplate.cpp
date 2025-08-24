@@ -277,3 +277,12 @@ std::size_t ItemTemplate::CalculateItemSpecBit(ChrSpecializationEntry const* spe
 {
     return (spec->ClassID - 1) * MAX_SPECIALIZATIONS + spec->OrderIndex;
 }
+
+bool ItemTemplate::HasStats() const
+{
+    for (uint8 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
+        if (GetItemStatType(i) > 0)
+            return true;
+
+    return false;
+}

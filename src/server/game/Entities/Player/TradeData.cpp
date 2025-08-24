@@ -81,6 +81,42 @@ void TradeData::SetItem(TradeSlots slot, Item* item, bool update /*= false*/)
     SetSpell(0);
 }
 
+bool TradeData::SetItemAtNullSlot(Item* item, bool update /*= false*/)
+{
+    uint32 slot = TradeSlots::TRADE_SLOT_TRADED_COUNT;
+    for (uint32 i = 0; i < TradeSlots::TRADE_SLOT_TRADED_COUNT; i++)
+    {
+        if (_items[i].IsEmpty())
+        {
+            slot = i;
+            break;
+        }
+    }
+    if (slot >= TradeSlots::TRADE_SLOT_TRADED_COUNT)
+        return false;
+    ObjectGuid itemGuid;
+    if (item)
+        itemGuid = item->GetGUID();
+
+    if (_items[slot] == itemGuid && !update)
+        return true;
+
+    _items[slot] = itemGuid;
+
+    SetAccepted(false);
+    GetTraderData()->SetAccepted(false);
+
+    Update();
+
+    // need remove possible trader spell applied to changed item
+    if (slot == TRADE_SLOT_NONTRADED)
+        GetTraderData()->SetSpell(0);
+
+    // need remove possible player spell applied (possible move reagent)
+    SetSpell(0);
+    return true;
+}
+
 void TradeData::SetSpell(uint32 spell_id, Item* castItem /*= nullptr*/)
 {
     ObjectGuid itemGuid = castItem ? castItem->GetGUID() : ObjectGuid::Empty;
@@ -150,4 +186,13 @@ void TradeData::SetAccepted(bool state, bool forTrader /*= false*/)
 void TradeData::UpdateServerStateIndex()
 {
     _serverStateIndex = rand32();
+}
+
+bool TradeData::IsNonPlayerBotTrade()
+{
+    if (_player->IsPlayerBot())
+        return false;
+    if (_trader->IsPlayerBot())
+        return false;
+    return true;
 }

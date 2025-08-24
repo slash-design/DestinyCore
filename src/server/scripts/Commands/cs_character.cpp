@@ -239,12 +239,15 @@ public:
 
             if (handler->needReportToTarget(player))
             {
-                if (oldLevel == newLevel)
-                    ChatHandler(player->GetSession()).PSendSysMessage(LANG_YOURS_LEVEL_PROGRESS_RESET, handler->GetNameLink().c_str());
-                else if (oldLevel < newLevel)
-                    ChatHandler(player->GetSession()).PSendSysMessage(LANG_YOURS_LEVEL_UP, handler->GetNameLink().c_str(), newLevel);
-                else                                                // if (oldlevel > newlevel)
-                    ChatHandler(player->GetSession()).PSendSysMessage(LANG_YOURS_LEVEL_DOWN, handler->GetNameLink().c_str(), newLevel);
+                if (!player->IsPlayerBot())
+                {
+                    if (oldLevel == newLevel)
+                        ChatHandler(player->GetSession()).PSendSysMessage(LANG_YOURS_LEVEL_PROGRESS_RESET, handler->GetNameLink().c_str());
+                    else if (oldLevel < newLevel)
+                        ChatHandler(player->GetSession()).PSendSysMessage(LANG_YOURS_LEVEL_UP, handler->GetNameLink().c_str(), newLevel);
+                    else                                                // if (oldlevel > newlevel)
+                        ChatHandler(player->GetSession()).PSendSysMessage(LANG_YOURS_LEVEL_DOWN, handler->GetNameLink().c_str(), newLevel);
+                }
             }
         }
         else
@@ -911,6 +914,9 @@ public:
 
         if (newlevel > STRONG_MAX_LEVEL)                         // hardcoded maximum level
             newlevel = STRONG_MAX_LEVEL;
+        newlevel = PlayerBotSetting::CheckMaxLevel(newlevel);
+        if (newlevel == oldlevel)
+            return true;
 
         HandleCharacterLevel(target, targetGuid, oldlevel, newlevel, handler);
 

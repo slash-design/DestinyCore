@@ -59,6 +59,10 @@
 #include <google/protobuf/stubs/common.h>
 #include <iostream>
 #include <csignal>
+#include "PlayerBotMgr.h"
+#include "ToolSocket.h"
+#include "ToolSocketMgr.h"
+#include "PathfindingMgr.h"
 
 #ifdef WITH_CPR
     #include <cpr/cpr.h>
@@ -331,6 +335,7 @@ extern int main(int argc, char** argv)
         sWorld->UpdateSessions(1);                             // real players unload required UpdateSessions call
 
         sWorldSocketMgr.StopNetwork();
+        sToolSocketMgr.StopNetwork();
 
         ///- Clean database before leaving
         ClearOnlineAccounts();
@@ -375,10 +380,14 @@ extern int main(int argc, char** argv)
 
     sScriptMgr->OnStartup();
 
+    sPlayerBotMgr->UpAllPlayerBotSession();
+    sFPMgr->InitializePFMgr();
+
     WorldUpdateLoop();
 
     // Shutdown starts here
     threadPool.reset();
+    sFPMgr->ClearPFThreads();
 
     sLog->SetSynchronous();
 

@@ -988,6 +988,15 @@ class TC_GAME_API WorldSession
             std::string os, LocaleConstant locale, uint32 recruiter, bool isARecruiter, std::string&& battlenetAccountName);
         ~WorldSession();
 
+        void SetAddress(std::string mybot)
+        {
+            m_Address = mybot;
+        }
+        void Setexpansion(uint8 mybot)
+        {
+            m_expansion = mybot;
+        }
+
         bool PlayerLoading() const { return !m_playerLoading.IsEmpty(); }
         bool PlayerLogout() const { return m_playerLogout; }
         bool PlayerLogoutWithSave() const { return m_playerLogout && m_playerSave; }
@@ -1060,7 +1069,7 @@ class TC_GAME_API WorldSession
         void KickPlayer();
 
         void QueuePacket(WorldPacket* new_packet);
-        bool Update(uint32 diff, PacketFilter& updater);
+        virtual bool Update(uint32 diff, PacketFilter& updater);
 
         /// Handle the authentication waiting queue (to be completed)
         void SendAuthWaitQue(uint32 position);
@@ -1526,6 +1535,12 @@ class TC_GAME_API WorldSession
         void HandleCancelAutoRepeatSpellOpcode(WorldPackets::Spells::CancelAutoRepeatSpell& cancelAutoRepeatSpell);
         void HandleMissileTrajectoryCollision(WorldPackets::Spells::MissileTrajectoryCollision& packet);
         void HandleUpdateMissileTrajectory(WorldPackets::Spells::UpdateMissileTrajectory& packet);
+
+        bool HasSocket() { return m_Socket != NULL; }
+        virtual bool IsBotSession() { return false; }
+        virtual bool HasSchedules() { return false; }
+        virtual bool HasBGSchedule() { return false; }
+        virtual bool IsAccountBotSession() { return false; }
 
         void HandleLearnPvpTalentsOpcode(WorldPackets::Talent::LearnPvpTalents& packet);
         void HandleLearnTalentsOpcode(WorldPackets::Talent::LearnTalents& packet);

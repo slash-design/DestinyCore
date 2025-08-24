@@ -22,6 +22,8 @@
 #include "LFGMgr.h"
 #include "Log.h"
 #include <sstream>
+#include "Config.h"
+#include "../Entities/Player/Player.h"
 
 namespace lfg
 {
@@ -391,7 +393,8 @@ LfgCompatibility LFGQueue::CheckCompatibility(GuidList check)
     }
 
     // Check if more than one LFG group and number of players joining
-    uint8 numPlayers = 0;
+    //uint8 numPlayers = 0;
+    uint8 numPlayers = sConfigMgr->GetIntDefault("LFGnumPlayer_Add", 0);
     uint8 numLfgGroups = 0;
     for (GuidList::const_iterator it = check.begin(); it != check.end() && numLfgGroups < 2 && numPlayers <= roleCount.GetMaxPlayers(); ++it)
     {

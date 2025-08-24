@@ -25,6 +25,19 @@
 #include "World.h"
 #include "WorldSession.h"
 
+std::vector<ObjectGuid> PlayerSocial::GetAllFriends()
+{
+    std::vector<ObjectGuid> friends;
+    for (PlayerSocialMap::iterator itr = _playerSocialMap.begin(); itr != _playerSocialMap.end(); ++itr)
+    {
+        ObjectGuid guid = ObjectGuid::Create<HighGuid::Player>(itr->first);
+        Player* target = ObjectAccessor::FindPlayer(guid);
+        if (!target)
+            friends.push_back(guid);
+    }
+    return friends;
+}
+
 uint32 PlayerSocial::GetNumberOfSocialsWithFlag(SocialFlag flag)
 {
     uint32 counter = 0;

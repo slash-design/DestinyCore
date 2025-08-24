@@ -434,6 +434,10 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         PhaseShift& GetSuppressedPhaseShift() { return _suppressedPhaseShift; }
         PhaseShift const& GetSuppressedPhaseShift() const { return _suppressedPhaseShift; }
         int32 GetDBPhase() const { return _dbPhase; }
+        bool InSamePhase(PhaseShift const& phaseShift) const
+        {
+            return GetPhaseShift().CanSee(phaseShift);
+        }
 
         void SetVisibleBySummonerOnly(bool visibleBySummonerOnly) { m_visibleBySummonerOnly = visibleBySummonerOnly; }
         bool IsVisibleBySummonerOnly() const { return m_visibleBySummonerOnly; }

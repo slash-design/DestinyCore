@@ -33,6 +33,7 @@
 #include "SpellAuraDefines.h"
 #include "SpellInfo.h"
 #include <G3D/g3dmath.h>
+#include "BotAITool.h"
 
 PetFamilySpellsStore sPetFamilySpellsStore;
 
@@ -2342,6 +2343,15 @@ void SpellMgr::LoadSpellInfoStore()
             mSpellInfoMap[i] = new SpellInfo(loadData[i], effectsBySpell[i], std::move(visualsBySpell[i]));
         }
     }
+
+    // New Spell, Arena Player Bot use
+    //SpellEntry* newArenaEntry = BotUtility::BuildNewArenaSpellEntry();
+    //if (mSpellInfoMap[newArenaEntry->ID])
+    //    delete mSpellInfoMap[newArenaEntry->ID];
+    //mSpellInfoMap[newArenaEntry->ID] = new SpellInfo(loadData[newArenaEntry->ID], newArenaEntry, &visualsBySpell[newArenaEntry->ID]);
+    //delete newArenaEntry;
+    //BotUtility::BuildNewArenaHellSpells(mSpellInfoMap);
+    //BotUtility::ModifySpecialSpells(mSpellInfoMap);
 
     TC_LOG_INFO("server.loading", ">> Loaded SpellInfo store in %u ms", GetMSTimeDiffToNow(oldMSTime));
 }

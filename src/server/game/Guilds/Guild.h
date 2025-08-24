@@ -752,6 +752,7 @@ class TC_GAME_API Guild
         std::string const& GetName() const { return m_name; }
         std::string const& GetMOTD() const { return m_motd; }
         std::string const& GetInfo() const { return m_info; }
+        uint32 GetMemberCount() const { return m_members.size(); }
         time_t GetCreatedDate() const { return m_createdDate; }
         uint64 GetBankMoney() const { return m_bankMoney; }
 
@@ -865,6 +866,17 @@ class TC_GAME_API Guild
 
         bool HasAchieved(uint32 achievementId) const;
         void UpdateCriteria(CriteriaTypes type, uint64 miscValue1, uint64 miscValue2, uint64 miscValue3, Unit* unit, Player* player);
+
+        std::list<ObjectGuid> GetAllMemberGUID()
+        {
+            std::list<ObjectGuid> guids;
+            for (Members::iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
+            {
+                Member* pMember = itr->second;
+                guids.push_back(pMember->GetGUID());
+            }
+            return guids;
+        }
 
     protected:
         ObjectGuid::LowType m_id;

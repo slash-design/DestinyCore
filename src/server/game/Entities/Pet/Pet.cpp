@@ -50,7 +50,9 @@ Pet::Pet(Player* owner, PetType type) :
 
     m_unitTypeMask |= UNIT_MASK_PET;
     if (type == HUNTER_PET)
+    {
         m_unitTypeMask |= UNIT_MASK_HUNTER_PET;
+    }
 
     if (!(m_unitTypeMask & UNIT_MASK_CONTROLABLE_GUARDIAN))
     {
@@ -148,7 +150,8 @@ bool Pet::LoadPetData(Player* owner, uint32 petEntry, uint32 petnumber, bool cur
     if (petType == HUNTER_PET)
     {
         CreatureTemplate const* creatureInfo = sObjectMgr->GetCreatureTemplate(petEntry);
-        if (!creatureInfo || !creatureInfo->IsTameable(owner->CanTameExoticPets()))
+        //        if (!creatureInfo || !creatureInfo->IsTameable(owner->CanTameExoticPets()))
+        if (!creatureInfo)
         {
             owner->GetSession()->SendPetStableResult(STABLE_ERR_EXOTIC);
             return false;
@@ -327,6 +330,17 @@ bool Pet::LoadPetData(Player* owner, uint32 petEntry, uint32 petnumber, bool cur
             {
                 m_declinedname->name[i] = fields2[i].GetString();
             }
+        }
+
+        if (owner->IsPlayerBot())
+        {
+            if (m_spells.empty())
+            {
+                InitPetCreateSpells();
+                //resetTalents();
+            }
+            //FlushTalentsByPoints();
+            SettingAllSpellAutocast(true);
         }
 
         CastSpell(this, HUNTER_PET_ACTIVE_SPELL, true);
@@ -816,8 +830,9 @@ bool Guardian::InitStatsForLevel(uint8 petlevel)
         }
         else
         {
-            TC_LOG_ERROR("entities.pet", "Unknown type pet %u is summoned by player class %u",
-                           GetEntry(), GetOwner()->getClass());
+            petType = SUMMON_PET;
+            // TC_LOG_ERROR("entities.pet", "Unknown type pet %u is summoned by player class %u",
+              //              GetEntry(), GetOwner()->getClass());
         }
     }
 
@@ -1554,6 +1569,22 @@ void Pet::InitPetCreateSpells()
     InitLevelupSpellsForLevel();
 
     CastPetAuras(false);
+}
+
+void Pet::SettingAllSpellAutocast(bool autocast, uint32 excludeSpell)
+{
+    for (PetSpellMap::iterator itrSpell = m_spells.begin(); itrSpell != m_spells.end(); ++itrSpell)
+    {
+        uint32 petSpellID = itrSpell->first;
+        if (petSpellID == excludeSpell)
+            continue;
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(petSpellID);
+        if (!spellInfo || spellInfo->IsPassive() || !spellInfo->IsAutocastable())
+            continue;
+        ToggleAutocast(spellInfo, (petSpellID == 1742) ? false : autocast);
+        if (CharmInfo* charmInfo = GetCharmInfo())
+            charmInfo->SetSpellAutocast(spellInfo, (petSpellID == 1742) ? false : autocast);
+    }
 }
 
 void Pet::ToggleAutocast(SpellInfo const* spellInfo, bool apply)

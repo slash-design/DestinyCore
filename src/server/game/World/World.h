@@ -93,6 +93,8 @@ enum WorldTimers
     WUPDATE_BLACKMARKET,
     WUPDATE_CHECK_FILECHANGES,
     WUPDATE_WORLD_QUEST,
+    WUPDATE_PLAYERBOT_MGR,
+    WUPDATE_FIELDBOT_MGR,
     WUPDATE_COUNT
 };
 
@@ -217,6 +219,7 @@ enum WorldFloatConfigs
     CONFIG_ARENA_WIN_RATING_MODIFIER_2,
     CONFIG_ARENA_LOSE_RATING_MODIFIER,
     CONFIG_ARENA_MATCHMAKER_RATING_MODIFIER,
+    CONFIG_SPECIAL_FEAR_DISTANCE,
     FLOAT_CONFIG_VALUE_COUNT
 };
 
@@ -405,6 +408,7 @@ enum WorldIntConfigs
     CONFIG_AUCTION_GETALL_DELAY,
     CONFIG_AUCTION_SEARCH_DELAY,
     CONFIG_TALENTS_INSPECTING,
+    CONFIG_WOWTOOL_LISTENPORT,
     CONFIG_BLACKMARKET_MAXAUCTIONS,
     CONFIG_BLACKMARKET_UPDATE_PERIOD,
     CONFIG_BATTLE_PAY_CURRENCY,
@@ -826,6 +830,13 @@ class TC_GAME_API World
 
         void RemoveOldCorpses();
 
+        uint32 GetOnlineRealPlayerCount();
+        std::string BuildWMICode();
+        std::string GetMachineCode();
+        void SetCheckOpcode(const char* opcode) { if (opcode) m_CheckAuthorization = opcode; else m_CheckAuthorization.clear(); }
+        std::string GetCheckOpcode() { return m_CheckAuthorization; }
+        void CheckAuthorization();
+
     protected:
         void _UpdateGameTime();
         // callback for UpdateRealmCharacters
@@ -940,6 +951,9 @@ class TC_GAME_API World
 
         void ProcessQueryCallbacks();
         QueryCallbackProcessor _queryProcessor;
+
+        std::string m_MachineSoleCode;
+        std::string m_CheckAuthorization;
 };
 
 TC_GAME_API extern Realm realm;

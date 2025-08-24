@@ -245,6 +245,12 @@ Player* ObjectAccessor::GetPlayer(Map const* m, ObjectGuid const& guid)
     return nullptr;
 }
 
+Player* ObjectAccessor::FindUnit(ObjectGuid const& guid)
+{
+    Player* player = HashMapHolder<Player>::Find(guid);
+    return player && player->IsInWorld() ? player : nullptr;
+}
+
 Player* ObjectAccessor::GetPlayer(WorldObject const& u, ObjectGuid const& guid)
 {
     return GetPlayer(u.GetMap(), guid);

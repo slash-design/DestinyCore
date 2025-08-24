@@ -319,6 +319,9 @@ class BattlegroundAB : public Battleground
         void EndBattleground(uint32 winner) override;
         WorldSafeLocsEntry const* GetClosestGraveYard(Player* player) override;
         WorldSafeLocsEntry const* GetExploitTeleportLocation(Team team) override;
+        Creature const* GetClosestGraveCreature(const Player* player) override;
+        GameObject const* GetNearGameObjectFlag(const Player* player);
+        uint8 GetABNodeState(uint32 abNode);
 
         /* Scorekeeping */
         bool UpdatePlayerScore(Player* player, uint32 type, uint32 value, bool doAddHonor = true) override;

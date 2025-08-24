@@ -809,6 +809,8 @@ struct TC_GAME_API ItemTemplate
     bool IsUsableByLootSpecialization(Player const* player, bool alwaysAllowBoundToAccount) const;
     bool IsUsableBySpecialization(uint32 spec, uint32 level, bool alwaysAllowBoundToAccount) const;
     static std::size_t CalculateItemSpecBit(ChrSpecializationEntry const* spec);
+
+    bool HasStats() const;
 };
 
 #endif
