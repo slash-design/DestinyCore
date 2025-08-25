@@ -327,7 +327,7 @@ void BotGroupAI::ProcessListEquip(Player* srcPlayer)
 			continue;
 		std::string itemLink = BotUtility::BuildItemLinkText(pTemplate);
 		char outputText[256] = { 0 };
-		sprintf_s(outputText, 255, "%s x %d", itemLink.c_str(), pItem->GetCount());
+		snprintf(outputText, 255, "%s x %d", itemLink.c_str(), pItem->GetCount());
 		me->Whisper(std::string(outputText), Language::LANG_COMMON, srcPlayer);
 		needSendText.push_back(std::string(outputText));
 
@@ -349,7 +349,7 @@ void BotGroupAI::ProcessListEquip(Player* srcPlayer)
 					continue;
 				std::string itemLink = BotUtility::BuildItemLinkText(pTemplate);
 				char outputText[256] = { 0 };
-				sprintf_s(outputText, 255, "%s x %d", itemLink.c_str(), pItem->GetCount());
+				snprintf(outputText, 255, "%s x %d", itemLink.c_str(), pItem->GetCount());
 				me->Whisper(std::string(outputText), Language::LANG_COMMON, srcPlayer);
 				needSendText.push_back(std::string(outputText));
 

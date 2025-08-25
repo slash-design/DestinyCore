@@ -696,7 +696,7 @@ void PlayerBotMgr::SupplementAccount()
     {
         ++m_LastBotAccountIndex;
         char indexText[25] ={ 0 };
-        itoa(m_LastBotAccountIndex, indexText, 10);
+        std::string s2 = std::to_string(m_LastBotAccountIndex);
         std::string userName = "detinybot";
         userName += indexText;
         if (AccountMgr::instance()->CreateAccount(userName, "botxxx") == AccountOpResult::AOR_OK)
@@ -729,10 +729,10 @@ void PlayerBotMgr::SupplementAccount()
 void PlayerBotMgr::DestroyBotMail(uint32 guid)
 {
     char sql[256] ={ 0 };
-    sprintf_s(sql, 255, "DELETE FROM mail WHERE receiver = %d", guid);
+    snprintf(sql, 255, "DELETE FROM mail WHERE receiver = %d", guid);
     CharacterDatabase.Execute(sql);
     //memset(sql, 0, 256);
-    //sprintf_s(sql, 255, "DELETE FROM mail_items WHERE receiver = %d", guid);
+    //snprintf(sql, 255, "DELETE FROM mail_items WHERE receiver = %d", guid);
     //CharacterDatabase.Execute(sql);
     CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_MAIL_ITEMS);
     stmt->setUInt32(0, guid);

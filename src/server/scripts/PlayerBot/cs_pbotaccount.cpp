@@ -126,7 +126,7 @@ static bool HandlePBotLoginAccountCommand(ChatHandler* handler, const char* args
 		if (!sPlayerBotMgr->LoginBotByAccountIndex(acc, accIndex))
 		{
 			char text[128] = { 0 };
-			sprintf_s(text, 127, "Login bot error. acc %d, index %d.", acc, accIndex);
+			snprintf(text, 127, "Login bot error. acc %d, index %d.", acc, accIndex);
 			sWorld->SendGlobalText(text, NULL);
 		}
 	}

@@ -536,7 +536,7 @@ void FieldWarfare::TeleportToTargetVisible(Player* pBot, Player* pTarget)
 			break;
 		}
 		float targetAngle = frand(0, float(M_PI) * 2.0f);
-		distX = pTarget->GetPositionX() + (BOTAI_FIELDTELEPORT_DISTANCE * 1.7f) * std::cosf(targetAngle);
+		distX = pTarget->GetPositionX() + (BOTAI_FIELDTELEPORT_DISTANCE * 1.7f) * std::cos(targetAngle);
 		distY = pTarget->GetPositionY() + (BOTAI_FIELDTELEPORT_DISTANCE * 1.7f) * std::sinf(targetAngle);
 		distZ = pTarget->GetPositionZ();
 		distZ = pTarget->GetMap()->GetHeight(pTarget->GetPhaseShift(), distX, distY, distZ);
@@ -572,7 +572,7 @@ Position FieldWarfare::GetEvadePosition(Player* centerPlayer, Player* evadePlaye
 	float maxDist = 0.0f;
 	for (float angle = 0.0f; angle < (float(M_PI) * 2.0f); angle += onceAngle)
 	{
-		float distX = evadePlayer->GetPositionX() + (BOTAI_FIELDTELEPORT_DISTANCE * 4) * std::cosf(angle);
+		float distX = evadePlayer->GetPositionX() + (BOTAI_FIELDTELEPORT_DISTANCE * 4) * std::cos(angle);
 		float distY = evadePlayer->GetPositionY() + (BOTAI_FIELDTELEPORT_DISTANCE * 4) * std::sinf(angle);
 		float distZ = evadePlayer->GetPositionZ();
 		distZ = evadePlayer->GetMap()->GetHeight(evadePlayer->GetPhaseShift(), distX, distY, distZ);
@@ -813,7 +813,7 @@ void FieldBotMgr::TeleportToTargetVisible(BotFieldAI* pFieldAI, Player* pTarget)
 				break;
 			}
 			float targetAngle = frand(0, float(M_PI) * 2.0f);
-			distX = pTarget->GetPositionX() + (BOTAI_FIELDTELEPORT_DISTANCE * 1.2f) * std::cosf(targetAngle);
+			distX = pTarget->GetPositionX() + (BOTAI_FIELDTELEPORT_DISTANCE * 1.2f) * std::cos(targetAngle);
 			distY = pTarget->GetPositionY() + (BOTAI_FIELDTELEPORT_DISTANCE * 1.2f) * std::sinf(targetAngle);
 			distZ = pTarget->GetPositionZ();
 			distZ = pTarget->GetMap()->GetHeight(pTarget->GetPhaseShift(), distX, distY, distZ);

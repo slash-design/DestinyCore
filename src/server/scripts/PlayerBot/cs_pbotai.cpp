@@ -45,7 +45,7 @@ static bool HandlePBotAIFaceTo(ChatHandler* handler, const char* args)
 			if (pCurrentSpell->m_spellInfo)
 			{
 				char text[128] = { 0 };
-				sprintf_s(text, "Casting spell %d, Target %d.", pCurrentSpell->m_spellInfo->Id, pCurrentSpell->m_targets.GetUnitTargetGUID().GetCounter());
+				sprintf(text, "Casting spell %d, Target %d.", pCurrentSpell->m_spellInfo->Id, pCurrentSpell->m_targets.GetUnitTargetGUID().GetCounter());
 				handler->SendSysMessage(text);
 			}
 		}
@@ -59,7 +59,7 @@ static bool HandlePBotAIFaceTo(ChatHandler* handler, const char* args)
 		if (diminiLevel <= 0)
 			continue;
 		char text[128] = { 0 };
-		sprintf_s(text, "Has diminishing index %d - LV %d.", i, diminiLevel);
+		sprintf(text, "Has diminishing index %d - LV %d.", i, diminiLevel);
 		handler->SendSysMessage(text);
 	}
 	handler->SendSysMessage("Search diminishing finish.");
@@ -419,7 +419,7 @@ static bool HandlePBotSearchGO(ChatHandler* handler, const char* args)
 	for (GameObject* pGameObject : results)
 	{
 		char text[128] = { 0 };
-		sprintf_s(text, "Search GO entry %d.", pGameObject->GetEntry());
+		sprintf(text, "Search GO entry %d.", pGameObject->GetEntry());
 		handler->SendSysMessage(text);
 	}
 	handler->SendSysMessage("Search GO End.");

@@ -21,6 +21,7 @@
 #include "WorldSession.h"
 #include "BotAI.h"
 #include "DisableMgr.h"
+#include <thread>
 
 PFThread::PFThread(PathfindingMgr* pfMgr, uint32 threadIndex) :
     m_pfMgr(pfMgr),
@@ -207,9 +208,10 @@ void PathfindingMgr::InitializePFMgr()
 
 int PathfindingMgr::GetCPUNumber() const
 {
-    SYSTEM_INFO info;
-    GetSystemInfo(&info);
-    return (int)info.dwNumberOfProcessors;
+    unsigned int cpuCount = std::thread::hardware_concurrency();
+    if (cpuCount == 0)
+        cpuCount = 1;
+    return static_cast<int>(cpuCount);
 }
 
 void PathfindingMgr::ClearPFThreads()
