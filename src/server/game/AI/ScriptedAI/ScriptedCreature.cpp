@@ -985,7 +985,7 @@ void ScriptedAI::BotFleeLineByAngle(Unit* center, float angle, bool force)
             {
                 float fleeAngle = Position::NormalizeOrientation(angle + float(M_PI_4));
                 Position fleePos = Position(center->GetPositionX() + fleeRange * std::cos(fleeAngle),
-                    center->GetPositionY() + fleeRange * std::sinf(fleeAngle), player->GetPositionZ(), player->GetOrientation());
+                    center->GetPositionY() + fleeRange * std::sin(fleeAngle), player->GetPositionZ(), player->GetOrientation());
                 fleePos.m_positionZ = player->GetMap()->GetHeight(player->GetPhaseShift(), fleePos.GetPositionX(), fleePos.GetPositionY(), fleePos.GetPositionZ());
                 //if (pGroupAI->GetAIPayer()->HasUnitState(UNIT_STATE_CASTING))
                 //	pGroupAI->GetAIPayer()->CastStop();
@@ -1000,7 +1000,7 @@ void ScriptedAI::BotFleeLineByAngle(Unit* center, float angle, bool force)
             {
                 float fleeAngle = Position::NormalizeOrientation(angle - float(M_PI_4));
                 Position fleePos = Position(center->GetPositionX() + fleeRange * std::cos(fleeAngle),
-                    center->GetPositionY() + fleeRange * std::sinf(fleeAngle), player->GetPositionZ(), player->GetOrientation());
+                    center->GetPositionY() + fleeRange * std::sin(fleeAngle), player->GetPositionZ(), player->GetOrientation());
                 fleePos.m_positionZ = player->GetMap()->GetHeight(player->GetPhaseShift(), fleePos.GetPositionX(), fleePos.GetPositionY(), fleePos.GetPositionZ());
                 //if (pGroupAI->GetAIPayer()->HasUnitState(UNIT_STATE_CASTING))
                 //	pGroupAI->GetAIPayer()->CastStop();
