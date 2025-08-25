@@ -26,7 +26,6 @@
 #include "CreatureAI.h"
 #include "PlayerBotMgr.h"
 #include "BotDuelClassAI.h"
-#include <corecrt_math_defines.h>
 #include "MotionMaster.h"
 #include "SpellHistory.h"
 

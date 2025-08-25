@@ -21,7 +21,6 @@
 #include "WorldSession.h"
 #include "BotAI.h"
 #include "DisableMgr.h"
-#include <windows.h>
 
 PFThread::PFThread(PathfindingMgr* pfMgr, uint32 threadIndex) :
     m_pfMgr(pfMgr),

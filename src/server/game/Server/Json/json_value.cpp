@@ -17,8 +17,8 @@
 
 #include "Define.h"
 #include <iostream>
-#include <json/value.h>
-#include <json/writer.h>
+#include <value.h>
+#include <writer.h>
 #include <utility>
 #include <stdexcept>
 #include <cstring>

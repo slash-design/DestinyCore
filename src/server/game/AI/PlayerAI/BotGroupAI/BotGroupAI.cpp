@@ -25,10 +25,9 @@
 #include "Spell.h"
 #include "Pet.h"
 #include "BotGroupClassAI.h"
-#include "config.h"
+#include "Config.h"
 #include "TradeData.h"
 #include "ItemPackets.h"
-#include <corecrt_math_defines.h>
 #include "Item.h"
 #include "Bag.h"
 #include "MotionMaster.h"

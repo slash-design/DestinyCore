@@ -15,7 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <json/writer.h>
+#include <writer.h>
 #include <utility>
 #include <assert.h>
 #include <stdio.h>

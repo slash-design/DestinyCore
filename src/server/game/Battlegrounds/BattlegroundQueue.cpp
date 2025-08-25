@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the DestinyCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -205,7 +204,7 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, Battlegr
             if (Battleground* bg = sBattlegroundMgr->GetBattlegroundTemplate(ginfo->BgTypeId))
             {
                 char text[128] = { 0 };
-                sprintf_s(text, 127, "|cff0000ff<%s> Join [%s] (%d-%d) Queue|r", leader->GetName().c_str(), bg->GetName().c_str(), bracketEntry->MinLevel, bracketEntry->MaxLevel);
+                snprintf(text, 127, "|cff0000ff<%s> Join [%s] (%d-%d) Queue|r", leader->GetName().c_str(), bg->GetName().c_str(), bracketEntry->MinLevel, bracketEntry->MaxLevel);
                 sWorld->SendGlobalText(text, NULL);
             }
         }
@@ -214,7 +213,7 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, Battlegr
             if (Battleground* bg = sBattlegroundMgr->GetBattlegroundTemplate(ginfo->BgTypeId))
             {
                 char text[128] = { 0 };
-                sprintf_s(text, 127, "|cffff0000<%s> Join [%s] (%d-%d) Queue|r", leader->GetName().c_str(), bg->GetName().c_str(), bracketEntry->MinLevel, bracketEntry->MaxLevel);
+                snprintf(text, 127, "|cffff0000<%s> Join [%s] (%d-%d) Queue|r", leader->GetName().c_str(), bg->GetName().c_str(), bracketEntry->MinLevel, bracketEntry->MaxLevel);
                 sWorld->SendGlobalText(text, NULL);
             }
         }

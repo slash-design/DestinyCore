@@ -15,8 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <json/reader.h>
-#include <json/value.h>
+#include <reader.h>
+#include <value.h>
 #include <utility>
 #include <cstdio>
 #include <cassert>

@@ -15,7 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "botDuelClassAI.h"
+#include "BotDuelClassAI.h"
 #include "BotBGAIMovement.h"
 #include "Group.h"
 #include "MotionMaster.h"

@@ -22,7 +22,7 @@
 #include "Common.h"
 #include "SharedDefines.h"
 #include "DatabaseEnv.h"
-#include "json/json.h"
+#include "json.h"
 
 struct ToolCharaterInfo
 {

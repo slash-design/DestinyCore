@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the DestinyCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -755,9 +755,9 @@ void LFGMgr::JoinLfg(Player* player, uint8 roles, LfgDungeonSet& dungeons)
                     roleText = "Damager";
                 char text[128] = { 0 };
                 if (player->GetTeamId() == TEAM_ALLIANCE)
-                    sprintf_s(text, 127, "|cff0000ff %s <%s> Join dungeon queue|r", roleText.c_str(), bot->GetName().c_str());
+                    snprintf(text, 127, "|cff0000ff %s <%s> Join dungeon queue|r", roleText.c_str(), bot->GetName().c_str());
                 else
-                    sprintf_s(text, 127, "|cffff0000 %s <%s> Join dungeon queue|r", roleText.c_str(), bot->GetName().c_str());
+                    snprintf(text, 127, "|cffff0000 %s <%s> Join dungeon queue|r", roleText.c_str(), bot->GetName().c_str());
                 sWorld->SendGlobalText(text, NULL);
             }
         }
@@ -796,9 +796,9 @@ void LFGMgr::JoinLfg(Player* player, uint8 roles, LfgDungeonSet& dungeons)
             roleText = "Damager";
         char text[128] = { 0 };
         if (player->GetTeamId() == TEAM_ALLIANCE)
-            sprintf_s(text, 127, "|cff0000ff %s <%s> Join dungeon queue|r", roleText.c_str(), player->GetName().c_str());
+            snprintf(text, 127, "|cff0000ff %s <%s> Join dungeon queue|r", roleText.c_str(), player->GetName().c_str());
         else
-            sprintf_s(text, 127, "|cffff0000 %s <%s> Join dungeon queue|r", roleText.c_str(), player->GetName().c_str());
+            snprintf(text, 127, "|cffff0000 %s <%s> Join dungeon queue|r", roleText.c_str(), player->GetName().c_str());
         sWorld->SendGlobalText(text, NULL);
     }
 

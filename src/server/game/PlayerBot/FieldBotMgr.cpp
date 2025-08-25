@@ -25,6 +25,7 @@
 #include "BotFieldAI.h"
 #include "BotGroupAI.h"
 #include "PathfindingMgr.h"
+#include <cmath>
 
 uint32 FieldStory::LastStoryEntry = 0;
 bool FieldWarfare::AID_TARGET_TEAM = false;

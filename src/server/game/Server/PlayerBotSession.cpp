@@ -360,7 +360,7 @@ bool PlayerBotSession::ProcessOffline(BotGlobleSchedule& schedule)
 		return true;
 	if (schedule.scheduleState > 0)
 		return false;
-	WorldPackets::Character::LogoutRequest::LogoutRequest(time(NULL) - 18);
+    WorldPackets::Character::LogoutRequest logoutReq(time(NULL) - 18);
 	//LogoutPlayer(false);
 	schedule.scheduleState = 1;
 	return false;

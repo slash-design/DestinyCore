@@ -28,7 +28,6 @@
 #include "WorldSession.h"
 #include "PartyPackets.h"
 #include "MiscPackets.h"
-#include <corecrt_math_defines.h>
 #include "MotionMaster.h"
 #include "CreatureAI.h"
 #include "SpellHistory.h"

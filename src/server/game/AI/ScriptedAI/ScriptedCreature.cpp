@@ -33,6 +33,7 @@
 #include "TemporarySummon.h"
 #include "Group.h"
 #include "Pet.h"
+#include <cmath>
 
 // Spell summary for ScriptedAI::SelectSpell
 struct TSpellSummary

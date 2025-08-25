@@ -27,7 +27,6 @@
 #include "SpellAuras.h"
 #include "WorldSession.h"
 #include "TradeData.h"
-#include <corecrt_math_defines.h>
 #include "SpellHistory.h"
 #include "Item.h"
 #include "Bag.h"
