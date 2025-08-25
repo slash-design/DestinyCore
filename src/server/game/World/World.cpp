@@ -148,6 +148,7 @@ uint32 World::GetOnlineRealPlayerCount()
 std::string World::BuildWMICode()
 {
 #ifndef INCOMPLETE_BOT
+#   ifdef _WIN32
     CoUninitialize();
     HRESULT hres = CoInitializeEx(0, COINIT_MULTITHREADED);
     if (FAILED(hres))
@@ -264,13 +265,15 @@ std::string World::BuildWMICode()
     return checkstring;
 #else
     return "";
+#   endif
+#else
+    return "";
 #endif
 }
 
 std::string World::GetMachineCode()
 {
-    //#ifndef INCOMPLETE_BOT //Ñô¹â-´ý¶¨
-#if defined(G3D_WINDOWS) && defined(_M_IX86) && !defined(__MINGW32__) /* G3DFIX: Don't check if on 64-bit Windows platforms or using MinGW */
+#if defined(_WIN32) && defined(_M_IX86) && !defined(__MINGW32__)
     if (m_MachineSoleCode.empty())
     {
         std::string checkstring = BuildWMICode();
@@ -288,9 +291,7 @@ std::string World::GetMachineCode()
             mov dedx, edx;
         }
         uint8 serials[12] = { 0 };
-        //bool isSupport = dedx & (1 << 18);
         memcpy(serials, &deax, 4);
-        //memcpy(serials + 4, &debx, 4);
         memcpy(serials + 4, &decx, 4);
         memcpy(serials + 8, &dedx, 4);
 
@@ -300,8 +301,11 @@ std::string World::GetMachineCode()
         cryptography.Finalize();
         std::string result = ByteArrayToHexStr(cryptography.GetDigest(), cryptography.GetLength());
         m_MachineSoleCode = result.substr(2, result.size() - 4);
-        //m_MachineSoleCode = "ACEB3480568ABE21667901275036CD0EB40A";
     }
+#else
+    // Dummy
+    if (m_MachineSoleCode.empty())
+        m_MachineSoleCode = "LINUX-DUMMY-CODE";
 #endif
     return m_MachineSoleCode;
 }
@@ -309,18 +313,20 @@ std::string World::GetMachineCode()
 void World::CheckAuthorization()
 {
 #ifndef INCOMPLETE_BOT
+    std::string mcode = GetMachineCode();
+    printf("CheckAuthorization out text : %s\n", mcode.c_str());
+
     uint32 checkLen = m_CheckAuthorization.size();
     if (checkLen != 35 && checkLen != 36)
     {
         StopNow(-1);
     }
-    std::string mcode = GetMachineCode();
-    printf("CheckAuthorization out text : %s", mcode.c_str());
 
     uint32 len = mcode.size() / 2;
-    uint8* code = new uint8[len + 1];
+    std::unique_ptr<uint8[]> code(new uint8[len + 1]);
     code[len] = 0;
-    HexStrToByteArray(mcode, code);
+    HexStrToByteArray(mcode, code.get());
+
     for (uint32 i = 0; i < len; i++)
     {
         if (code[i] == 0xff)
@@ -329,7 +335,8 @@ void World::CheckAuthorization()
             code[i] = code[i] + 1;
         code[i] = ~code[i];
     }
-    std::string matchString = ByteArrayToHexStr(code, len);
+
+    std::string matchString = ByteArrayToHexStr(code.get(), len);
     SHA1Hash cryptography;
     cryptography.UpdateData(matchString);
     cryptography.Finalize();
