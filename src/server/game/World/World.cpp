@@ -122,11 +122,13 @@ TC_GAME_API int32 World::m_visibility_notify_periodOnContinents = DEFAULT_VISIBI
 TC_GAME_API int32 World::m_visibility_notify_periodInInstances  = DEFAULT_VISIBILITY_NOTIFY_PERIOD;
 TC_GAME_API int32 World::m_visibility_notify_periodInBGArenas   = DEFAULT_VISIBILITY_NOTIFY_PERIOD;
 
-#define _WIN32_DCOM  
-#include <iostream>
-#include <comdef.h>
-#include <Wbemidl.h>
-#pragma comment(lib, "wbemuuid.lib")
+#ifdef _WIN32
+#  define _WIN32_DCOM
+#  include <iostream>
+#  include <comdef.h>
+#  include <Wbemidl.h>
+#  pragma comment(lib, "wbemuuid.lib")
+#endif
 
 uint32 World::GetOnlineRealPlayerCount()
 {
