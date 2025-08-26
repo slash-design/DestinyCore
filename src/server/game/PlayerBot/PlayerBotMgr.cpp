@@ -32,6 +32,7 @@
 #include "Config.h"
 #include "PlayerBotSession.h"
 #include "AccountMgr.h"
+#include "BattlenetAccountMgr.h"
 #include "CharacterPackets.h"
 
 #include <boost/algorithm/string.hpp>
@@ -692,37 +693,69 @@ void PlayerBotMgr::SupplementAccount()
     if (needAccount <= 0)
         return;
 
-    for (uint32 i = 0; i < needAccount; i++)
+    for (uint32 i = 0; i < needAccount; ++i)
     {
         ++m_LastBotAccountIndex;
-        char indexText[25] ={ 0 };
-        std::string s2 = std::to_string(m_LastBotAccountIndex);
-        std::string userName = "detinybot";
-        userName += indexText;
-        if (AccountMgr::instance()->CreateAccount(userName, "botxxx") == AccountOpResult::AOR_OK)
-        {
-            std::string querySql = "SELECT id, username, sha_pass_hash FROM account WHERE username='";
-            querySql += userName + "'";
-            QueryResult result = LoginDatabase.Query(querySql.c_str());
-            if (result)
-            {
-                Field* fields = result->Fetch();
-                if (fields)
-                {
-                    uint32 id = fields[0].GetUInt32();
-                    std::string username = fields[1].GetString();
-                    std::string pass = fields[2].GetString();
+        std::string userName = "playerbot" + std::to_string(m_LastBotAccountIndex);
+        std::string password = userName;
+        std::string bnetEmail = userName + "@destinycore";
 
-                    std::string lowerName = boost::algorithm::to_lower_copy(username);
-                    if (m_idPlayerBotBase.find(id) == m_idPlayerBotBase.end())
-                    {
-                        PlayerBotBaseInfo* pInfo = new PlayerBotBaseInfo(id, username.c_str(), pass, false);
-                        m_idPlayerBotBase[id] = pInfo;
-                    }
-                    m_LastBotAccountIndex = id;
-                }
-            }
+        // Create Account or get, if available
+        AccountOpResult accRes = sAccountMgr->CreateAccount(userName, password);
+        if (accRes != AccountOpResult::AOR_OK && accRes != AccountOpResult::AOR_NAME_ALREADY_EXIST)
+            continue;
+
+        QueryResult accResQr = LoginDatabase.PQuery(
+            "SELECT id, username, sha_pass_hash FROM account WHERE username='%s'",
+            userName.c_str());
+        if (!accResQr)
+            continue;
+
+        Field* accF = accResQr->Fetch();
+        uint32 accountId = accF[0].GetUInt32();
+        std::string accName = accF[1].GetString();
+        std::string accHash = accF[2].GetString();
+
+        // Create BattlenetAccount
+        // createGameAccount = false -> we do NOT want an automatically generated game account,
+        // so that we can link our own "playerbotX" cleanly and index 1 is free
+        AccountOpResult bnetRes = Battlenet::AccountMgr::CreateBattlenetAccount(
+            bnetEmail, password, /*createGameAccount=*/false, /*outGameAccountName=*/nullptr);
+
+        if (bnetRes != AccountOpResult::AOR_OK && bnetRes != AccountOpResult::AOR_NAME_ALREADY_EXIST)
+            continue;
+
+        // Determine BNet ID
+        QueryResult bnQr = LoginDatabase.PQuery(
+            "SELECT id FROM battlenet_accounts WHERE email='%s'",
+            bnetEmail.c_str());
+        if (!bnQr)
+            continue;
+
+        uint32 battlenetId = bnQr->Fetch()[0].GetUInt32();
+
+        // Determine the next battlenet_index
+        uint32 bnIndex = 1;
+        if (QueryResult idxQr = LoginDatabase.PQuery(
+            "SELECT COALESCE(MAX(battlenet_index), 0) FROM account WHERE battlenet_account=%u",
+            battlenetId))
+        {
+            bnIndex = idxQr->Fetch()[0].GetUInt32() + 1;
         }
+
+        // Link
+        LoginDatabase.PExecute(
+            "UPDATE account SET battlenet_account=%u, battlenet_index=%u WHERE id=%u",
+            battlenetId, bnIndex, accountId);
+
+        // Maintain internal structure
+        if (m_idPlayerBotBase.find(accountId) == m_idPlayerBotBase.end())
+        {
+            PlayerBotBaseInfo* pInfo = new PlayerBotBaseInfo(accountId, accName.c_str(), accHash, false);
+            m_idPlayerBotBase[accountId] = pInfo;
+        }
+
+        m_LastBotAccountIndex = accountId;
     }
 }
 
