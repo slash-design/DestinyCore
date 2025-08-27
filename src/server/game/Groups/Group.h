@@ -304,6 +304,7 @@ class TC_GAME_API Group
         GroupCategory GetGroupCategory() const { return m_groupCategory; }
         ObjectGuid GetLeaderGUID() const;
         ObjectGuid GetGUID() const;
+        ObjectGuid::LowType GetLowGUID() const;
         const char * GetLeaderName() const;
         LootMethod GetLootMethod() const;
         ObjectGuid GetLooterGuid() const;

@@ -492,6 +492,22 @@ namespace WorldPackets
         class DFGetJoinStatus;
     }
 
+    namespace LfgList
+    {
+        class LfgListApplyToGroup;
+        class LfgListCancelApplication;
+        class LfgListDeclineApplicant;
+        class LfgListInviteApplicant;
+        class LfgListUpdateRequest;
+        class LfgListGetStatus;
+        class LfgListInviteResponse;
+        class LfgListJoin;
+        class LfgListLeave;
+        class LfgListSearch;
+        class RequestLfgListBlacklist;
+        struct ListRequest;
+    }
+
     namespace Loot
     {
         class LootUnit;
@@ -1688,6 +1704,19 @@ class TC_GAME_API WorldSession
 
         void HandleSelfResOpcode(WorldPackets::Spells::SelfRes& selfRes);
         void HandleRequestPetInfo(WorldPackets::Pet::RequestPetInfo& packet);
+
+        // Lfg List
+        void HandleRequestLfgListBlackList(WorldPackets::LfgList::RequestLfgListBlacklist& packet);
+        void HandleLfgListSearch(WorldPackets::LfgList::LfgListSearch& packet);
+        void HandleLfgListJoin(WorldPackets::LfgList::LfgListJoin& packet);
+        void HandleLfgListLeave(WorldPackets::LfgList::LfgListLeave& packet);
+        void HandleLfgListInviteResponse(WorldPackets::LfgList::LfgListInviteResponse& packet);
+        void HandleLfgListGetStatus(WorldPackets::LfgList::LfgListGetStatus& packet);
+        void HandleLfgListApplyToGroup(WorldPackets::LfgList::LfgListApplyToGroup& packet);
+        void HandleLfgListCancelApplication(WorldPackets::LfgList::LfgListCancelApplication& packet);
+        void HandleLfgListDeclineApplicant(WorldPackets::LfgList::LfgListDeclineApplicant& packet);
+        void HandleLfgListInviteApplicant(WorldPackets::LfgList::LfgListInviteApplicant& packet);
+        void HandleLfgListUpdateRequest(WorldPackets::LfgList::LfgListUpdateRequest& packet);
 
         // Socket gem
         void HandleSocketGems(WorldPackets::Item::SocketGems& socketGems);

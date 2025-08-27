@@ -31,7 +31,9 @@ namespace WorldPackets
             Battlegrounds = 1,
             Lfg = 2,
             PvPPetBattle = 3,
-            PetBattle = 5
+            LfgListApplication = 4,
+            PetBattle = 5,
+            LfgListApplicant = 6
         };
 
         struct RideTicket

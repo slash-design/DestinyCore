@@ -465,6 +465,20 @@ void HotfixDatabaseConnection::DoPrepareStatements()
     // GlyphRequiredSpec.db2
     PrepareStatement(HOTFIX_SEL_GLYPH_REQUIRED_SPEC, "SELECT ID, ChrSpecializationID, GlyphPropertiesID FROM glyph_required_spec ORDER BY ID DESC", CONNECTION_SYNCH);
 
+    // GroupFinderActivity.db2
+    PrepareStatement(HOTFIX_SEL_GROUP_FINDER_ACTIVITY, "SELECT ID, FullName, ShortName, MinGearLevelSuggestion, MapID, AreaID, GroupFinderCategoryID, "
+        "GroupFinderActivityGrpID, OrderIndex, MinLevel, MaxLevelSuggestion, DifficultyID, Flags, DisplayType, MaxPlayers FROM group_finder_activity"
+        " ORDER BY ID DESC", CONNECTION_SYNCH);
+    PREPARE_LOCALE_STMT(HOTFIX_SEL_GROUP_FINDER_ACTIVITY, "SELECT ID, FullName_lang, ShortName_lang FROM group_finder_activity_locale WHERE locale = ?", CONNECTION_SYNCH);
+
+    // GroupFinderActivityGrp.db2
+    PrepareStatement(HOTFIX_SEL_GROUP_FINDER_ACTIVITY_GRP, "SELECT ID, Name, OrderIndex FROM group_finder_activity_grp ORDER BY ID DESC", CONNECTION_SYNCH);
+    PREPARE_LOCALE_STMT(HOTFIX_SEL_GROUP_FINDER_ACTIVITY_GRP, "SELECT ID, Name_lang FROM group_finder_activity_grp_locale WHERE locale = ?", CONNECTION_SYNCH);
+
+    // GroupFinderCategory.db2
+    PrepareStatement(HOTFIX_SEL_GROUP_FINDER_CATEGORY, "SELECT ID, Name, Flags, OrderIndex FROM group_finder_category ORDER BY ID DESC", CONNECTION_SYNCH);
+    PREPARE_LOCALE_STMT(HOTFIX_SEL_GROUP_FINDER_CATEGORY, "SELECT ID, Name_lang FROM group_finder_category_locale WHERE locale = ?", CONNECTION_SYNCH);
+
     // GuildColorBackground.db2
     PrepareStatement(HOTFIX_SEL_GUILD_COLOR_BACKGROUND, "SELECT ID, Red, Green, Blue FROM guild_color_background ORDER BY ID DESC", CONNECTION_SYNCH);
 

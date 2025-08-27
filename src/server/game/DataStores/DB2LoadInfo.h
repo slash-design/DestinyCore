@@ -2159,6 +2159,64 @@ struct GlyphRequiredSpecLoadInfo
     }
 };
 
+struct GroupFinderActivityLoadInfo
+{
+    static DB2LoadInfo const* Instance()
+    {
+        static DB2FieldMeta const fields[] =
+        {
+            { true, FT_INT, "ID" },
+            { false, FT_STRING, "FullName" },
+            { false, FT_STRING, "ShortName" },
+            { false, FT_SHORT, "MinGearLevelSuggestion" },
+            { false, FT_SHORT, "MapID" },
+            { false, FT_SHORT, "AreaID" },
+            { false, FT_BYTE, "GroupFinderCategoryID" },
+            { false, FT_BYTE, "GroupFinderActivityGrpID" },
+            { false, FT_BYTE, "OrderIndex" },
+            { false, FT_BYTE, "MinLevel" },
+            { false, FT_BYTE, "MaxLevelSuggestion" },
+            { false, FT_BYTE, "DifficultyID" },
+            { false, FT_BYTE, "Flags" },
+            { false, FT_BYTE, "DisplayType" },
+            { false, FT_BYTE, "MaxPlayers" },
+        };
+        static DB2LoadInfo const loadInfo(&fields[0], std::extent<decltype(fields)>::value, GroupFinderActivityMeta::Instance(), HOTFIX_SEL_GROUP_FINDER_ACTIVITY);
+        return &loadInfo;
+    }
+};
+
+struct GroupFinderActivityGrpLoadInfo
+{
+    static DB2LoadInfo const* Instance()
+    {
+        static DB2FieldMeta const fields[] =
+        {
+            { true, FT_INT, "ID" },
+            { false, FT_STRING, "Name" },
+            { false, FT_BYTE, "OrderIndex" },
+        };
+        static DB2LoadInfo const loadInfo(&fields[0], std::extent<decltype(fields)>::value, GroupFinderActivityGrpMeta::Instance(), HOTFIX_SEL_GROUP_FINDER_ACTIVITY_GRP);
+        return &loadInfo;
+    }
+};
+
+struct GroupFinderCategoryLoadInfo
+{
+    static DB2LoadInfo const* Instance()
+    {
+        static DB2FieldMeta const fields[] =
+        {
+            { true, FT_INT, "ID" },
+            { false, FT_STRING, "Name" },
+            { false, FT_BYTE, "Flags" },
+            { false, FT_BYTE, "OrderIndex" },
+        };
+        static DB2LoadInfo const loadInfo(&fields[0], std::extent<decltype(fields)>::value, GroupFinderCategoryMeta::Instance(), HOTFIX_SEL_GROUP_FINDER_CATEGORY);
+        return &loadInfo;
+    }
+};
+
 struct GuildColorBackgroundLoadInfo
 {
     static DB2LoadInfo const* Instance()

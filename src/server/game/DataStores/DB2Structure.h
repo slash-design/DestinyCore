@@ -1442,6 +1442,40 @@ struct GlyphRequiredSpecEntry
     uint16 GlyphPropertiesID;
 };
 
+struct GroupFinderActivityEntry
+{
+    int32       ID;
+    LocalizedString* FullName;
+    LocalizedString* ShortName;
+    uint16      MinGearLevelSuggestion;
+    uint16      MapID;
+    uint16      AreaID;
+    uint8       GroupFinderCategoryID;
+    uint8       GroupFinderActivityGrpID;
+    uint8       OrderIndex;
+    uint8       MinLevel;
+    uint8       MaxLevelSuggestion;
+    uint8       DifficultyID;
+    uint8       Flags;
+    uint8       DisplayType;
+    uint8       MaxPlayers;
+};
+
+struct GroupFinderActivityGrpEntry
+{
+    int32       ID;
+    LocalizedString* Name;
+    uint8       OrderIndex;
+};
+
+struct GroupFinderCategoryEntry
+{
+    int32       ID;
+    LocalizedString* Name;
+    uint8       Flags;
+    uint8       OrderIndex;
+};
+
 struct GuildColorBackgroundEntry
 {
     uint32 ID;

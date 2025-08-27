@@ -213,6 +213,9 @@ namespace Trinity
         template<class M>
         inline auto MapGetValuePtr(M& map, typename M::key_type const& key) -> decltype(AddressOrSelf(map.find(key)->second))
         {
+            if (map.empty())
+                return nullptr;
+
             auto itr = map.find(key);
             return itr != map.end() ? AddressOrSelf(itr->second) : nullptr;
         }

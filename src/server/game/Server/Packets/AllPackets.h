@@ -52,6 +52,7 @@
 #include "InstancePackets.h"
 #include "ItemPackets.h"
 #include "LFGPackets.h"
+#include "LfgListPackets.h"
 #include "LootPackets.h"
 #include "MailPackets.h"
 #include "MiscPackets.h"

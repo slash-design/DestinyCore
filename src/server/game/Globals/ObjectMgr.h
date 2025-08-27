@@ -995,6 +995,8 @@ class TC_GAME_API ObjectMgr
 
         InstanceTemplate const* GetInstanceTemplate(uint32 mapId) const;
 
+        Player* GetPlayerByLowGUID(ObjectGuid::LowType const& lowguid) const;
+
         void GetPlayerClassLevelInfo(uint32 class_, uint8 level, uint32& baseMana) const;
 
         PlayerInfo const* GetPlayerInfo(uint32 race, uint32 class_) const;

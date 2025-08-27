@@ -3045,6 +3045,11 @@ ObjectGuid Group::GetGUID() const
     return m_guid;
 }
 
+ObjectGuid::LowType Group::GetLowGUID() const
+{
+    return m_guid.GetCounter();
+}
+
 char const* Group::GetLeaderName() const
 {
     return m_leaderName.c_str();

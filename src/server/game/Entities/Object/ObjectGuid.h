@@ -100,7 +100,7 @@ enum class HighGuid
     Spell            = 34,
     Mail             = 35,
     WebObj           = 36,  //NYI
-    LFGObject        = 37,  //NYI
+    LFGObject        = 37,  
     LFGList          = 38,  //NYI
     UserRouter       = 39,
     PVPQueueGroup    = 40,
@@ -155,6 +155,7 @@ GUID_TRAIT_GLOBAL(HighGuid::GMTask)
 GUID_TRAIT_GLOBAL(HighGuid::RaidGroup)
 GUID_TRAIT_GLOBAL(HighGuid::Spell)
 GUID_TRAIT_GLOBAL(HighGuid::Mail)
+GUID_TRAIT_GLOBAL(HighGuid::LFGObject)
 GUID_TRAIT_GLOBAL(HighGuid::UserRouter)
 GUID_TRAIT_GLOBAL(HighGuid::PVPQueueGroup)
 GUID_TRAIT_GLOBAL(HighGuid::UserClient)

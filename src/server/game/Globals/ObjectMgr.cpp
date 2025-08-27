@@ -3922,6 +3922,11 @@ void ObjectMgr::LoadPlayerInfo()
     }
 }
 
+Player* ObjectMgr::GetPlayerByLowGUID(ObjectGuid::LowType const& lowguid) const
+{
+    return ObjectAccessor::FindPlayer(ObjectGuid::Create<HighGuid::Player>(lowguid));
+}
+
 void ObjectMgr::GetPlayerClassLevelInfo(uint32 class_, uint8 level, uint32& baseMana) const
 {
     if (level < 1 || class_ >= MAX_CLASSES)
