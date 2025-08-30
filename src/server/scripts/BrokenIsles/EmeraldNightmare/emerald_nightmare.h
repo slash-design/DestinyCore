@@ -133,7 +133,7 @@ enum GameObjects
     GOB_ILGYNOTH_DOOR           = 251555,
 };
 
-enum SpellVisualKit
+enum SpellVisualKitEmeraldNightmare
 {
     SPELL_VISUAL_KIT_EMERALD_NIGHTMARE_ENTRANCE_LOCATION = 70900,
     SPELL_VISUAL_KIT_EMERALD_NIGHTMATE_POST_XAVIUS_EXIT  = 74270,

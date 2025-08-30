@@ -15,8 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _PLAYER_H
-#define _PLAYER_H
+#ifndef PLAYER_H
+#define PLAYER_H
 
 #include "Arena.h"
 #include "ArenaHelper.h"
@@ -2718,6 +2718,7 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         GuidList WhisperList;
         uint32 m_combatExitTime;
         uint32 m_regenTimerCount;
+        uint32 m_foodEmoteTimerCount;
         float m_powerFraction[MAX_POWERS_PER_CLASS];
         uint32 m_contestedPvPTimer;
         uint32 m_areaQuestTimer;

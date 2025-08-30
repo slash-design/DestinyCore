@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the DestinyCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -16,8 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TRINITY_SHAREDDEFINES_H
-#define TRINITY_SHAREDDEFINES_H
+#ifndef SHAREDDEFINES_H
+#define SHAREDDEFINES_H
 
 #include "DBCEnums.h"
 #include "Define.h"
@@ -387,6 +386,12 @@ enum SpellCategory
 {
     SPELL_CATEGORY_FOOD             = 11,
     SPELL_CATEGORY_DRINK            = 59
+};
+
+enum SpellVisualKit
+{
+    SPELL_VISUAL_KIT_FOOD           = 406,
+    SPELL_VISUAL_KIT_DRINK          = 438
 };
 
 const uint32 ItemQualityColors[MAX_ITEM_QUALITY] =
