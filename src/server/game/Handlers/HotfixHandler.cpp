@@ -25,12 +25,27 @@
 
 void WorldSession::HandleDBQueryBulk(WorldPackets::Hotfix::DBQueryBulk& dbQuery)
 {
+    // [LEGION_OPCODE_FIX] Enhanced hotfix handling for Legion+ clients
     DB2StorageBase const* store = sDB2Manager.GetStorage(dbQuery.TableHash);
     if (!store)
     {
         TC_LOG_ERROR("network", "CMSG_DB_QUERY_BULK: %s requested unsupported unknown hotfix type: %u", GetPlayerInfo().c_str(), dbQuery.TableHash);
+        
+        // Send error response for unsupported hotfix types
+        for (WorldPackets::Hotfix::DBQueryBulk::DBQueryRecord const& record : dbQuery.Queries)
+        {
+            WorldPackets::Hotfix::DBReply dbReply;
+            dbReply.TableHash = dbQuery.TableHash;
+            dbReply.RecordID = record.RecordID;
+            dbReply.Allow = false;
+            dbReply.Timestamp = time(NULL);
+            SendPacket(dbReply.Write());
+        }
         return;
     }
+
+    TC_LOG_DEBUG("network", "CMSG_DB_QUERY_BULK: %s requested %zu records from hotfix type: %u", 
+                 GetPlayerInfo().c_str(), dbQuery.Queries.size(), dbQuery.TableHash);
 
     for (WorldPackets::Hotfix::DBQueryBulk::DBQueryRecord const& record : dbQuery.Queries)
     {
@@ -43,10 +58,12 @@ void WorldSession::HandleDBQueryBulk(WorldPackets::Hotfix::DBQueryBulk& dbQuery)
             dbReply.Allow = true;
             dbReply.Timestamp = sWorld->GetGameTime();
             store->WriteRecord(record.RecordID, GetSessionDbcLocale(), dbReply.Data);
+            TC_LOG_DEBUG("network", "Hotfix record %u found and sent for type %u", record.RecordID, dbQuery.TableHash);
         }
         else
         {
             TC_LOG_TRACE("network", "CMSG_DB_QUERY_BULK: %s requested non-existing entry %u in datastore: %u", GetPlayerInfo().c_str(), record.RecordID, dbQuery.TableHash);
+            dbReply.Allow = false;
             dbReply.Timestamp = time(NULL);
         }
 
@@ -61,9 +78,14 @@ void WorldSession::SendAvailableHotfixes(int32 version)
 
 void WorldSession::HandleHotfixRequest(WorldPackets::Hotfix::HotfixRequest& hotfixQuery)
 {
+    // [LEGION_OPCODE_FIX] Enhanced hotfix request handling for Legion+ clients
     std::map<uint64, int32> const& hotfixes = sDB2Manager.GetHotfixData();
     WorldPackets::Hotfix::HotfixResponse hotfixQueryResponse;
     hotfixQueryResponse.Hotfixes.reserve(hotfixQuery.Hotfixes.size());
+    
+    TC_LOG_DEBUG("network", "CMSG_HOTFIX_REQUEST: %s requested %zu hotfixes", 
+                 GetPlayerInfo().c_str(), hotfixQuery.Hotfixes.size());
+    
     for (uint64 hotfixId : hotfixQuery.Hotfixes)
     {
         if (int32 const* hotfix = Trinity::Containers::MapGetValuePtr(hotfixes, hotfixId))
@@ -73,13 +95,23 @@ void WorldSession::HandleHotfixRequest(WorldPackets::Hotfix::HotfixRequest& hotf
             WorldPackets::Hotfix::HotfixResponse::HotfixData hotfixData;
             hotfixData.ID = hotfixId;
             hotfixData.RecordID = *hotfix;
-            if (storage->HasRecord(hotfixData.RecordID))
+            
+            if (storage && storage->HasRecord(hotfixData.RecordID))
             {
                 hotfixData.Data.emplace();
                 storage->WriteRecord(hotfixData.RecordID, GetSessionDbcLocale(), *hotfixData.Data);
+                TC_LOG_DEBUG("network", "Hotfix %lu (record %u) found and sent", hotfixId, *hotfix);
+            }
+            else
+            {
+                TC_LOG_DEBUG("network", "Hotfix %lu (record %u) not found in storage", hotfixId, *hotfix);
             }
 
             hotfixQueryResponse.Hotfixes.emplace_back(std::move(hotfixData));
+        }
+        else
+        {
+            TC_LOG_DEBUG("network", "Hotfix %lu not found in hotfix data", hotfixId);
         }
     }
 
