@@ -248,13 +248,27 @@ bool MoveSplineInitArgs::Validate(Unit* unit) const
 #undef CHECK
 }
 
-// check path lengths - why are we even starting such short movement?
+// [LEGION_OPCODE_FIX] check path lengths - why are we even starting such short movement?
 bool MoveSplineInitArgs::_checkPathLengths() const
 {
-    if (path.size() > 2 || facing.type == MONSTER_MOVE_NORMAL)
+    // Ensure we have at least 2 points to check distances
+    if (path.size() < 2)
+        return true;
+    
+    // Check if facing type allows path length validation
+    if (facing.type == MONSTER_MOVE_NORMAL)
+    {
         for (uint32 i = 0; i < path.size() - 1; ++i)
-            if ((path[i + 1] - path[i]).length() < 0.1f)
+        {
+            // Calculate distance between consecutive points
+            float distance = (path[i + 1] - path[i]).length();
+            if (distance < 0.1f)
+            {
+                TC_LOG_DEBUG("misc.movesplineinitargs", "Path point %u and %u are too close (distance: %f)", i, i + 1, distance);
                 return false;
+            }
+        }
+    }
     return true;
 }
 MoveSplineInitArgs::MoveSplineInitArgs(size_t path_capacity /*= 16*/) : path_Idx_offset(0), velocity(0.f),

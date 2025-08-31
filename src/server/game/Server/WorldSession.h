@@ -1960,6 +1960,17 @@ class TC_GAME_API WorldSession
         // Challenge Modes
         void HandleChallengeModeStart(WorldPackets::ChallengeMode::StartRequest& /*start*/);
 
+        // [LEGION_OPCODE_FIX] Client report handlers for Legion+ opcodes
+        void HandleReportClientVariables(WorldPacket& recvData);
+        void HandleReportEnabledAddons(WorldPacket& recvData);
+        void HandleReportKeybindingExecutionCounts(WorldPacket& recvData);
+        void HandleQuickJoinAutoAcceptRequests(WorldPacket& recvData);
+        void HandleQueuedMessagesEnd(WorldPacket& recvData);
+        void HandleQueryCountdownTimer(WorldPacket& recvData);
+        void HandleRequestConquestFormulaConstants(WorldPacket& recvData);
+        void HandleGarrisonRequestLandingPageShipmentInfo(WorldPacket& recvData);
+        void HandleDiscardedTimeSyncAcks(WorldPacket& recvData);
+
         union ConnectToKey
         {
             struct
