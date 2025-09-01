@@ -1590,9 +1590,12 @@ public:
                 switch (eventId)
                 {
                     case EVENT_ICYCLE_AOE:
-                        if (Player* pPlayer = me->SelectNearestPlayer(200.0f))
-                            DoCast(pPlayer, SPELL_ICYCLE);
-                        events.ScheduleEvent(EVENT_ICYCLE_AOE, urand(6000, 8000));
+                        if (IsHeroic())
+                        {
+                            if (Player* pPlayer = me->SelectNearestPlayer(200.0f))
+                                DoCast(pPlayer, SPELL_ICYCLE);
+                            events.ScheduleEvent(EVENT_ICYCLE_AOE, urand(6000, 8000));
+                        }
                         break;
                     case EVENT_SPIRIT_STRIKE:
                         DoCastVictim(SPELL_SPIRIT_STRIKE);
