@@ -500,7 +500,7 @@ void Garrison::AddShipmentFollower(uint32 garrFollowerId)
 
     _owner->UpdateCriteria(CRITERIA_TYPE_RECRUIT_GARRISON_FOLLOWER, follower.PacketInfo.DbID);
 
-    SQLTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
     SaveToDB(trans);
     CharacterDatabase.CommitTransaction(trans);
 }
@@ -908,7 +908,7 @@ uint64 Garrison::StartWorkOrder(uint32 plotInstanceID, uint32 shipmentID)
     workOrder.CompleteTime = MaxCompleteTime + charShipmentEntry->Duration;
     workOrder.ownerID = _owner->GetGUID().GetCounter();
 
-    SQLTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
 
     uint8 index = 0;
     CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_GARRISON_WORKORDER);
