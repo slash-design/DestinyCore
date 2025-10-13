@@ -713,279 +713,117 @@ void WorldSession::HandleQueryQuestRewards(WorldPackets::Quest::QueryQuestReward
 
 void WorldSession::HandleRequestAreaPoiUpdate(WorldPackets::Quest::RequestAreaPoiUpdate& packet)
 {
-    WorldPackets::Quest::AreaPoiUpdate response;
-    bool needSend = true;
+    using namespace WorldPackets::Quest;
 
-    // For activate screen need cast 233539
-    uint32 questId;
+    AreaPoiUpdate response;
+    bool needSend = false;
 
+    auto addPoi = [&](int32 lastUpdate, uint32 questId, uint32 timer, int32 variableId, int32 value)
+        {
+            response.Pois.push_back({ lastUpdate, questId, timer, variableId, value });
+            needSend = true;
+        };
+
+    // Legion Invasion Zones
     if (sWorldQuestMgr->WorldLegionInvasionZoneID)
     {
-        // 7637 - suramar, 7558 - valsharah, 7541 - stormheim, 7503 - highmountain, 7334 - azsuna, 7543 - Broken Shore
-        // Temporary hack
-        // valsharah
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(45812))
-
+        struct ZoneQuest
         {
-            response.Pois.emplace_back(activequest->StartTime, 5210, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-            response.Pois.emplace_back(activequest->StartTime, 5272, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-            needSend = true;
+            uint32 questId;
+            std::array<uint32, 2> pois;
+        };
 
-            if (GetPlayer()->GetQuestStatus(activequest->QuestId) == QUEST_STATUS_NONE)
-                GetPlayer()->AddQuest(activequest->GetTemplate()->GetQuest(), nullptr);
-        }
-        // azsuna
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(45838))
+        static const ZoneQuest zones[] = {
+            {45812, {5210, 5272}}, // Val'sharah
+            {45838, {5175, 5273}}, // Azsuna
+            {45839, {5178, 5270}}, // Stormheim
+            {45840, {5177, 5271}}  // Highmountain
+        };
+
+        for (auto const& zone : zones)
         {
-            response.Pois.emplace_back(activequest->StartTime, 5175, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-            response.Pois.emplace_back(activequest->StartTime, 5273, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-            needSend = true;
+            if (auto* q = sWorldQuestMgr->GetActiveWorldQuest(zone.questId))
+            {
+                for (auto poi : zone.pois)
+                    addPoi(q->StartTime, poi, q->GetTemplate()->Duration, q->GetTemplate()->VariableId, q->GetTemplate()->Value);
 
-            if (GetPlayer()->GetQuestStatus(activequest->QuestId) == QUEST_STATUS_NONE)
-                GetPlayer()->AddQuest(activequest->GetTemplate()->GetQuest(), nullptr);
-        }
-        // stormheim
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(45839))
-        {
-            response.Pois.emplace_back(activequest->StartTime, 5178, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-            response.Pois.emplace_back(activequest->StartTime, 5270, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-            needSend = true;
-
-            if (GetPlayer()->GetQuestStatus(activequest->QuestId) == QUEST_STATUS_NONE)
-                GetPlayer()->AddQuest(activequest->GetTemplate()->GetQuest(), nullptr);
-        }
-        // highmountain
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(45840))
-        {
-            response.Pois.emplace_back(activequest->StartTime, 5177, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-            response.Pois.emplace_back(activequest->StartTime, 5271, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-            needSend = true;
-
-            if (GetPlayer()->GetQuestStatus(activequest->QuestId) == QUEST_STATUS_NONE)
-                GetPlayer()->AddQuest(activequest->GetTemplate()->GetQuest(), nullptr);
+                if (GetPlayer()->GetQuestStatus(q->QuestId) == QUEST_STATUS_NONE)
+                    GetPlayer()->AddQuest(q->GetTemplate()->GetQuest(), nullptr);
+            }
         }
     }
-    if (sGameEventMgr->IsActiveEvent(117))
-    {
-        GameEventData const* ged = &sGameEventMgr->GetEventMap()[117];
-        response.Pois.emplace_back(ged->start, 5252, ged->start * 60, 13321, 1);
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(118))
-    {
-        GameEventData const* ged = &sGameEventMgr->GetEventMap()[118];
-        response.Pois.emplace_back(ged->start, 5261, ged->start * 60, 13321, 9);
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(119))
-    {
-        GameEventData const* ged = &sGameEventMgr->GetEventMap()[119];
-        response.Pois.emplace_back(ged->start, 5257, ged->start * 60, 13321, 5);
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(120))
-    {
-        GameEventData const* ged = &sGameEventMgr->GetEventMap()[120];
-        response.Pois.emplace_back(ged->start, 5260, ged->start * 60, 13321, 8);
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(121))
-    {
-        GameEventData const* ged = &sGameEventMgr->GetEventMap()[121];
-        response.Pois.emplace_back(ged->start, 5254, ged->start * 60, 13321, 2);
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(122))
-    {
-        GameEventData const* ged = &sGameEventMgr->GetEventMap()[122];
-        response.Pois.emplace_back(ged->start, 5259, ged->start * 60, 13321, 7);
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(123))
-    {
-        GameEventData const* ged = &sGameEventMgr->GetEventMap()[123];
-        response.Pois.emplace_back(ged->start, 5258, ged->start * 60, 13321, 6);
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(124))
-    {
-        GameEventData const* ged = &sGameEventMgr->GetEventMap()[124];
-        response.Pois.emplace_back(ged->start, 5256, ged->start * 60, 13321, 4);
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(125))
-    {
-        GameEventData const* ged = &sGameEventMgr->GetEventMap()[125];
-        response.Pois.emplace_back(ged->start, 5255, ged->start * 60, 13321, 3);
-        needSend = true;
-    }
+
+    // Simple game events
+    auto addEventPoi = [&](uint32 eventId, uint32 poiId, int32 variableId, int32 value)
+        {
+            if (sGameEventMgr->IsActiveEvent(eventId))
+            {
+                auto const& ged = sGameEventMgr->GetEventMap()[eventId];
+                addPoi(ged.start, poiId, ged.start * 60, variableId, value);
+            }
+        };
+
+    addEventPoi(117, 5252, 13321, 1);
+    addEventPoi(118, 5261, 13321, 9);
+    addEventPoi(119, 5257, 13321, 5);
+    addEventPoi(120, 5260, 13321, 8);
+    addEventPoi(121, 5254, 13321, 2);
+    addEventPoi(122, 5259, 13321, 7);
+    addEventPoi(123, 5258, 13321, 6);
+    addEventPoi(124, 5256, 13321, 4);
+    addEventPoi(125, 5255, 13321, 3);
+
     // Spring Balloon Festival
     if (sGameEventMgr->IsActiveEvent(87))
     {
-        GameEventData const* ged = &sGameEventMgr->GetEventMap()[87];
-        response.Pois.emplace_back(ged->start, 5191, 0, 13062, 1);
-        response.Pois.emplace_back(ged->start, 5192, 0, 13062, 1);
-        response.Pois.emplace_back(ged->start, 5193, 0, 13062, 1);
-        response.Pois.emplace_back(ged->start, 5195, 0, 13062, 1);
-        response.Pois.emplace_back(ged->start, 5196, 0, 13062, 1);
-        response.Pois.emplace_back(ged->start, 5197, 0, 13062, 1);
-        response.Pois.emplace_back(ged->start, 5198, 0, 13062, 1);
-        needSend = true;
+        auto const& ged = sGameEventMgr->GetEventMap()[87];
+        for (uint32 poiId : {5191, 5192, 5193, 5195, 5196, 5197, 5198})
+            addPoi(ged.start, poiId, 0, 13062, 1);
     }
-    if (sGameEventMgr->IsActiveEvent(301))
-    {
-        GameEventData const* ged = &sGameEventMgr->GetEventMap()[301];
-        response.Pois.emplace_back(ged->start, 5055, 0, 13107, 1);
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(75))
-    {
-        GameEventData const* ged = &sGameEventMgr->GetEventMap()[75];
-        response.Pois.emplace_back(ged->start, 2704, 0, 6078, 1);
-        response.Pois.emplace_back(ged->start, 2705, 0, 6078, 1);
-        needSend = true;
-    }
+
+    // Other world events
+    addEventPoi(301, 5055, 13107, 1);
+    addEventPoi(75, 2704, 6078, 1);
+    addEventPoi(75, 2705, 6078, 1);
+
     // World Bosses Argus
-    if (sGameEventMgr->IsActiveEvent(102))
-    {
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49171))
-            response.Pois.emplace_back(activequest->StartTime, 5380, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
+    auto addWorldBoss = [&](uint32 eventId, std::initializer_list<std::pair<uint32, uint32>> quests)
+        {
+            if (!sGameEventMgr->IsActiveEvent(eventId))
+                return;
 
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49169))
-            response.Pois.emplace_back(activequest->StartTime, 5381, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
+            for (auto [questId, poiId] : quests)
+                if (auto* q = sWorldQuestMgr->GetActiveWorldQuest(questId))
+                    addPoi(q->StartTime, poiId, q->GetTemplate()->Duration, q->GetTemplate()->VariableId, q->GetTemplate()->Value);
+        };
 
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(103))
-    {
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49166))
-            response.Pois.emplace_back(activequest->StartTime, 5379, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
+    addWorldBoss(102, { {49171, 5380}, {49169, 5381} });
+    addWorldBoss(103, { {49166, 5379}, {49167, 5375} });
+    addWorldBoss(104, { {49168, 5377}, {49170, 5376} });
 
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49167))
-            response.Pois.emplace_back(activequest->StartTime, 5375, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
+    // Invasion Points Argus
+    auto addInvasionPoi = [&](uint32 eventId, uint32 questId, uint32 poiId)
+        {
+            if (sGameEventMgr->IsActiveEvent(eventId))
+                if (auto* q = sWorldQuestMgr->GetActiveWorldQuest(questId))
+                    addPoi(q->StartTime, poiId, q->GetTemplate()->Duration, q->GetTemplate()->VariableId, q->GetTemplate()->Value);
+        };
 
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(104))
-    {
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49168))
-            response.Pois.emplace_back(activequest->StartTime, 5377, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49170))
-            response.Pois.emplace_back(activequest->StartTime, 5376, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
-    // Invasion Point Argus
-    if (sGameEventMgr->IsActiveEvent(180))
-    {
-        //Invasion Point: Cen'gar
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49098))
-            response.Pois.emplace_back(activequest->StartTime, 5359, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(181))
-    {
-        //Invasion Point: Val
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49091))
-            response.Pois.emplace_back(activequest->StartTime, 5372, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(182))
-    {
-        //Invasion Point: Bonich
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49099))
-            response.Pois.emplace_back(activequest->StartTime, 5366, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(183))
-    {
-        //Invasion Point: Aurinor
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(48982))
-            response.Pois.emplace_back(activequest->StartTime, 5373, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(184))
-    {
-        //Invasion Point: Naigtal
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49096))
-            response.Pois.emplace_back(activequest->StartTime, 5368, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(185))
-    {
-        // Invasion Point : Val
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49091))
-            response.Pois.emplace_back(activequest->StartTime, 5360, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(186))
-    {
-        //Invasion Point: Cen'gar
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49098))
-            response.Pois.emplace_back(activequest->StartTime, 5370, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(187))
-    {
-        //Invasion Point: Sangua
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49097))
-            response.Pois.emplace_back(activequest->StartTime, 5350, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(188))
-    {
-        //Invasion Point: Aurinor
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(48982))
-            response.Pois.emplace_back(activequest->StartTime, 5367, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(189))
-    {
-        //Invasion Point: Bonich
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49099))
-            response.Pois.emplace_back(activequest->StartTime, 5371, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(190))
-    {
-        //Invasion Point: Naigtal
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49096))
-            response.Pois.emplace_back(activequest->StartTime, 5374, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
-    if (sGameEventMgr->IsActiveEvent(191))
-    {
-        //Invasion Point: Sangua
-        if (ActiveWorldQuest* activequest = sWorldQuestMgr->GetActiveWorldQuest(49097))
-            response.Pois.emplace_back(activequest->StartTime, 5369, activequest->GetTemplate()->Duration, activequest->GetTemplate()->VariableId, activequest->GetTemplate()->Value);
-
-        needSend = true;
-    }
+    addInvasionPoi(180, 49098, 5359);
+    addInvasionPoi(181, 49091, 5372);
+    addInvasionPoi(182, 49099, 5366);
+    addInvasionPoi(183, 48982, 5373);
+    addInvasionPoi(184, 49096, 5368);
+    addInvasionPoi(185, 49091, 5360);
+    addInvasionPoi(186, 49098, 5370);
+    addInvasionPoi(187, 49097, 5350);
+    addInvasionPoi(188, 48982, 5367);
+    addInvasionPoi(189, 49099, 5371);
+    addInvasionPoi(190, 49096, 5374);
+    addInvasionPoi(191, 49097, 5369);
 
     if (needSend)
         SendPacket(response.Write());
-
-    /*  if (uint8 eventID = sWorldStateMgr.GetWorldStateValue(13321))
-      {
-           WorldPackets::Quest::AreaPoiUpdate response;
-           switch (eventID)
-           {
-               case 1:
-                   response.Pois.push_back(WorldPackets::Quest::WorldQuestUpdateInfo(activequest->StartTime, 5271, worldQuest->Timer, worldQuest->VariableID, worldQuest->Value));
-           }
-      }*/
 }
 
 void WorldSession::HandlePlayerChoiceResponse(WorldPackets::Quest::ChoiceResponse& choiceResponse)
