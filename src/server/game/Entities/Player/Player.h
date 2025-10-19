@@ -1105,6 +1105,13 @@ static uint32 const DefaultTalentRowLevels[MAX_TALENT_TIERS] = { 15, 30, 45, 60,
 static uint32 const DKTalentRowLevels[MAX_TALENT_TIERS] = { 57, 58, 59, 60, 75, 90, 100 };
 static uint32 const DHTalentRowLevels[MAX_TALENT_TIERS] = { 99, 100, 102, 104, 106, 108, 110 };
 
+struct WorldQuestInfo
+{
+    uint32 QuestID;
+    uint32 resetTime;
+    bool needSave = false;
+};
+
 struct TC_GAME_API SpecializationInfo
 {
     SpecializationInfo() : ResetTalentsCost(0), ResetTalentsTime(0), PrimarySpecialization(0), ActiveGroup(0)
@@ -1640,6 +1647,9 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         void SendQuestUpdateAddCreditSimple(QuestObjective const& obj) const;
         void SendQuestUpdateAddPlayer(Quest const* quest, uint16 newCount) const;
         void SendQuestGiverStatusMultiple();
+
+        // WorldQuest
+        bool WorldQuestCompleted(uint32 QuestID) const;
 
         ObjectGuid GetDivider() const { return m_divider; }
         void SetDivider(ObjectGuid guid) { m_divider = guid; }
@@ -2790,6 +2800,7 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         typedef std::set<uint32> QuestSet;
         typedef std::set<uint32> SeasonalQuestSet;
         typedef std::unordered_map<uint32, SeasonalQuestSet> SeasonalEventQuestMap;
+        typedef std::unordered_map<uint32, WorldQuestInfo> WorldQuestStatusMap;
         QuestSet m_timedquests;
         QuestSet m_weeklyquests;
         QuestSet m_monthlyquests;
@@ -2919,6 +2930,8 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
 
         QuestStatusMap m_QuestStatus;
         QuestStatusSaveMap m_QuestStatusSave;
+
+        WorldQuestStatusMap m_worldquests;
 
         RewardedQuestSet m_RewardedQuests;
         QuestStatusSaveMap m_RewardedQuestsSave;

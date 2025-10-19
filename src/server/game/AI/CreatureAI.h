@@ -211,6 +211,8 @@ class TC_GAME_API CreatureAI : public UnitAI
         // Called when a creature regen one of his power
         virtual void RegeneratePower(Powers /*power*/, int32& /*value*/) { }
 
+        virtual void SetPower(Powers power, int32 value) {}
+
         // Called when the Creature reach splineIndex
         virtual void OnSplineIndexReached(int /*splineIndex*/) { }
 

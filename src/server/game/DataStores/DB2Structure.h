@@ -105,6 +105,37 @@ struct AreaGroupMemberEntry
     uint16 AreaGroupID;
 };
 
+struct AreaPOIEntry
+{
+    int32       ID;
+    LocalizedString* Name;
+    LocalizedString* Description;
+    int32       Flags;
+    float       PosX;               // f
+    int32       PosY;               // i
+    int32       PosZ;               // i
+    int32       PoiDataType;        // i
+    uint16      ContinentID;        // h
+    uint16      AreaID;             // h
+    uint16      WorldStateID;       // h
+    uint16      PortLocID;          // h
+    uint8       Importance;         // b
+    uint8       Icon;               // b
+    int32       PlayerConditionID;  // i
+    int32       UiTextureAtlasMemberID; // i
+    int32       MapFloor;           // i
+    int32       WmoGroupID;         // i
+};
+
+struct AreaPOIStateEntry
+{
+    int32       ID;
+    LocalizedString* Description;
+    uint8       WorldStateValue;
+    uint8       IconEnumValue;
+    int32       UiTextureAtlasMemberID;
+};
+
 struct AreaTableEntry
 {
     uint32 ID;

@@ -38,6 +38,8 @@ TC_GAME_API extern DB2Storage<AchievementEntry>                     sAchievement
 TC_GAME_API extern DB2Storage<AdventureJournalEntry>                sAdventureJournalStore;
 TC_GAME_API extern DB2Storage<AdventureMapPOIEntry>                 sAdventureMapPOIStore;
 TC_GAME_API extern DB2Storage<AnimKitEntry>                         sAnimKitStore;
+TC_GAME_API extern DB2Storage<AreaPOIEntry>                         sAreaPOIStore;
+TC_GAME_API extern DB2Storage<AreaPOIStateEntry>                    sAreaPOIStateStore;
 TC_GAME_API extern DB2Storage<AreaTableEntry>                       sAreaTableStore;
 TC_GAME_API extern DB2Storage<AreaTriggerEntry>                     sAreaTriggerStore;
 TC_GAME_API extern DB2Storage<ArmorLocationEntry>                   sArmorLocationStore;

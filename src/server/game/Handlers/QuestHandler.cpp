@@ -713,9 +713,7 @@ void WorldSession::HandleQueryQuestRewards(WorldPackets::Quest::QueryQuestReward
 
 void WorldSession::HandleRequestAreaPoiUpdate(WorldPackets::Quest::RequestAreaPoiUpdate& packet)
 {
-    using namespace WorldPackets::Quest;
-
-    AreaPoiUpdate response;
+    WorldPackets::Quest::AreaPoiUpdate response;
     bool needSend = false;
 
     auto addPoi = [&](int32 lastUpdate, uint32 questId, uint32 timer, int32 variableId, int32 value)
@@ -763,15 +761,15 @@ void WorldSession::HandleRequestAreaPoiUpdate(WorldPackets::Quest::RequestAreaPo
             }
         };
 
-    addEventPoi(117, 5252, 13321, 1);
-    addEventPoi(118, 5261, 13321, 9);
-    addEventPoi(119, 5257, 13321, 5);
-    addEventPoi(120, 5260, 13321, 8);
-    addEventPoi(121, 5254, 13321, 2);
-    addEventPoi(122, 5259, 13321, 7);
-    addEventPoi(123, 5258, 13321, 6);
-    addEventPoi(124, 5256, 13321, 4);
-    addEventPoi(125, 5255, 13321, 3);
+    addEventPoi(999, 5252, 13321, 1); // TODO
+    addEventPoi(999, 5261, 13321, 9); // TODO
+    addEventPoi(999, 5257, 13321, 5); // TODO
+    addEventPoi(999, 5260, 13321, 8); // TODO
+    addEventPoi(999, 5254, 13321, 2); // TODO
+    addEventPoi(999, 5259, 13321, 7); // TODO
+    addEventPoi(999, 5258, 13321, 6); // TODO
+    addEventPoi(999, 5256, 13321, 4); // TODO
+    addEventPoi(999, 5255, 13321, 3); // TODO
 
     // Spring Balloon Festival
     if (sGameEventMgr->IsActiveEvent(87))
@@ -797,9 +795,9 @@ void WorldSession::HandleRequestAreaPoiUpdate(WorldPackets::Quest::RequestAreaPo
                     addPoi(q->StartTime, poiId, q->GetTemplate()->Duration, q->GetTemplate()->VariableId, q->GetTemplate()->Value);
         };
 
-    addWorldBoss(102, { {49171, 5380}, {49169, 5381} });
-    addWorldBoss(103, { {49166, 5379}, {49167, 5375} });
-    addWorldBoss(104, { {49168, 5377}, {49170, 5376} });
+    addWorldBoss(113, { {49171, 5380}, {49169, 5381} });
+    addWorldBoss(114, { {49166, 5379}, {49167, 5375} });
+    addWorldBoss(115, { {49168, 5377}, {49170, 5376} });
 
     // Invasion Points Argus
     auto addInvasionPoi = [&](uint32 eventId, uint32 questId, uint32 poiId)
@@ -809,18 +807,18 @@ void WorldSession::HandleRequestAreaPoiUpdate(WorldPackets::Quest::RequestAreaPo
                     addPoi(q->StartTime, poiId, q->GetTemplate()->Duration, q->GetTemplate()->VariableId, q->GetTemplate()->Value);
         };
 
-    addInvasionPoi(180, 49098, 5359);
-    addInvasionPoi(181, 49091, 5372);
-    addInvasionPoi(182, 49099, 5366);
-    addInvasionPoi(183, 48982, 5373);
-    addInvasionPoi(184, 49096, 5368);
-    addInvasionPoi(185, 49091, 5360);
-    addInvasionPoi(186, 49098, 5370);
-    addInvasionPoi(187, 49097, 5350);
-    addInvasionPoi(188, 48982, 5367);
-    addInvasionPoi(189, 49099, 5371);
-    addInvasionPoi(190, 49096, 5374);
-    addInvasionPoi(191, 49097, 5369);
+    addInvasionPoi(116, 49098, 5359);
+    addInvasionPoi(117, 49091, 5372);
+    addInvasionPoi(118, 49099, 5366);
+    addInvasionPoi(119, 48982, 5373);
+    addInvasionPoi(120, 49096, 5368);
+    addInvasionPoi(121, 49091, 5360);
+    addInvasionPoi(122, 49098, 5370);
+    addInvasionPoi(123, 49097, 5350);
+    addInvasionPoi(124, 48982, 5367);
+    addInvasionPoi(125, 49099, 5371);
+    addInvasionPoi(126, 49096, 5374);
+    addInvasionPoi(127, 49097, 5369);
 
     if (needSend)
         SendPacket(response.Write());

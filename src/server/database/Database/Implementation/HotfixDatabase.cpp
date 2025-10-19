@@ -52,6 +52,16 @@ void HotfixDatabaseConnection::DoPrepareStatements()
     // AreaGroupMember.db2
     PrepareStatement(HOTFIX_SEL_AREA_GROUP_MEMBER, "SELECT ID, AreaID, AreaGroupID FROM area_group_member ORDER BY ID DESC", CONNECTION_SYNCH);
 
+    // AreaPOI.db2
+    PrepareStatement(HOTFIX_SEL_AREA_POI, "SELECT ID, Name, Description, Flags, Pos1, Pos2, Pos3, PoiDataType, PoiData, ContinentID, AreaID, "
+        "WorldStateID, Importance, Icon, PlayerConditionID, PortLocID, UiTextureAtlasMemberID, MapFloor, WmoGroupID FROM area_p_o_i ORDER BY ID DESC", CONNECTION_SYNCH);
+    PREPARE_LOCALE_STMT(HOTFIX_SEL_AREA_POI, "SELECT ID, Name_lang, Description_lang FROM area_p_o_i_locale WHERE locale = ?", CONNECTION_SYNCH);
+
+    // AreaPOIState.db2
+    PrepareStatement(HOTFIX_SEL_AREA_POI_STATE, "SELECT ID, Description, WorldStateValue, IconEnumValue, UiTextureAtlasMemberID"
+        " FROM area_p_o_i_state ORDER BY ID DESC", CONNECTION_SYNCH);
+    PREPARE_LOCALE_STMT(HOTFIX_SEL_AREA_POI_STATE, "SELECT ID, Description_lang FROM area_p_o_i_state_locale WHERE locale = ?", CONNECTION_SYNCH);
+
     // AreaTable.db2
     PrepareStatement(HOTFIX_SEL_AREA_TABLE, "SELECT ID, ZoneName, AreaName, Flags1, Flags2, AmbientMultiplier, ContinentID, ParentAreaID, AreaBit, "
         "AmbienceID, ZoneMusic, IntroSound, LiquidTypeID1, LiquidTypeID2, LiquidTypeID3, LiquidTypeID4, UwZoneMusic, UwAmbience, "

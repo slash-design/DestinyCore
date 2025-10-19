@@ -40,6 +40,8 @@ DB2Storage<AdventureJournalEntry>               sAdventureJournalStore("Adventur
 DB2Storage<AdventureMapPOIEntry>                sAdventureMapPOIStore("AdventureMapPOI.db2", AdventureMapPOILoadInfo::Instance());
 DB2Storage<AnimKitEntry>                        sAnimKitStore("AnimKit.db2", AnimKitLoadInfo::Instance());
 DB2Storage<AreaGroupMemberEntry>                sAreaGroupMemberStore("AreaGroupMember.db2", AreaGroupMemberLoadInfo::Instance());
+DB2Storage<AreaPOIEntry>                        sAreaPOIStore("AreaPOI.db2", AreaPOILoadInfo::Instance());
+DB2Storage<AreaPOIStateEntry>                   sAreaPOIStateStore("AreaPOIState.db2", AreaPOIStateLoadInfo::Instance());
 DB2Storage<AreaTableEntry>                      sAreaTableStore("AreaTable.db2", AreaTableLoadInfo::Instance());
 DB2Storage<AreaTriggerEntry>                    sAreaTriggerStore("AreaTrigger.db2", AreaTriggerLoadInfo::Instance());
 DB2Storage<ArmorLocationEntry>                  sArmorLocationStore("ArmorLocation.db2", ArmorLocationLoadInfo::Instance());
@@ -533,6 +535,8 @@ void DB2Manager::LoadStores(std::string const& dataPath, uint32 defaultLocale)
     LOAD_DB2(sAdventureMapPOIStore);
     LOAD_DB2(sAnimKitStore);
     LOAD_DB2(sAreaGroupMemberStore);
+    //LOAD_DB2(sAreaPOIStore);
+    //LOAD_DB2(sAreaPOIStateStore);
     LOAD_DB2(sAreaTableStore);
     LOAD_DB2(sAreaTriggerStore);
     LOAD_DB2(sArmorLocationStore);

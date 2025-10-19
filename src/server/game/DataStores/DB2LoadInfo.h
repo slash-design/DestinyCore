@@ -147,6 +147,54 @@ struct AreaGroupMemberLoadInfo
     }
 };
 
+struct AreaPOILoadInfo
+{
+    static DB2LoadInfo const* Instance()
+    {
+        static DB2FieldMeta const fields[] =
+        {
+            { true, FT_INT, "ID" },
+            { false, FT_STRING, "Name" },
+            { false, FT_STRING, "Description" },
+            { true, FT_INT, "Flags" },
+            { false, FT_FLOAT, "Pos1" },
+            { false, FT_FLOAT, "Pos2" },
+            { false, FT_FLOAT, "Pos3" },
+            { true, FT_INT, "PoiDataType" },
+            { true, FT_INT, "PoiData" },
+            { false, FT_SHORT, "ContinentID" },
+            { false, FT_SHORT, "AreaID" },
+            { false, FT_SHORT, "WorldStateID" },
+            { false, FT_BYTE, "Importance" },
+            { false, FT_BYTE, "Icon" },
+            { true, FT_INT, "PlayerConditionID" },
+            { true, FT_INT, "PortLocID" },
+            { true, FT_INT, "UiTextureAtlasMemberID" },
+            { true, FT_INT, "MapFloor" },
+            { true, FT_INT, "WmoGroupID" },
+        };
+        static DB2LoadInfo const loadInfo(&fields[0], std::extent<decltype(fields)>::value, AreaPOIMeta::Instance(), HOTFIX_SEL_AREA_POI);
+        return &loadInfo;
+    }
+};
+
+struct AreaPOIStateLoadInfo
+{
+    static DB2LoadInfo const* Instance()
+    {
+        static DB2FieldMeta const fields[] =
+        {
+            { true, FT_INT, "ID" },
+            { false, FT_STRING, "Description" },
+            { false, FT_BYTE, "WorldStateValue" },
+            { false, FT_BYTE, "IconEnumValue" },
+            { true, FT_INT, "UiTextureAtlasMemberID" },
+        };
+        static DB2LoadInfo const loadInfo(&fields[0], std::extent<decltype(fields)>::value, AreaPOIStateMeta::Instance(), HOTFIX_SEL_AREA_POI_STATE);
+        return &loadInfo;
+    }
+};
+
 struct AreaTableLoadInfo
 {
     static DB2LoadInfo const* Instance()

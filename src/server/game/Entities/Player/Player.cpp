@@ -18313,6 +18313,15 @@ void Player::SendQuestGiverStatusMultiple()
     GetSession()->SendPacket(response.Write());
 }
 
+bool Player::WorldQuestCompleted(uint32 QuestID) const
+{
+    WorldQuestStatusMap::const_iterator iter = m_worldquests.find(QuestID);
+    if (iter == m_worldquests.end())
+        return false;
+
+    return iter->second.resetTime > time(NULL);
+}
+
 WorldObject* Player::GetLastQuestGiver() const
 {
     return ObjectAccessor::GetWorldObject(*this, m_lastQuestGiverGUID);

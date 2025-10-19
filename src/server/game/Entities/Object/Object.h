@@ -444,6 +444,9 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         // if negative it is used as PhaseGroupId
         void SetDBPhase(int32 p) { _dbPhase = p; }
 
+        uint32 m_zoneId;
+
+        uint32 GetCurrentZoneID() const { return m_zoneId; }
         uint32 GetAreaId() const;
         uint32 GetZoneId() const;
 

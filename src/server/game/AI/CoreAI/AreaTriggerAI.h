@@ -60,6 +60,9 @@ class TC_GAME_API AreaTriggerAI
 
         // Pass parameters between AI
         virtual void DoAction(int32 /*param*/) { }
+
+        // Called when the AreaTrigger is update target
+        virtual void ActionOnUpdate(GuidList& affectedPlayers) {}
 };
 
 class NullAreaTriggerAI : public AreaTriggerAI
