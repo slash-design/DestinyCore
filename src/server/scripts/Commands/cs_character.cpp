@@ -233,8 +233,11 @@ public:
     {
         if (player)
         {
+            // level down to before talents become available case: remove all - this will dismiss any active player pets
+            if (oldLevel > newLevel && oldLevel == 15)
+                player->ResetTalents(true);
+
             player->GiveLevel(newLevel);
-            player->InitTalentForLevel();
             player->SetUInt32Value(PLAYER_XP, 0);
 
             if (handler->needReportToTarget(player))
