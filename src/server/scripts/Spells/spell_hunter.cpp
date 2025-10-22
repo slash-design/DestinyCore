@@ -1015,9 +1015,17 @@ public:
             if (!pet || pet->isDead())
                 return SPELL_FAILED_NO_PET;
 
-            // pet has a target and target is within 5 yards and target is in line of sight
-            if (!petTarget || !pet->IsWithinDist(petTarget, 25.0f, true) || !petTarget->IsWithinLOSInMap(pet))
-                return SPELL_FAILED_DONT_REPORT;
+            // no target
+            if (!petTarget)
+                return SPELL_FAILED_NO_VALID_TARGETS;
+
+            // target not in range
+            if (!pet->IsWithinDist(petTarget, 25.0f, true))
+                return SPELL_FAILED_OUT_OF_RANGE;
+
+            // target not in line of sight
+            if (!petTarget->IsWithinLOSInMap(pet))
+                return SPELL_FAILED_LINE_OF_SIGHT;
 
             if (pet->HasAuraType(SPELL_AURA_MOD_STUN) || pet->HasAuraType(SPELL_AURA_MOD_CONFUSE) || pet->HasAuraType(SPELL_AURA_MOD_SILENCE) ||
                 pet->HasAuraType(SPELL_AURA_MOD_FEAR) || pet->HasAuraType(SPELL_AURA_MOD_FEAR_2))
@@ -1097,21 +1105,18 @@ public:
 
         void HandleDamage(SpellEffIndex /*effIndex*/)
         {
-            Unit* caster = GetCaster();
-            Unit* owner = caster->GetOwner();
-            Unit* target = GetExplTargetUnit();
+            if (Unit* caster = GetCaster())
+            {
+                if (Player* owner = caster->GetOwner()->ToPlayer())
+                {
+                    // formula from Patch 7.2.5
+                    // [ 1.5 * (1 + (Ranged Attack Power * 3.6)) * 1 * (0.5 + min( Level, 20 ) * 0.025) * (1 + Versatility) ]
+                    float rawdmg = 1.5f * (1.0f + owner->GetUInt32Value(UNIT_FIELD_RANGED_ATTACK_POWER) * 3.6f);
+                    rawdmg *= (0.5f + std::min(int32(owner->getLevel()), 20) * 0.025f) * (1 + owner->GetRatingBonusValue(CR_VERSATILITY_DAMAGE_DONE) / 100.0f);
 
-            // (1.5 * (rap * 3) * bmMastery * lowNerf * (1 + versability))
-            int32 dmg = 4.5f * owner->GetUInt32Value(UNIT_FIELD_RANGED_ATTACK_POWER);
-            int32 lowNerf = std::min(int32(owner->getLevel()), 20) * 0.05f;
-
-            dmg = AddPct(dmg, owner->GetFloatValue(PLAYER_MASTERY));
-            dmg *= lowNerf;
-
-            dmg = caster->SpellDamageBonusDone(target, GetSpellInfo(), dmg, SPELL_DIRECT_DAMAGE, GetEffectInfo(EFFECT_0));
-            dmg = target->SpellDamageBonusTaken(caster, GetSpellInfo(), dmg, SPELL_DIRECT_DAMAGE, GetEffectInfo(EFFECT_0));
-
-            SetHitDamage(dmg);
+                    SetHitDamage((int32)rawdmg);
+                }
+            }
         }
 
         void Register() override
