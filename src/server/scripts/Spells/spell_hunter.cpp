@@ -1042,35 +1042,7 @@ public:
 
             return SPELL_CAST_OK;
         }
-        //
-        // Master of Beasts:
-        // Aura 197248
-        // 
-        // Aspect of the Beast:
-        // Aura 191384
-        // 
-        // uint16 spec = GetCaster()->ToPlayer()->GetPet()->GetSpecialization();
-        //
-        // spec == 74, 535: FEROCITY
-        // spec == 79, 536: CUNNING
-        // spec == 81, 537: TENACITY
-        //
-        // BESTIAL FEROCITY = 191413
-        // BESTIAL TENACITY = 191414
-        // BESTUAL CUNNING = 191397
-        /*
-                            if caster->HasAura(AOTB)
-                                switch PetSpec
-                                    case FEROCITY:
-                                        pet->CastSpell(target, BESTIAL_FEROCITY, true);
-                                        break;
-                                    case TENACITY:
-                                        pet->CastSpell(pet, BESTIAL_TENACITY, true);
-                                        break;
-                                    case CUNNING:
-                                        pet->CastSpell(target, BESTIAL_CUNNING, true);
-                                        break;
-        */
+
         void HandleDummy(SpellEffIndex /*effIndex*/)
         {
             if (GetCaster()->IsPlayer())
@@ -1111,7 +1083,7 @@ public:
                             break;
                         case PET_SPEC_TENACITY:
                         case PET_SPEC_TENACITY_ALT:
-                            pet->CastSpell(GetExplTargetUnit(), SPELL_BESTIAL_TENACITY, true);
+                            pet->CastSpell(pet, SPELL_BESTIAL_TENACITY, true);
                             break;
                         }
                     }
@@ -2076,7 +2048,7 @@ public:
                             break;
                         case PET_SPEC_TENACITY:
                         case PET_SPEC_TENACITY_ALT:
-                            pet->CastSpell(target, SPELL_BESTIAL_TENACITY, true);
+                            pet->CastSpell(pet, SPELL_BESTIAL_TENACITY, true);
                             break;
                         }
                     }
