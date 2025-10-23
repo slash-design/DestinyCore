@@ -65,6 +65,16 @@ enum PetStableinfo
     PET_STABLE_INACTIVE               = 2
 };
 
+enum PetSpecializations : uint16            // from SpecializationSpells.db2
+{
+    PET_SPEC_FEROCITY                 = 74,
+    PET_SPEC_CUNNING                  = 79,
+    PET_SPEC_TENACITY                 = 81,
+    PET_SPEC_FEROCITY_ALT             = 535,
+    PET_SPEC_CUNNING_ALT              = 536,
+    PET_SPEC_TENACITY_ALT             = 537
+};
+
 typedef std::unordered_map<uint32, PetSpell> PetSpellMap;
 typedef std::vector<uint32> AutoSpellList;
 

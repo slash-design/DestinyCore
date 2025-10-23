@@ -127,6 +127,8 @@ enum HunterSpells
     SPELL_HUNTER_TRAILBLAZER_BUFF                   = 231390,
     SPELL_HUNTER_VULNERABLE                         = 187131,
     SPELL_HUNTER_WILD_CALL_AURA                     = 185791,
+    SPELL_HUNTER_MASTER_OF_BEASTS                   = 197248,
+    SPELL_HUNTER_ASPECT_OF_THE_BEAST                = 191384
 };
 
 enum AncientHysteriaSpells
@@ -151,6 +153,13 @@ enum DireBeastSpells
     DIRE_BEAST_TOWNLONG_STEPPES                     = 126215,
     DIRE_BEAST_VALE_OF_THE_ETERNAL_BLOSSOM          = 126213,
     DIRE_BEAST_VALLEY_OF_THE_FOUR_WINDS             = 122811,
+};
+
+enum AspectOfTheBeastSpells
+{
+    SPELL_BESTIAL_FEROCITY = 191413,
+    SPELL_BESTIAL_CUNNING = 191397,
+    SPELL_BESTIAL_TENACITY = 191414
 };
 
 // Harpoon - 190925
@@ -1033,11 +1042,40 @@ public:
 
             return SPELL_CAST_OK;
         }
-
+        //
+        // Master of Beasts:
+        // Aura 197248
+        // 
+        // Aspect of the Beast:
+        // Aura 191384
+        // 
+        // uint16 spec = GetCaster()->ToPlayer()->GetPet()->GetSpecialization();
+        //
+        // spec == 74, 535: FEROCITY
+        // spec == 79, 536: CUNNING
+        // spec == 81, 537: TENACITY
+        //
+        // BESTIAL FEROCITY = 191413
+        // BESTIAL TENACITY = 191414
+        // BESTUAL CUNNING = 191397
+        /*
+                            if caster->HasAura(AOTB)
+                                switch PetSpec
+                                    case FEROCITY:
+                                        pet->CastSpell(target, BESTIAL_FEROCITY, true);
+                                        break;
+                                    case TENACITY:
+                                        pet->CastSpell(pet, BESTIAL_TENACITY, true);
+                                        break;
+                                    case CUNNING:
+                                        pet->CastSpell(target, BESTIAL_CUNNING, true);
+                                        break;
+        */
         void HandleDummy(SpellEffIndex /*effIndex*/)
         {
             if (GetCaster()->IsPlayer())
             {
+
                 if (Unit* pet = GetCaster()->GetGuardianPet())
                 {
                     if (!pet)
@@ -1047,7 +1085,7 @@ public:
                         return;
 
                     pet->CastSpell(GetExplTargetUnit(), SPELL_HUNTER_KILL_COMMAND_TRIGGER, true);
-
+                    
                     if (pet->GetVictim())
                     {
                         pet->AttackStop();
@@ -1057,13 +1095,33 @@ public:
                         pet->ToCreature()->AI()->AttackStart(GetExplTargetUnit());
 
                     pet->CastSpell(GetExplTargetUnit(), SPELL_HUNTER_KILL_COMMAND_CHARGE, true);
+
+                    // Aspect of the Beast
+                    if (GetCaster()->HasAura(SPELL_HUNTER_ASPECT_OF_THE_BEAST))
+                    {
+                        switch (((Pet*)pet)->GetSpecialization())
+                        {
+                        case PET_SPEC_FEROCITY:
+                        case PET_SPEC_FEROCITY_ALT:
+                            pet->CastSpell(GetExplTargetUnit(), SPELL_BESTIAL_FEROCITY, true);
+                            break;
+                        case PET_SPEC_CUNNING:
+                        case PET_SPEC_CUNNING_ALT:
+                            pet->CastSpell(GetExplTargetUnit(), SPELL_BESTIAL_CUNNING, true);
+                            break;
+                        case PET_SPEC_TENACITY:
+                        case PET_SPEC_TENACITY_ALT:
+                            pet->CastSpell(GetExplTargetUnit(), SPELL_BESTIAL_TENACITY, true);
+                            break;
+                        }
+                    }
                 }
 				if (Creature* hati = GetCaster()->GetHati())
                 {
                     if (!hati || hati->isDead())
                         return;
 
-                    if (!GetExplTargetUnit() || !hati->IsWithinDist(GetExplTargetUnit(), 25.0f, true) || !GetExplTargetUnit()->IsWithinLOSInMap(hati) || !GetCaster()->HasAura(197248))
+                    if (!GetExplTargetUnit() || !hati->IsWithinDist(GetExplTargetUnit(), 25.0f, true) || !GetExplTargetUnit()->IsWithinLOSInMap(hati) || !GetCaster()->HasAura(SPELL_HUNTER_MASTER_OF_BEASTS))
                         return;
                     hati->CastSpell(GetExplTargetUnit(), SPELL_HUNTER_KILL_COMMAND_TRIGGER, true);
 
@@ -2003,8 +2061,25 @@ public:
                         pet->AddThreat(target, 400.0f);
                     }
 
-                    dmg = player->SpellDamageBonusDone(target, GetSpellInfo(), dmg, SPELL_DIRECT_DAMAGE, GetEffectInfo(EFFECT_0));
-                    dmg = target->SpellDamageBonusTaken(player, GetSpellInfo(), dmg, SPELL_DIRECT_DAMAGE, GetEffectInfo(EFFECT_0));
+                    // Aspect of the Beast
+                    if (GetCaster()->HasAura(SPELL_HUNTER_ASPECT_OF_THE_BEAST))
+                    {
+                        switch (((Pet*)pet)->GetSpecialization())
+                        {
+                        case PET_SPEC_FEROCITY:
+                        case PET_SPEC_FEROCITY_ALT:
+                            pet->CastSpell(target, SPELL_BESTIAL_FEROCITY, true);
+                            break;
+                        case PET_SPEC_CUNNING:
+                        case PET_SPEC_CUNNING_ALT:
+                            pet->CastSpell(target, SPELL_BESTIAL_CUNNING, true);
+                            break;
+                        case PET_SPEC_TENACITY:
+                        case PET_SPEC_TENACITY_ALT:
+                            pet->CastSpell(target, SPELL_BESTIAL_TENACITY, true);
+                            break;
+                        }
+                    }
 
                     SetHitDamage(dmg);
                 }
