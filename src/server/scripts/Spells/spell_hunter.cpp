@@ -1029,7 +1029,7 @@ public:
                 return SPELL_FAILED_NO_VALID_TARGETS;
 
             // target not in range
-            if (!pet->IsWithinDist(petTarget, 25.0f, true))
+            if (!pet->IsWithinDist(petTarget, 40.0f, true))
                 return SPELL_FAILED_OUT_OF_RANGE;
 
             // target not in line of sight
