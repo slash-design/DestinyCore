@@ -59,6 +59,14 @@ void AddSC_boss_sha_of_doubt();
 void AddSC_boss_wise_mari();
 void AddSC_instance_temple_of_jade_serpent();
 
+// Terrace of Endless Spring
+void AddSC_boss_lei_shi();
+void AddSC_boss_protectors_of_the_endless();
+void AddSC_boss_sha_of_fear();
+void AddSC_boss_tsulong();
+void AddSC_instance_terrace_of_endless_spring();
+void AddSC_terrace_of_endless_spring();
+
 // Mogu'Shan Vault
 void AddSC_boss_stone_guard();
 void AddSC_boss_feng();
@@ -172,6 +180,14 @@ void AddPandariaScripts()
     AddSC_boss_sha_of_doubt();
     AddSC_boss_wise_mari();
     AddSC_instance_temple_of_jade_serpent();
+
+    // Terrace of Endless Spring
+    AddSC_boss_lei_shi();
+    AddSC_boss_protectors_of_the_endless();
+    AddSC_boss_sha_of_fear();
+    AddSC_boss_tsulong();
+    AddSC_instance_terrace_of_endless_spring();
+    AddSC_terrace_of_endless_spring();
 
     // Mogu'Shan Vault
     AddSC_boss_stone_guard();

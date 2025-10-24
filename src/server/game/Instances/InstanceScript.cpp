@@ -767,6 +767,47 @@ void InstanceScript::DoKillPlayersWithAura(uint32 spell)
                 player->Kill(player);
 }
 
+// Apply Dampening Spell for Creature
+void InstanceScript::DoDampeningForCreatures(Creature* creature)
+{
+    if (!creature || !GetDampening() || !GetDampeningSpell())
+        return;
+
+    // Only normal/heroic mode
+    if (instance->GetDifficultyID() == DIFFICULTY_LFR)
+    {
+        SetDampeningSpell(0);
+        return;
+    }
+
+    if (Pet* pet = creature->ToPet())
+        if (Player* player = pet->GetOwner())
+            return;
+
+    if (TempSummon* temp = creature->ToTempSummon())
+        if (temp->GetSummonerGUID().IsPlayer())
+            return;
+
+    if (creature->HasAura(GetDampeningSpell()))
+        return;
+
+    creature->CastSpell(creature, GetDampeningSpell(), true);
+    dampenedGUIDs.push_back(creature->GetGUID());
+}
+
+// Remove Specific Dampening Spell from affected creatures and prevent apply for future
+void InstanceScript::DoRemoveDampeningFromCreatures()
+{
+    SetDampening(false);
+
+    for (auto&& itr : dampenedGUIDs)
+        if (Creature* creature = instance->GetCreature(itr))
+            creature->RemoveAurasDueToSpell(GetDampeningSpell());
+
+    // Not apply anymore in reset/evade
+    SetDampeningSpell(0);
+}
+
 // Cast spell on all players in instance
 void InstanceScript::DoCastSpellOnPlayers(uint32 spell, Unit* caster /*= nullptr*/, bool triggered /*= true*/)
 {

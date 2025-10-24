@@ -304,6 +304,10 @@ class TC_GAME_API InstanceScript : public ZoneScript
         // Kill all players with this aura in the instance
         void DoKillPlayersWithAura(uint32 spell);
 
+        // Dampening creatures with specific aura
+        void DoDampeningForCreatures(Creature* creature);
+        void DoRemoveDampeningFromCreatures();
+
         // Cast spell on all players in instance
         void DoCastSpellOnPlayers(uint32 spell, Unit* caster = nullptr, bool triggered = true);
 
@@ -577,6 +581,12 @@ class TC_GAME_API InstanceScript : public ZoneScript
         // ReCheck PhaseTemplate related conditions
         void UpdatePhasing();
 
+        // Dampening condition
+        void SetDampening(bool force = true) { hasDampening = force; }
+        bool GetDampening() { return hasDampening; }
+        void SetDampeningSpell(uint32 spellId) { dampeningSpellId = spellId; }
+        uint32 GetDampeningSpell() { return dampeningSpellId; }
+
         uint32 GetEncounterCount() const { return uint32(bosses.size()); }
 
         void InitializeCombatResurrections(uint8 charges = 1, uint32 interval = 0);
@@ -667,6 +677,7 @@ class TC_GAME_API InstanceScript : public ZoneScript
 
         std::vector<char> headers;
         std::vector<BossInfo> bosses;
+        std::vector<ObjectGuid> dampenedGUIDs;
         DoorInfoMap doors;
         MinionInfoMap minions;
         ObjectInfoMap _creatureInfo;
@@ -689,6 +700,9 @@ class TC_GAME_API InstanceScript : public ZoneScript
         Optional<Position> _challengeModeFontOfPowerPosition2;
         std::array<uint32, 3> _affixes;
         std::bitset<size_t(121)> _affixesTest;//Affixes::MaxAffixes
+
+        uint32 dampeningSpellId;
+        bool hasDampening;
 
     #ifdef TRINITY_API_USE_DYNAMIC_LINKING
         // Strong reference to the associated script module
