@@ -251,7 +251,7 @@ namespace Instances { namespace Bloodmaul
 
             struct boss_AI : public BossAI
             {
-                boss_AI(Creature* creature) : BossAI(creature, BossIds::BossForgemasterGogduh)
+                boss_AI(Creature* creature) : BossAI(creature, BossIds::BossForgemasterGogduh), m_ForgemasterDied(false)
                 {
                     me->SetControlled(true, UNIT_STATE_ROOT);
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED);
@@ -261,15 +261,13 @@ namespace Instances { namespace Bloodmaul
                         instance->SetBossState(BossIds::BossForgemasterGogduh, EncounterState::TO_BE_DECIDED);
                 }
 
-                void DoAction(const int32 /*action*/) override
+                void DoAction(const int32 action) override
                 {
                     Talk((uint8)Yells::Release);
+                if (action == 0)
+                    m_ForgemasterDied = true;
                     me->SetControlled(false, UNIT_STATE_ROOT);
 
-                    if (Creature* forgemaster = me->GetMap()->GetCreature(instance->GetGuidData((uint32)MobEntries::Gogduh)))
-                        me->GetMotionMaster()->MoveCharge(forgemaster->GetPositionX(), forgemaster->GetPositionY(), forgemaster->GetPositionZ(), 42.0f, 1);
-                    else
-                        me->GetMotionMaster()->MovePoint(1, 2082.f, 116.f, 225.f);
                 }
 
                 void JustReachedHome() override
@@ -366,6 +364,15 @@ namespace Instances { namespace Bloodmaul
 
                     if (me->HasUnitState(UNIT_STATE_CASTING) || me->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
                         return;
+                if (m_ForgemasterDied && instance)
+                {
+                    m_ForgemasterDied = false;
+                    ObjectGuid gogduhGuid = instance->GetGuidData(uint32(MobEntries::Gogduh));
+                    if (Creature* forgemaster = me->GetMap()->GetCreature(gogduhGuid))
+                        me->GetMotionMaster()->MoveCharge(forgemaster->GetPositionX(), forgemaster->GetPositionY(), forgemaster->GetPositionZ(), 42.0f, 1);
+                    else
+                        me->GetMotionMaster()->MovePoint(1, 2082.f, 116.f, 225.f);
+                }
 
                     events.Update(diff);
 
@@ -400,6 +407,8 @@ namespace Instances { namespace Bloodmaul
 
                     DoMeleeAttackIfReady();
                 }
+        private:
+            bool m_ForgemasterDied;
             };
     };
 
