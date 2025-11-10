@@ -96,9 +96,6 @@ enum Expansions
     EXPANSION_LEGION                   = 6,
     MAX_EXPANSIONS,
 
-    // future expansion
-    EXPANSION_BATTLE_FOR_AZEROTH       = 7,
-
     MAX_ACCOUNT_EXPANSIONS
 };
 
