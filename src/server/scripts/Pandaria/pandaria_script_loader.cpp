@@ -135,6 +135,23 @@ void AddSC_townlong_steppes();
 void AddSC_vale_of_eternal_blossoms();
 void AddSC_valley_of_the_four_winds();
 
+// Scenarios
+void AddSC_instance_arena_of_annihiliation();
+void AddSC_instance_assault_on_zanvess();
+void AddSC_instance_battle_on_the_high_seas();
+void AddSC_instance_blood_in_the_snow();
+void AddSC_instance_brewing_storm();
+void AddSC_instance_brewmoon_festival();
+void AddSC_instance_crypt_of_forgotten_kings();
+void AddSC_instance_dagger_in_the_dark();
+void AddSC_instance_dark_heart_of_pandaria();
+void AddSC_instance_fall_of_theramore_alliance();
+void AddSC_instance_fall_of_theramore_horde();
+void AddSC_instance_greenstone_village();
+void AddSC_instance_little_patience();
+void AddSC_instance_secrets_of_ragefire();
+void AddSC_instance_unga_ingoo();
+
 void AddPandariaScripts()
 {
     // Gate Setting Sun
@@ -256,4 +273,21 @@ void AddPandariaScripts()
     AddSC_townlong_steppes();
     AddSC_vale_of_eternal_blossoms();
     AddSC_valley_of_the_four_winds();
+
+    // Scenarios
+    AddSC_instance_arena_of_annihiliation();
+    AddSC_instance_assault_on_zanvess();
+    AddSC_instance_battle_on_the_high_seas();
+    AddSC_instance_blood_in_the_snow();
+    AddSC_instance_brewing_storm();
+    AddSC_instance_brewmoon_festival();
+    AddSC_instance_crypt_of_forgotten_kings();
+    AddSC_instance_dagger_in_the_dark();
+    AddSC_instance_dark_heart_of_pandaria();
+    AddSC_instance_fall_of_theramore_alliance();
+    AddSC_instance_fall_of_theramore_horde();
+    AddSC_instance_greenstone_village();
+    AddSC_instance_little_patience();
+    AddSC_instance_secrets_of_ragefire();
+    AddSC_instance_unga_ingoo();
 }
