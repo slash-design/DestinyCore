@@ -920,7 +920,6 @@ public:
             SetHitDamage(dmg);
 
             caster->SetPower(POWER_PAIN, caster->GetPower(POWER_PAIN) - m_ExtraSpellCost);
-            caster->ToPlayer()->SetPower(POWER_PAIN, caster->GetPower(POWER_PAIN) - m_ExtraSpellCost);
             if (caster->HasAura(SPELL_DH_GLUTTONY_BUFF))
                 caster->RemoveAurasDueToSpell(SPELL_DH_GLUTTONY_BUFF);
         }
