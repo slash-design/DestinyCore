@@ -658,6 +658,9 @@ enum {
     QUEST_BLINK_OF_AN_EYE = 44663,
     QUEST_THE_CALL_OF_WAR = 39691,
     QUEST_DEMONS_AMONG_THEM = 44463,
+    QUEST_THE_MISSION = 29548,
+    QUEST_UNLEASH_HELL = 31732,
+    QUEST_TOUCHING_GROUND = 31733,
     SCENE_DEMONS_AMONG_THEM = 1456,
     KILL_CREDIT_WARN_ANDUIN_WRYNN = 111585,
     SPELL_PHASE_175 = 57569,
@@ -750,6 +753,26 @@ public:
     }
 };
 
+class player_the_mission_skyfire_phasing : public PlayerScript
+{
+public:
+    player_the_mission_skyfire_phasing() : PlayerScript("player_the_mission_skyfire_phasing") { }
+
+    void OnQuestStatusChange(Player* player, uint32 questId) override
+    {
+        switch (questId)
+        {
+        case QUEST_THE_MISSION:
+        case QUEST_UNLEASH_HELL:
+        case QUEST_TOUCHING_GROUND:
+            PhasingHandler::OnConditionChange(player);
+            break;
+        default:
+            break;
+        }
+    }
+};
+
 // Elerion Bladedancer <Illidari>
 class npc_elerion_bladedancer_101004 : public CreatureScript
 {
@@ -835,6 +858,7 @@ void AddSC_stormwind_city()
     new npc_anduin_wrynn();
     new scene_demons_among_them_alliance();
     new quest_demons_among_them();
+    new player_the_mission_skyfire_phasing();
     new npc_elerion_bladedancer_101004();
     new npc_khadgars_upgraded_servant_114562();
     new PlayerScript_phase_correction();
