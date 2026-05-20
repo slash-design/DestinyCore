@@ -661,6 +661,7 @@ enum {
     QUEST_THE_MISSION = 29548,
     QUEST_UNLEASH_HELL = 31732,
     QUEST_TOUCHING_GROUND = 31733,
+    MAP_THE_JADE_FOREST = 870,
     SCENE_DEMONS_AMONG_THEM = 1456,
     KILL_CREDIT_WARN_ANDUIN_WRYNN = 111585,
     SPELL_PHASE_175 = 57569,
@@ -760,16 +761,37 @@ public:
 
     void OnQuestStatusChange(Player* player, uint32 questId) override
     {
-        switch (questId)
-        {
-        case QUEST_THE_MISSION:
-        case QUEST_UNLEASH_HELL:
-        case QUEST_TOUCHING_GROUND:
-            PhasingHandler::OnConditionChange(player);
-            break;
-        default:
-            break;
-        }
+        if (!IsSkyfireIntroQuest(questId))
+            return;
+
+        RefreshSkyfireVisibility(player);
+    }
+
+    void OnMapChanged(Player* player) override
+    {
+        if (player->GetMapId() != MAP_THE_JADE_FOREST || !IsInSkyfireIntroChain(player))
+            return;
+
+        PhasingHandler::OnMapChange(player);
+        RefreshSkyfireVisibility(player);
+    }
+
+private:
+    static bool IsSkyfireIntroQuest(uint32 questId)
+    {
+        return questId == QUEST_THE_MISSION || questId == QUEST_UNLEASH_HELL || questId == QUEST_TOUCHING_GROUND;
+    }
+
+    static bool IsInSkyfireIntroChain(Player* player)
+    {
+        return player->GetQuestStatus(QUEST_THE_MISSION) != QUEST_STATUS_NONE
+            && player->GetQuestStatus(QUEST_TOUCHING_GROUND) != QUEST_STATUS_REWARDED;
+    }
+
+    static void RefreshSkyfireVisibility(Player* player)
+    {
+        PhasingHandler::OnConditionChange(player);
+        player->UpdateObjectVisibility(true);
     }
 };
 
