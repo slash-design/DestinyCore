@@ -200,7 +200,7 @@ void Metric::ScheduleSend()
 {
     if (_enabled)
     {
-        _batchTimer->expires_from_now(boost::posix_time::seconds(_updateInterval));
+        _batchTimer->expires_after(Seconds(_updateInterval));
         _batchTimer->async_wait(std::bind(&Metric::SendBatch, this));
     }
     else
@@ -224,7 +224,7 @@ void Metric::ScheduleOverallStatusLog()
 {
     if (_enabled)
     {
-        _overallStatusTimer->expires_from_now(boost::posix_time::seconds(_overallStatusTimerInterval));
+        _overallStatusTimer->expires_after(Seconds(_overallStatusTimerInterval));
         _overallStatusTimer->async_wait([this](const boost::system::error_code&)
         {
             _overallStatusTimerTriggered = true;

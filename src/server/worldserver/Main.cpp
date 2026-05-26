@@ -99,7 +99,7 @@ public:
 
     static void Start(std::shared_ptr<FreezeDetector> const& freezeDetector)
     {
-        freezeDetector->_timer.expires_from_now(boost::posix_time::seconds(5));
+        freezeDetector->_timer.expires_after(Seconds(5));
         freezeDetector->_timer.async_wait(std::bind(&FreezeDetector::Handler, std::weak_ptr<FreezeDetector>(freezeDetector), std::placeholders::_1));
     }
 
@@ -121,14 +121,14 @@ public:
 
     static void Start(std::shared_ptr<WorldToDiscord> const& worldToDiscord)
     {
-        worldToDiscord->_timer.expires_from_now(boost::posix_time::seconds(5));
+        worldToDiscord->_timer.expires_after(Seconds(5));
         worldToDiscord->_timer.async_wait(std::bind(&WorldToDiscord::Handler, std::weak_ptr<WorldToDiscord>(worldToDiscord), std::placeholders::_1));
     }
 
     static void Handler(std::weak_ptr<WorldToDiscord> worldToDiscordRed, boost::system::error_code const& error);
 
 private:
-    boost::asio::deadline_timer _timer;
+    Trinity::Asio::DeadlineTimer _timer;
 };
 #endif
 
@@ -529,7 +529,7 @@ void FreezeDetector::Handler(std::weak_ptr<FreezeDetector> freezeDetectorRef, bo
                 ABORT();
             }
 
-            freezeDetector->_timer.expires_from_now(boost::posix_time::seconds(1));
+            freezeDetector->_timer.expires_after(Seconds(1));
             freezeDetector->_timer.async_wait(std::bind(&FreezeDetector::Handler, freezeDetectorRef, std::placeholders::_1));
         }
     }
@@ -617,7 +617,7 @@ void WorldToDiscord::Handler(std::weak_ptr<WorldToDiscord> worldToDiscordRef, bo
                 }
             }
 
-            worldToDiscord->_timer.expires_from_now(boost::posix_time::seconds(2));
+            worldToDiscord->_timer.expires_after(Seconds(2));
             worldToDiscord->_timer.async_wait(std::bind(&WorldToDiscord::Handler, worldToDiscordRef, std::placeholders::_1));
         }
     }

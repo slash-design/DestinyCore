@@ -122,7 +122,7 @@ protected:
     {
         TC_LOG_DEBUG("misc", "Network Thread Starting");
 
-        _updateTimer.expires_from_now(boost::posix_time::milliseconds(10));
+        _updateTimer.expires_after(Milliseconds(10));
         _updateTimer.async_wait(std::bind(&NetworkThread<SocketType>::Update, this));
         _ioContext.run();
 
@@ -136,7 +136,7 @@ protected:
         if (_stopped)
             return;
 
-        _updateTimer.expires_from_now(boost::posix_time::milliseconds(10));
+        _updateTimer.expires_after(Milliseconds(10));
         _updateTimer.async_wait(std::bind(&NetworkThread<SocketType>::Update, this));
 
         AddNewSockets();
