@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -25,19 +25,13 @@
  */
 namespace boost
 {
-    namespace posix_time
-    {
-        class ptime;
-    }
-
     namespace asio
     {
-        template <typename Time>
-        struct time_traits;
-
         namespace ip
         {
             class address;
+            class address_v4;
+            class address_v6;
 
             class tcp;
 
@@ -46,36 +40,6 @@ namespace boost
 
             typedef basic_endpoint<tcp> tcp_endpoint;
         }
-#if BOOST_VERSION >= 107000
-        class executor;
-
-        namespace ip
-        {
-            template <typename InternetProtocol, typename Executor>
-            class basic_resolver;
-
-            typedef basic_resolver<tcp, executor> tcp_resolver;
-        }
-#elif BOOST_VERSION >= 106600
-        namespace ip
-        {
-            template <typename InternetProtocol>
-            class basic_resolver;
-
-            typedef basic_resolver<tcp> tcp_resolver;
-        }
-#else
-        namespace ip
-        {
-            template <typename InternetProtocol>
-            class resolver_service;
-
-            template <typename InternetProtocol, typename ResolverService>
-            class basic_resolver;
-
-            typedef basic_resolver<tcp, resolver_service<tcp>> tcp_resolver;
-        }
-#endif
     }
 }
 
@@ -83,6 +47,8 @@ namespace Trinity
 {
     namespace Asio
     {
+        class DeadlineTimer;
+        class IoContext;
         class Strand;
     }
 }
