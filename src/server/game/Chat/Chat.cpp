@@ -36,6 +36,9 @@
 #include "ScriptMgr.h"
 #include "World.h"
 #include "WorldSession.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 ChatCommand::ChatCommand(char const* name, uint32 permission, bool allowConsole, pHandler handler, std::string help, std::vector<ChatCommand> childCommands /*= std::vector<ChatCommand>()*/)
     : Name(ASSERT_NOTNULL(name)), Permission(permission), AllowConsole(allowConsole), Handler(handler), Help(std::move(help)), ChildCommands(std::move(childCommands))
@@ -370,6 +373,11 @@ bool ChatHandler::ExecuteCommandInTable(std::vector<ChatCommand> const& table, c
         // some commands have custom error messages. Don't send the default one in these cases.
         else if (!HasSentErrorMessage())
         {
+#ifdef ELUNA
+            if (Eluna* e = sWorld->GetEluna())
+                if (!e->OnCommand(m_session ? m_session->GetPlayer() : nullptr, fullcmd.c_str()))
+                    return true;
+#endif
             if (!table[i].Help.empty())
                 SendSysMessage(table[i].Help.c_str());
             else
@@ -378,6 +386,12 @@ bool ChatHandler::ExecuteCommandInTable(std::vector<ChatCommand> const& table, c
 
         return true;
     }
+
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        if (!e->OnCommand(m_session ? m_session->GetPlayer() : nullptr, fullcmd.c_str()))
+            return true;
+#endif
 
     return false;
 }

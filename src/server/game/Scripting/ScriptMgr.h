@@ -399,6 +399,12 @@ class TC_GAME_API ItemScript : public ScriptObject
 
         // Called when the item is destroyed.
         virtual bool OnRemove(Player* /*player*/, Item* /*item*/) { return false; }
+
+        // Called when a player selects an option in an item gossip window
+        virtual void OnGossipSelect(Player* /*player*/, Item* /*item*/, uint32 /*sender*/, uint32 /*action*/) { }
+
+        // Called when a player selects an option in an item gossip window
+        virtual void OnGossipSelectCode(Player* /*player*/, Item* /*item*/, uint32 /*sender*/, uint32 /*action*/, const char* /*code*/) { }
 };
 
 class TC_GAME_API UnitScript : public ScriptObject
@@ -847,6 +853,12 @@ class TC_GAME_API PlayerScript : public UnitScript
 		
 	    // Called when a player Itemlevel changed
         virtual void OnItemLevelChange(Player* /*player*/) { }
+
+        // Called when a player selects an option in a player gossip window
+        virtual void OnGossipSelect(Player* /*player*/, uint32 /*menu_id*/, uint32 /*sender*/, uint32 /*action*/) { }
+
+        // Called when a player selects an option in a player gossip window
+        virtual void OnGossipSelectCode(Player* /*player*/, uint32 /*menu_id*/, uint32 /*sender*/, uint32 /*action*/, const char* /*code*/) { }
 };
 
 class TC_GAME_API AccountScript : public ScriptObject
@@ -1150,6 +1162,8 @@ class TC_GAME_API ScriptMgr
         bool OnItemOpen(Player* player, Item* item);
         bool OnItemExpire(Player* player, ItemTemplate const* proto);
         bool OnItemRemove(Player* player, Item* item);
+        void OnGossipSelect(Player* player, Item* item, uint32 sender, uint32 action);
+        void OnGossipSelectCode(Player* player, Item* item, uint32 sender, uint32 action, const char* code);
 
     public: /* CreatureScript */
 
@@ -1272,6 +1286,8 @@ class TC_GAME_API ScriptMgr
         void OnPlayerSave(Player* player);
         void OnPlayerBindToInstance(Player* player, Difficulty difficulty, uint32 mapid, bool permanent, uint8 extendState);
         void OnPlayerUpdateZone(Player* player, Area* newArea, Area* oldArea);
+        void OnGossipSelect(Player* player, uint32 menu_id, uint32 sender, uint32 action);
+        void OnGossipSelectCode(Player* player, uint32 menu_id, uint32 sender, uint32 action, const char* code);
         void OnPlayerUpdateArea(Player* player, Area* newArea, Area* oldArea);
         void OnPetBattleFinish(Player* player);
         void OnMovementInform(Player* player, uint32 moveType, uint32 ID);

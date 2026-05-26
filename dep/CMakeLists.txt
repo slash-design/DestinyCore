@@ -41,3 +41,7 @@ if(TOOLS)
   add_subdirectory(bzip2)
   add_subdirectory(CascLib)
 endif()
+
+if (ELUNA)
+  add_subdirectory(lualib)
+endif()

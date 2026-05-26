@@ -44,6 +44,9 @@
 #include "Util.h"
 #include "World.h"
 #include "WorldSession.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 #include "PlayerBotMgr.h"
 #include "BotBGAIMovement.h"
 
@@ -178,6 +181,11 @@ bool Group::Create(Player* leader)
     }
     else if (!AddMember(leader))
         return false;
+
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnCreate(this, m_leaderGuid, GROUP_TYPE_NORMAL);
+#endif
 
     return true;
 }

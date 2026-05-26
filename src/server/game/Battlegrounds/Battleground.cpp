@@ -46,6 +46,10 @@
 #include "PlayerBotMgr.h"
 #include "CommandBG.h"
 
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
+
 template<class Do>
 void Battleground::BroadcastWorker(Do& _do)
 {
@@ -130,6 +134,11 @@ Battleground::Battleground()
 
 Battleground::~Battleground()
 {
+#ifdef ELUNA
+    if(m_Map)
+        if (Eluna* e = m_Map->GetEluna())
+            e->OnBGDestroy(this, GetTypeID(), GetInstanceID());
+#endif
     // remove objects and creatures
     // (this is done automatically in mapmanager update, when the instance is reset after the reset time)
     uint32 size = uint32(BgCreatures.size());
@@ -485,6 +494,11 @@ inline void Battleground::_ProcessJoin(uint32 diff)
         m_Events |= BG_STARTING_EVENT_4;
 
         StartingEventOpenDoors();
+
+#ifdef ELUNA
+        if (Eluna* e = GetBgMap()->GetEluna())
+            e->OnBGStart(this, GetTypeID(), GetInstanceID());
+#endif
 
         if (StartMessageIds[BG_STARTING_EVENT_FOURTH])
             SendBroadcastText(StartMessageIds[BG_STARTING_EVENT_FOURTH], CHAT_MSG_BG_SYSTEM_NEUTRAL);
@@ -944,6 +958,11 @@ void Battleground::EndBattleground(uint32 winner)
             }
         }
     }
+#ifdef ELUNA
+    //the type of the winner,change Team to BattlegroundTeamId,it could be better.
+    if (Eluna* e = GetBgMap()->GetEluna())
+        e->OnBGEnd(this, GetTypeID(), GetInstanceID(), Team(winner));
+#endif
 }
 
 uint32 Battleground::GetBonusHonorFromKill(uint32 kills) const

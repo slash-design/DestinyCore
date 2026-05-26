@@ -33,6 +33,10 @@
 #include "UpdateFields.h"
 #include <list>
 #include <unordered_map>
+#ifdef ELUNA
+#include "ElunaEventMgr.h"
+#include "LuaValue.h"
+#endif
 
 class AreaTrigger;
 class Conversation;
@@ -53,6 +57,11 @@ class UpdateData;
 class WorldObject;
 class WorldPacket;
 class ZoneScript;
+#ifdef ELUNA
+class ElunaEventProcessorInfo;
+class ElunaEventProcessor;
+class Eluna;
+#endif
 struct QuaternionData;
 
 typedef std::unordered_map<Player*, UpdateData> UpdateDataMapType;
@@ -612,6 +621,17 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         bool IsWorldObject() const;
 
         uint32  LastUsedScriptID;
+
+#ifdef ELUNA
+        std::unique_ptr<ElunaProcessorInfo> elunaMapEvents;
+        std::unique_ptr<ElunaProcessorInfo> elunaWorldEvents;
+
+        Eluna* GetEluna() const;
+
+        ElunaEventProcessor* GetElunaEvents(int32 mapId);
+
+        LuaVal lua_data = LuaVal({});
+#endif
 
         // Transports
         Transport* GetTransport() const { return m_transport; }

@@ -126,6 +126,9 @@
 #include "WorldPacket.h"
 #include "WorldQuestMgr.h"
 #include "WorldSession.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 #include "WorldStatePackets.h"
 #include <G3D/g3dmath.h>
 #include "ChallengeModeMgr.h"
@@ -999,6 +1002,11 @@ uint32 Player::EnvironmentalDamage(EnviromentalDamage type, uint32 damage)
         }
 
         UpdateCriteria(CRITERIA_TYPE_DEATHS_FROM, 1, type);
+
+#ifdef ELUNA
+        if (Eluna* e = GetEluna())
+            e->OnPlayerKilledByEnvironment(this, type);
+#endif
     }
 
     return final_damage;
@@ -3687,6 +3695,11 @@ void Player::LearnSpell(uint32 spell_id, bool dependent, int32 fromSkill /*= 0*/
         WorldPackets::Spells::LearnedSpells packet;
         packet.SpellID.push_back(spell_id);
         GetSession()->SendPacket(packet.Write());
+
+#ifdef ELUNA
+        if (Eluna* e = GetEluna())
+            e->OnLearnSpell(this, spell_id);
+#endif
     }
 
     // learn all disabled higher ranks and required spells (recursive)
@@ -4710,6 +4723,10 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
     // recast lost by death auras of any items held in the inventory
     CastAllObtainSpells();
 
+#ifdef ELUNA
+    if (Eluna* e = GetEluna())
+        e->OnResurrect(this);
+#endif
     if (!applySickness)
         return;
 
@@ -5840,6 +5857,12 @@ bool Player::UpdateSkillPro(uint16 skillId, int32 chance, uint32 step)
 
     UpdateSkillEnchantments(skillId, value, new_value);
     UpdateCriteria(CRITERIA_TYPE_REACH_SKILL_LEVEL, skillId);
+
+#ifdef ELUNA
+    if (Eluna* e = GetEluna())
+        e->OnSkillChange(this, skillId, new_value);
+#endif
+
     TC_LOG_DEBUG("entities.player.skills", "Player::UpdateSkillPro: Player '%s' (%s), SkillID: %u, Chance: %3.1f%% taken",
         GetName().c_str(), GetGUID().ToString().c_str(), skillId, chance / 10.0f);
     return true;
@@ -6513,6 +6536,10 @@ void Player::CheckAreaExploreAndOutdoor()
 
     if (!(currFields & val))
     {
+#ifdef ELUNA
+        if (Eluna* e = GetEluna())
+            e->OnDiscoverArea(this, GetAreaId());
+#endif
         SetUInt32Value(PLAYER_EXPLORED_ZONES_1 + offset, (uint32)(currFields | val));
 
         UpdateCriteria(CRITERIA_TYPE_EXPLORE_AREA);
@@ -7669,6 +7696,11 @@ void Player::UpdateArea(uint32 newAreaId)
     if (oldArea != m_area)
     {
         sScriptMgr->OnPlayerUpdateArea(this, m_area, oldArea);
+
+#ifdef ELUNA
+        if (Eluna* e = GetEluna())
+            e->OnUpdateArea(this, oldArea ? oldArea->GetId() : 0, m_area ? m_area->GetId() : 0);
+#endif
 
         if (ZoneScript* zoneScript = GetZoneScript())
             zoneScript->OnPlayerAreaUpdate(this, m_area, oldArea);
@@ -12438,6 +12470,15 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
         if (artifact->ChrSpecializationID != GetUInt32Value(PLAYER_FIELD_CURRENT_SPEC_ID))
             return EQUIP_ERR_CANT_USE_ITEM;
 
+#ifdef ELUNA
+    if (Eluna* e = GetEluna())
+    {
+        InventoryResult eres = e->OnCanUseItem(this, proto->GetId());
+        if (eres != EQUIP_ERR_OK)
+            return eres;
+    }
+#endif
+
     return EQUIP_ERR_OK;
 }
 
@@ -15766,6 +15807,10 @@ void Player::AddQuestAndCheckCompletion(Quest const* quest, Object* questGiver)
     {
         case TYPEID_UNIT:
             sScriptMgr->OnQuestAccept(this, questGiver->ToCreature(), quest);
+#ifdef ELUNA
+            if (Eluna* e = GetEluna())
+                e->OnQuestAccept(this, questGiver->ToCreature(), quest);
+#endif
             questGiver->ToCreature()->AI()->sQuestAccept(this, quest);
             m_lastQuestGiverGUID = questGiver->GetGUID();
             break;
@@ -15793,6 +15838,10 @@ void Player::AddQuestAndCheckCompletion(Quest const* quest, Object* questGiver)
         }
         case TYPEID_GAMEOBJECT:
             sScriptMgr->OnQuestAccept(this, questGiver->ToGameObject(), quest);
+#ifdef ELUNA
+            if (Eluna* e = GetEluna())
+                e->OnQuestAccept(this, questGiver->ToGameObject(), quest);
+#endif
             questGiver->ToGameObject()->AI()->QuestAccept(this, quest);
             m_lastQuestGiverGUID = questGiver->GetGUID();
             break;
@@ -17214,6 +17263,10 @@ QuestGiverStatus Player::GetQuestDialogStatus(Object* questgiver)
     {
     case TYPEID_GAMEOBJECT:
     {
+#ifdef ELUNA
+        if (Eluna* e = GetEluna())
+            e->GetDialogStatus(this, questgiver->ToGameObject());
+#endif
         QuestGiverStatus questStatus = QuestGiverStatus(sScriptMgr->GetDialogStatus(this, questgiver->ToGameObject()));
         if (questStatus != DIALOG_STATUS_SCRIPTED_NO_STATUS)
             return questStatus;
@@ -17223,6 +17276,10 @@ QuestGiverStatus Player::GetQuestDialogStatus(Object* questgiver)
     }
     case TYPEID_UNIT:
     {
+#ifdef ELUNA
+        if (Eluna* e = GetEluna())
+            e->GetDialogStatus(this, questgiver->ToCreature());
+#endif
         QuestGiverStatus questStatus = QuestGiverStatus(sScriptMgr->GetDialogStatus(this, questgiver->ToCreature()));
         if (questStatus != DIALOG_STATUS_SCRIPTED_NO_STATUS)
             return questStatus;

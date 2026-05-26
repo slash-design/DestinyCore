@@ -46,6 +46,9 @@
 #include "SpellMgr.h"
 #include "Trainer.h"
 #include "WorldPacket.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 void WorldSession::HandleTabardVendorActivateOpcode(WorldPackets::NPC::Hello& packet)
 {
@@ -347,6 +350,12 @@ void WorldSession::HandleGossipHelloOpcode(WorldPackets::NPC::Hello& packet)
             return;
         }
     }
+
+#ifdef ELUNA
+    if (Eluna* e = GetPlayer()->GetEluna())
+        if (e->OnGossipHello(_player, unit))
+            return;
+#endif
 
     if (!sScriptMgr->OnGossipHello(_player, unit))
     {

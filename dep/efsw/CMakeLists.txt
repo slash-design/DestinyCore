@@ -1,4 +1,4 @@
-if (BUILD_SHARED_LIBS)
+if (BUILD_SHARED_LIBS OR ELUNA)
   set(SRCS
     src/efsw/Debug.cpp
     src/efsw/DirectorySnapshot.cpp

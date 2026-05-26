@@ -52,6 +52,10 @@
 #include "WorldPacket.h"
 #include <G3D/g3dmath.h>
 
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
+
 TrainerSpell const* TrainerSpellData::Find(uint32 spell_id) const
 {
     TrainerSpellMap::const_iterator itr = spellList.find(spell_id);
@@ -229,6 +233,11 @@ void Creature::AddToWorld()
         if (GetZoneScript())
             GetZoneScript()->OnCreatureCreate(this);
 
+#ifdef ELUNA
+        if (Eluna* e = GetEluna())
+            e->OnAddToWorld(this);
+#endif
+
         GetMap()->GetObjectsStore().Insert<Creature>(GetGUID(), this);
         if (m_spawnId)
             GetMap()->GetCreatureBySpawnIdStore().insert(std::make_pair(m_spawnId, this));
@@ -245,6 +254,10 @@ void Creature::RemoveFromWorld()
 {
     if (IsInWorld())
     {
+#ifdef ELUNA
+        if (Eluna* e = GetEluna())
+            e->OnRemoveFromWorld(this);
+#endif
         if (GetZoneScript())
             GetZoneScript()->OnCreatureRemove(this);
 

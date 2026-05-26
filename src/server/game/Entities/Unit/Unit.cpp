@@ -79,6 +79,9 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 #include <cmath>
 #include "BotGroupAI.h"
 #include "BotAI.h"
@@ -8202,6 +8205,12 @@ void Unit::SetInCombatState(bool PvP, Unit* enemy)
 
     SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
 
+#ifdef ELUNA
+    if (Player* player = ToPlayer())
+        if (Eluna* e = player->GetEluna())
+            e->OnPlayerEnterCombat(player, enemy);
+#endif
+
     if (Creature* creature = ToCreature())
     {
         // Set home position at place of engaging combat for escorted creatures
@@ -8264,7 +8273,14 @@ void Unit::ClearInCombat()
             return;
     }
     else
+    {
+#ifdef ELUNA
+        if (Player* player = ToPlayer())
+            if (Eluna* e = player->GetEluna())
+                e->OnPlayerLeaveCombat(player);
+#endif
         ToPlayer()->OnCombatExit();
+    }
 
     RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_LEAVE_COMBAT);
 }

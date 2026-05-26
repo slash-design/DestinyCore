@@ -36,7 +36,13 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#ifdef ELUNA
+#include "ElunaMgr.h"
+#endif
 
+#ifdef ELUNA
+class Eluna;
+#endif
 class Player;
 class WorldPacket;
 class WorldSession;
@@ -839,6 +845,10 @@ class TC_GAME_API World
         std::string GetCheckOpcode() { return m_CheckAuthorization; }
         void CheckAuthorization();
 
+#ifdef ELUNA
+        Eluna* GetEluna() const { return sElunaMgr->Get(_elunaInfo); }
+#endif
+
     protected:
         void _UpdateGameTime();
         // callback for UpdateRealmCharacters
@@ -956,6 +966,9 @@ class TC_GAME_API World
 
         std::string m_MachineSoleCode;
         std::string m_CheckAuthorization;
+#ifdef ELUNA
+        ElunaInfo _elunaInfo;
+#endif
 };
 
 TC_GAME_API extern Realm realm;

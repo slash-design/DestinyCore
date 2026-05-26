@@ -16,17 +16,17 @@ INSERT INTO `creature_text` (`CreatureID`, `GroupID`, `ID`, `Text`, `Type`, `Lan
 (97359, 0, 0, 'Sewer guards, time to take a break!', 41, 0, 100, 0, 0, 0, 99082, 0, 'Raethan to Player'),
 (97359, 1, 0, 'Sewer guards! Return to your posts!', 41, 0, 100, 0, 0, 0, 99083, 0, 'Raethan to Player');
 
-DELETE FROM `game_event` WHERE `eventEntry` in (104,105,106,107,108,109,110,111,112);
+DELETE FROM `game_event` WHERE `eventEntry` IN (104,105,106,107,108,109,110,111,112);
 INSERT INTO `game_event` (`eventEntry`, `start_time`, `end_time`, `occurence`, `length`, `holiday`, `description`, `world_event`, `announce`) VALUES 
-(104, '0000-00-00 00:00:00', '0000-00-00 00:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - PVP On', 0, 2),
-(105, '0000-00-00 00:00:00', '2035-01-01 02:00:00', 10, 2592000, 0, 'Dalaran_Underbelly - PVP Off ', 0, 2),
-(106, '0000-00-00 00:00:00', '0000-00-00 00:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Bats', 0, 2),
-(107, '0000-00-00 00:00:00', '0000-00-00 00:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Demons', 0, 2),
-(108, '0000-00-00 00:00:00', '0000-00-00 00:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Sister', 0, 2),
-(109, '0000-00-00 00:00:00', '0000-00-00 00:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Crocodile', 0, 2),
-(110, '0000-00-00 00:00:00', '0000-00-00 00:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Banquet', 0, 2),
-(111, '0000-00-00 00:00:00', '0000-00-00 00:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Turtle', 0, 2),
-(112, '0000-00-00 00:00:00', '0000-00-00 00:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Shimmering Whorl', 0, 2);
+(104, '2000-01-01 00:00:00', '2035-01-01 02:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - PVP On', 0, 2),
+(105, '2000-01-01 00:00:00', '2035-01-01 02:00:00', 10, 2592000, 0, 'Dalaran_Underbelly - PVP Off', 0, 2),
+(106, '2000-01-01 00:00:00', '2035-01-01 02:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Bats', 0, 2),
+(107, '2000-01-01 00:00:00', '2035-01-01 02:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Demons', 0, 2),
+(108, '2000-01-01 00:00:00', '2035-01-01 02:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Sister', 0, 2),
+(109, '2000-01-01 00:00:00', '2035-01-01 02:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Crocodile', 0, 2),
+(110, '2000-01-01 00:00:00', '2035-01-01 02:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Banquet', 0, 2),
+(111, '2000-01-01 00:00:00', '2035-01-01 02:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Turtle', 0, 2),
+(112, '2000-01-01 00:00:00', '2035-01-01 02:00:00', 2592000, 5, 0, 'Dalaran_Underbelly - Shimmering Whorl', 0, 2);
 
 -- 103112
 UPDATE `creature_template` SET `AIName` = 'SmartAI' WHERE `entry` = 103112;

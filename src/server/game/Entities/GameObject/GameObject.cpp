@@ -43,6 +43,10 @@
 #include "World.h"
 #include <G3D/Quat.h>
 
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
+
 bool QuaternionData::isUnit() const
 {
     return fabs(x * x + y * y + z * z + w * w - 1.0f) < 1e-5;
@@ -179,6 +183,15 @@ void GameObject::AddToWorld()
 
         EnableCollision(toggledState);
         WorldObject::AddToWorld();
+
+#ifdef ELUNA
+        if (Eluna* e = GetEluna())
+        {
+            // one of these should really be deprecated, they serve the exact same purpose
+            e->OnAddToWorld(this);
+            e->OnSpawn(this);
+        }
+#endif
     }
 }
 
@@ -189,6 +202,11 @@ void GameObject::RemoveFromWorld()
     {
         if (m_zoneScript)
             m_zoneScript->OnGameObjectRemove(this);
+
+#ifdef ELUNA
+        if (Eluna* e = GetEluna())
+            e->OnRemoveFromWorld(this);
+#endif
 
         RemoveFromOwner();
         if (m_model)
@@ -449,6 +467,10 @@ GameObject* GameObject::CreateGameObjectFromDB(ObjectGuid::LowType spawnId, Map*
 
 void GameObject::Update(uint32 diff)
 {
+#ifdef ELUNA
+    if (Eluna* e = GetEluna())
+        e->UpdateAI(this, diff);
+#endif
     m_Events.Update(diff);
     _scheduler.Update(diff);
 
@@ -1368,6 +1390,12 @@ void GameObject::Use(Unit* user)
         if (sScriptMgr->OnGossipHello(playerUser, this))
             return;
 
+#ifdef ELUNA
+        if (Eluna* e = GetEluna())
+            if (e->OnGossipHello(playerUser, this))
+                return;
+#endif
+
         if (AI()->GossipHello(playerUser, true))
             return;
     }
@@ -2256,6 +2284,10 @@ void GameObject::SetDestructibleState(GameObjectDestructibleState state, Player*
             break;
         case GO_DESTRUCTIBLE_DAMAGED:
         {
+#ifdef ELUNA
+            if (Eluna* e = GetEluna())
+                e->OnDamaged(this, eventInvoker);
+#endif
             EventInform(m_goInfo->destructibleBuilding.DamagedEvent, eventInvoker);
             sScriptMgr->OnGameObjectDamaged(this, eventInvoker);
 
@@ -2281,6 +2313,10 @@ void GameObject::SetDestructibleState(GameObjectDestructibleState state, Player*
         }
         case GO_DESTRUCTIBLE_DESTROYED:
         {
+#ifdef ELUNA
+            if (Eluna* e = GetEluna())
+                e->OnDestroyed(this, eventInvoker);
+#endif
             sScriptMgr->OnGameObjectDestroyed(this, eventInvoker);
             EventInform(m_goInfo->destructibleBuilding.DestroyedEvent, eventInvoker);
             if (eventInvoker)
@@ -2335,6 +2371,10 @@ void GameObject::SetLootState(LootState state, Unit* unit)
     else
         m_lootStateUnitGUID.Clear();
 
+#ifdef ELUNA
+    if (Eluna* e = GetEluna())
+        e->OnLootStateChanged(this, state);
+#endif
     AI()->OnStateChanged(state, unit);
     sScriptMgr->OnGameObjectLootStateChanged(this, state, unit);
 
@@ -2355,6 +2395,10 @@ void GameObject::SetLootState(LootState state, Unit* unit)
 void GameObject::SetGoState(GOState state)
 {
     SetByteValue(GAMEOBJECT_BYTES_1, 0, state);
+#ifdef ELUNA
+    if (Eluna* e = GetEluna())
+        e->OnGameObjectStateChanged(this, state);
+#endif
     sScriptMgr->OnGameObjectStateChanged(this, state);
     if (m_model && !IsTransport())
     {

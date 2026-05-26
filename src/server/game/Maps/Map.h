@@ -35,11 +35,18 @@
 #include <mutex>
 #include <set>
 #include <unordered_set>
+#ifdef ELUNA
+#include "LuaValue.h"
+#include "ElunaMgr.h"
+#endif
 
 class Battleground;
 class BattlegroundMap;
 class BrawlersGuild;
 class CreatureGroup;
+#ifdef ELUNA
+class Eluna;
+#endif
 class GameObjectModel;
 class Group;
 class InstanceMap;
@@ -607,6 +614,12 @@ class TC_GAME_API Map : public GridRefManager<NGridType>
 
         time_t m_respawnChallenge = 0;
 
+        bool IsParentMap() const { return m_parentMap == this; }
+#ifdef ELUNA
+        Eluna* GetEluna() const { return sElunaMgr->Get(_elunaInfo); }
+        LuaVal lua_data = LuaVal({});
+#endif
+
     private:
         void LoadMapAndVMap(int gx, int gy);
         void LoadVMap(int gx, int gy);
@@ -717,6 +730,10 @@ class TC_GAME_API Map : public GridRefManager<NGridType>
         Map* m_parentMap;                                           // points to MapInstanced* or self (always same map id)
         Map* m_parentTerrainMap;                                    // points to m_parentMap of MapEntry::ParentMapID
         std::vector<Map*>* m_childTerrainMaps;                      // contains m_parentMap of maps that have MapEntry::ParentMapID == GetId()
+
+#ifdef ELUNA
+        ElunaInfo _elunaInfo;
+#endif
 
         NGridType* i_grids[MAX_NUMBER_OF_GRIDS][MAX_NUMBER_OF_GRIDS];
         GridMap* GridMaps[MAX_NUMBER_OF_GRIDS][MAX_NUMBER_OF_GRIDS];

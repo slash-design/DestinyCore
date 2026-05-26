@@ -39,11 +39,12 @@ else()
   set(BOOST_REQUIRED_VERSION 1.74)
 endif()
 
-# Direkt wie im funktionierenden Branch
+# Boost.System has been header-only since 1.69 (our minimum is 1.74), and the
+# component was removed entirely from Boost 1.90's modular CMake config — so
+# do not list it under COMPONENTS or find_package fails on Ubuntu 26.04 / Boost 1.90.
 find_package(Boost ${BOOST_REQUIRED_VERSION}
   REQUIRED
   COMPONENTS
-    system
     filesystem
     thread
     program_options
@@ -59,7 +60,7 @@ find_package(Boost ${BOOST_REQUIRED_VERSION}
 include (CheckCXXSourceCompiles)
 
 set(CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIR})
-set(CMAKE_REQUIRED_LIBRARIES ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY})
+set(CMAKE_REQUIRED_LIBRARIES ${Boost_FILESYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY})
 set(CMAKE_REQUIRED_FLAGS "-std=c++11")
 unset(boost_filesystem_copy_links_without_NO_SCOPED_ENUM CACHE)
 check_cxx_source_compiles("

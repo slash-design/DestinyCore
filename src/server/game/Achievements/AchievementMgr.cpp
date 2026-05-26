@@ -36,6 +36,10 @@
 #include "Player.h"
 #include "Unit.h"
 
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
+
 struct VisibleAchievementCheck
 {
     AchievementEntry const* operator()(std::pair<uint32, CompletedAchievementData> const& val)
@@ -545,6 +549,11 @@ void PlayerAchievementMgr::CompletedAchievement(AchievementEntry const* achievem
     default:
         break;
     }
+
+#ifdef ELUNA
+    if (Eluna* e = _owner->GetEluna())
+        e->OnAchievementComplete(_owner, achievement->ID);
+#endif
 
     // reward items and titles if any
     AchievementReward const* reward = sAchievementMgr->GetAchievementReward(achievement);

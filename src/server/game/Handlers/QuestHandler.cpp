@@ -38,6 +38,9 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldQuestMgr.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 #include <GameEventMgr.h>
 
 void WorldSession::HandleQuestgiverStatusQueryOpcode(WorldPackets::Quest::QuestGiverStatusQuery& packet)
@@ -92,6 +95,12 @@ void WorldSession::HandleQuestgiverHelloOpcode(WorldPackets::Quest::QuestGiverHe
         GetPlayer()->RemoveAurasByType(SPELL_AURA_FEIGN_DEATH);
     // Stop the npc if moving
     creature->StopMoving();
+
+#ifdef ELUNA
+    if (Eluna* e = GetPlayer()->GetEluna())
+        if (e->OnGossipHello(_player, creature))
+            return;
+#endif
 
     if (sScriptMgr->OnGossipHello(_player, creature))
         return;
@@ -392,6 +401,10 @@ void WorldSession::HandleQuestgiverChooseRewardOpcode(WorldPackets::Quest::Quest
             {
                 //For AutoSubmition was added plr case there as it almost same exclute AI script cases.
                 Creature* creatureQGiver = object->ToCreature();
+#ifdef ELUNA
+                if (Eluna* e = GetPlayer()->GetEluna())
+                    e->OnQuestReward(_player, creatureQGiver, quest, packet.ItemChoiceID);
+#endif
                 if (!creatureQGiver || !sScriptMgr->OnQuestReward(_player, creatureQGiver, quest, packet.ItemChoiceID))
                 {
                     // Send next quest
@@ -415,6 +428,10 @@ void WorldSession::HandleQuestgiverChooseRewardOpcode(WorldPackets::Quest::Quest
             case TYPEID_GAMEOBJECT:
             {
                 GameObject* questGiver = object->ToGameObject();
+#ifdef ELUNA
+                if (Eluna* e = GetPlayer()->GetEluna())
+                    e->OnQuestReward(_player, questGiver, quest, packet.ItemChoiceID);
+#endif
                 if (!sScriptMgr->OnQuestReward(_player, questGiver, quest, packet.ItemChoiceID))
                 {
                     // Send next quest
@@ -495,6 +512,11 @@ void WorldSession::HandleQuestLogRemoveQuest(WorldPackets::Quest::QuestLogRemove
             _player->AbandonQuest(questId); // remove all quest items player received before abandoning quest. Note, this does not remove normal drop items that happen to be quest requirements.
             _player->RemoveActiveQuest(quest);
             _player->RemoveCriteriaTimer(CRITERIA_TIMED_TYPE_QUEST, questId);
+
+#ifdef ELUNA
+            if (Eluna* e = GetPlayer()->GetEluna())
+                e->OnQuestAbandon(_player, questId);
+#endif
 
             TC_LOG_INFO("network", "%s abandoned quest %u", _player->GetGUID().ToString().c_str(), questId);
 

@@ -24,6 +24,10 @@ class Aura;
 
 #include "SpellAuras.h"
 
+#ifdef ELUNA
+#include "UniqueTrackablePtr.h"
+#endif
+
 typedef void(AuraEffect::*pAuraEffectHandler)(AuraApplication const* aurApp, uint8 mode, bool apply) const;
 
 class TC_GAME_API AuraEffect
@@ -105,6 +109,10 @@ class TC_GAME_API AuraEffect
         bool IsEffect(SpellEffectName effectName) const { return _effectInfo->Effect == uint32(effectName); }
         bool IsAreaAuraEffect() const;
 
+#ifdef ELUNA
+        Trinity::unique_weak_ptr<AuraEffect> GetWeakPtr() const { return m_scriptRef; }
+#endif
+
     private:
         Aura* const m_base;
 
@@ -126,6 +134,11 @@ class TC_GAME_API AuraEffect
         uint8 const m_effIndex;
         bool m_canBeRecalculated;
         bool m_isPeriodic;
+
+#ifdef ELUNA
+        struct NoopAuraEffectDeleter { void operator()(AuraEffect*) const { /*noop - not managed*/ } };
+        Trinity::unique_trackable_ptr<AuraEffect> m_scriptRef;
+#endif
 
     public:
         // aura effect apply/remove handlers
