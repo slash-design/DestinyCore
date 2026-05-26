@@ -225,6 +225,9 @@ BaseLocation DBUpdater<T>::GetBaseLocationType()
 template<class T>
 bool DBUpdater<T>::Create(DatabaseWorkerPool<T>& pool)
 {
+    if (!DBUpdaterUtil::CheckExecutable())
+        return false;
+
     TC_LOG_INFO("sql.updates", "Database \"%s\" does not exist, do you want to create it? [yes (default) / no]: ",
         pool.GetConnectionInfo()->database.c_str());
 
