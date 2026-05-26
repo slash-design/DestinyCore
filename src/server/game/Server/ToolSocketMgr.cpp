@@ -42,7 +42,7 @@ bool ToolSocketMgr::StartNetwork(Trinity::Asio::IoContext& ioContext, std::strin
 {
 	_tcpNoDelay = sConfigMgr->GetBoolDefault("Network.TcpNodelay", true);
 
-	int const max_connections = boost::asio::socket_base::max_connections;
+	int const max_connections = TRINITY_MAX_LISTEN_CONNECTIONS;
 	TC_LOG_DEBUG("misc", "Max allowed socket connections %d", max_connections);
 
 	// -1 means use default
