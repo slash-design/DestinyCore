@@ -32,7 +32,7 @@ BattlegroundIC::BattlegroundIC()
     BgObjects.resize(MAX_NORMAL_GAMEOBJECTS_SPAWNS + MAX_AIRSHIPS_SPAWNS + MAX_HANGAR_TELEPORTERS_SPAWNS + MAX_FORTRESS_TELEPORTERS_SPAWNS + MAX_HANGAR_TELEPORTER_EFFECTS_SPAWNS + MAX_FORTRESS_TELEPORTER_EFFECTS_SPAWNS);
     BgCreatures.resize(MAX_NORMAL_NPCS_SPAWNS + MAX_WORKSHOP_SPAWNS + MAX_DOCKS_SPAWNS + MAX_SPIRIT_GUIDES_SPAWNS + MAX_HANGAR_NPCS_SPAWNS);
 
-    float scoreFinal = MAX_REINFORCEMENTS * BotUtility::BattlegroundScoreRate;
+    float scoreFinal = MAX_REINFORCEMENTS;
     if (scoreFinal < 40) scoreFinal = 40;
     for (uint8 i = 0; i < 2; ++i)
         factionReinforcements[i] = scoreFinal;
@@ -378,7 +378,7 @@ bool BattlegroundIC::SetupBattleground()
 
 void BattlegroundIC::ResetBGSubclass()
 {
-    float scoreFinal = MAX_REINFORCEMENTS * BotUtility::BattlegroundScoreRate;
+    float scoreFinal = MAX_REINFORCEMENTS;
     if (scoreFinal < 40) scoreFinal = 40;
     for (uint8 i = 0; i < 2; ++i)
         factionReinforcements[i] = scoreFinal;

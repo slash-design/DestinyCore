@@ -1901,7 +1901,7 @@ void BattlegroundAV::ResetBGSubclass()
     {
         for (uint8 j=0; j<9; j++)
             m_Team_QuestStatus[i][j]=0;
-        float scoreFinal = BG_AV_SCORE_INITIAL_POINTS * BotUtility::BattlegroundScoreRate;
+        float scoreFinal = BG_AV_SCORE_INITIAL_POINTS;
         if (scoreFinal < 40) scoreFinal = 40;
         m_Team_Scores[i] = scoreFinal;
         m_IsInformedNearVictory[i]=false;

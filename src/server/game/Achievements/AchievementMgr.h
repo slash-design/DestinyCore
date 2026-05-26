@@ -22,7 +22,6 @@
 #include "CriteriaHandler.h"
 
 class Guild;
-class PlayerBots;
 
 struct AchievementReward
 {

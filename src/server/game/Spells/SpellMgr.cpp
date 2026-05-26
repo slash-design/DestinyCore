@@ -2456,14 +2456,6 @@ void SpellMgr::LoadSpellInfoStore()
         }
     }
 
-    // New Spell, Arena Player Bot use
-    //SpellEntry* newArenaEntry = BotUtility::BuildNewArenaSpellEntry();
-    //if (mSpellInfoMap[newArenaEntry->ID])
-    //    delete mSpellInfoMap[newArenaEntry->ID];
-    //mSpellInfoMap[newArenaEntry->ID] = new SpellInfo(loadData[newArenaEntry->ID], newArenaEntry, &visualsBySpell[newArenaEntry->ID]);
-    //delete newArenaEntry;
-    //BotUtility::BuildNewArenaHellSpells(mSpellInfoMap);
-    //BotUtility::ModifySpecialSpells(mSpellInfoMap);
 
     TC_LOG_INFO("server.loading", ">> Loaded SpellInfo store in %u ms", GetMSTimeDiffToNow(oldMSTime));
 }

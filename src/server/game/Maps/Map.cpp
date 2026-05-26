@@ -4018,9 +4018,6 @@ bool InstanceMap::HasPermBoundPlayers() const
 
 uint32 InstanceMap::GetMaxPlayers() const
 {
-    if (BotGroupAI::PVE_MAX_DUNGEON)
-        return 40;
-
     MapDifficultyEntry const* mapDiff = GetMapDifficulty();
     if (mapDiff && mapDiff->MaxPlayers)
         return mapDiff->MaxPlayers;
