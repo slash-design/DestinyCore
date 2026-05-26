@@ -161,8 +161,6 @@ enum LoginDatabaseStatements : uint32
 
     LOGIN_INS_PURCHASE,
 
-    LOGIN_SEL_TOOL_IPBIND,
-
     MAX_LOGINDATABASE_STATEMENTS
 };
 

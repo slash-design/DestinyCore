@@ -105,7 +105,6 @@
 #include "PetBattleSystem.h"
 #include "AIWaypointsMgr.h"
 #include "PathfindingMgr.h"
-#include "ToolSocket.h"
 #include "SHA1.h"
 #include <boost/algorithm/string.hpp>
 #include "CustomTalkMenu.h"
@@ -2862,12 +2861,6 @@ void World::Update(uint32 diff)
 
     // And last, but not least handle the issued cli commands
     ProcessCliCommands();
-
-    if (ToolSocket::g_Tool)
-    {
-        //        TC_LOG_ERROR("server.loading", "Gtools2\n");
-        ToolSocket::g_Tool->ProcessToolCmd();
-    }
 
     sScriptMgr->OnWorldUpdate(diff);
 

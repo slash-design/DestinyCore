@@ -174,7 +174,6 @@ void LoginDatabaseConnection::DoPrepareStatements()
     PrepareStatement(LOGIN_UPD_BATTLE_PAY_ACCOUNT_CREDITS, "UPDATE battlenet_accounts SET battlePayCredits = ? WHERE id = ?;", CONNECTION_ASYNC);
     PrepareStatement(LOGIN_INS_PURCHASE, "INSERT INTO battlepay_purchases (battlenetAccountId, realm, characterGuid, productID, productName, CurrentPrice, RemoteAddress) VALUES (?, ?, ?, ?, ?, ?, ?)", CONNECTION_ASYNC);
 
-    PrepareStatement(LOGIN_SEL_TOOL_IPBIND, "SELECT * FROM toolip WHERE ip = ?", CONNECTION_SYNCH);
 }
 
 LoginDatabaseConnection::LoginDatabaseConnection(MySQLConnectionInfo& connInfo, ConnectionFlags connectionFlags) : MySQLConnection(connInfo, connectionFlags)

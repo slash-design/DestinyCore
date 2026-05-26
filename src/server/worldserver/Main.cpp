@@ -59,8 +59,6 @@
 #include <google/protobuf/stubs/common.h>
 #include <iostream>
 #include <csignal>
-#include "ToolSocket.h"
-#include "ToolSocketMgr.h"
 #include "PathfindingMgr.h"
 
 #ifdef WITH_CPR
@@ -334,7 +332,6 @@ extern int main(int argc, char** argv)
         sWorld->UpdateSessions(1);                             // real players unload required UpdateSessions call
 
         sWorldSocketMgr.StopNetwork();
-        sToolSocketMgr.StopNetwork();
 
         ///- Clean database before leaving
         ClearOnlineAccounts();
