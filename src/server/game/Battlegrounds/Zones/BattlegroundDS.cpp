@@ -16,9 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AIWaypointsMgr.h"
 #include "BattlegroundDS.h"
-#include "BotAI.h"
 #include "Creature.h"
 #include "Log.h"
 #include "Player.h"
@@ -32,9 +30,6 @@ BattlegroundDS::BattlegroundDS()
 
     _pipeKnockBackTimer = 0;
     _pipeKnockBackCount = 0;
-
-    m_LMStartPoint = sAIWPMgr->FindAIWaypoint(72);
-    m_BLStartPoint = sAIWPMgr->FindAIWaypoint(73);
 }
 
 void BattlegroundDS::PostUpdateImpl(uint32 diff)
@@ -128,27 +123,6 @@ void BattlegroundDS::StartingEventOpenDoors()
         if (Player* player = _GetPlayer(itr, "BattlegroundDS::StartingEventOpenDoors"))
         {
             player->RemoveAurasDueToSpell(SPELL_WARL_DEMONIC_CIRCLE);
-            if (m_LMStartPoint && m_BLStartPoint)
-            {
-                AIWaypoint* telePoint = NULL;
-                if (player->GetTeamId() == TEAM_ALLIANCE)
-                    telePoint = m_LMStartPoint;
-                else if (player->GetTeamId() == TEAM_HORDE)
-                    telePoint = m_BLStartPoint;
-                if (telePoint)
-                {
-                    Position telePos = telePoint->GetPosition();
-                    if (player->IsPlayerBot())
-                    {
-                        if (BotBGAI* pBotAI = dynamic_cast<BotBGAI*>(player->GetAI()))
-                            pBotAI->SetTeleport(telePos);
-                    }
-                    else
-                    {
-                        player->TeleportTo(player->GetMapId(), telePos.GetPositionX(), telePos.GetPositionY(), telePos.GetPositionZ(), player->GetOrientation());
-                    }
-                }
-            }
         }
     }
 }

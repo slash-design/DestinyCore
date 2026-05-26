@@ -17,7 +17,6 @@
  */
 
 #include "BattlegroundIC.h"
-#include "BotAITool.h"
 #include "Creature.h"
 #include "GameObject.h"
 #include "Log.h"

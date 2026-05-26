@@ -1707,17 +1707,8 @@ void Guild::HandleInviteMember(WorldSession* session, std::string const& name)
             SendCommandResult(session, GUILD_COMMAND_INVITE_PLAYER, ERR_ALREADY_IN_GUILD_S, name);
             return;
         }
-        if (!pInvitee->IsPlayerBot())
-        {
-            SendCommandResult(session, GUILD_COMMAND_INVITE_PLAYER, ERR_ALREADY_IN_GUILD_S, name);
-            return;
-        }
-        pInviteeGuild->HandleLeaveMember(pInvitee->GetSession());
-        if (pInvitee->GetGuildId() || pInvitee->GetGuild())
-        {
-            SendCommandResult(session, GUILD_COMMAND_INVITE_PLAYER, ERR_ALREADY_IN_GUILD_S, name);
-            return;
-        }
+        SendCommandResult(session, GUILD_COMMAND_INVITE_PLAYER, ERR_ALREADY_IN_GUILD_S, name);
+        return;
     }
 
     // Invited player cannot be invited
@@ -1741,39 +1732,31 @@ void Guild::HandleInviteMember(WorldSession* session, std::string const& name)
     pInvitee->SetGuildIdInvited(m_id);
     _LogEvent(GUILD_EVENT_LOG_INVITE_PLAYER, player->GetGUID().GetCounter(), pInvitee->GetGUID().GetCounter());
 
-    // If it is a PlayerBot, automatically accept the invitation
-    if (pInvitee->IsPlayerBot())
+    WorldPackets::Guild::GuildInvite invite;
+
+    invite.InviterVirtualRealmAddress = GetVirtualRealmAddress();
+    invite.GuildVirtualRealmAddress = GetVirtualRealmAddress();
+    invite.GuildGUID = GetGUID();
+
+    invite.EmblemStyle = uint32(m_emblemInfo.GetStyle());
+    invite.EmblemColor = uint32(m_emblemInfo.GetColor());
+    invite.BorderStyle = uint32(m_emblemInfo.GetBorderStyle());
+    invite.BorderColor = uint32(m_emblemInfo.GetBorderColor());
+    invite.Background = uint32(m_emblemInfo.GetBackgroundColor());
+    invite.AchievementPoints = GetAchievementMgr().GetAchievementPoints();
+
+    invite.InviterName = player->GetName();
+    invite.GuildName = GetName();
+
+    if (Guild* oldGuild = pInvitee->GetGuild())
     {
-        HandleAcceptMember(pInvitee->GetSession());
+        invite.OldGuildGUID = oldGuild->GetGUID();
+        invite.OldGuildName = oldGuild->GetName();
+        invite.OldGuildVirtualRealmAddress = GetVirtualRealmAddress();
     }
-    else
-    {
-        WorldPackets::Guild::GuildInvite invite;
 
-        invite.InviterVirtualRealmAddress = GetVirtualRealmAddress();
-        invite.GuildVirtualRealmAddress = GetVirtualRealmAddress();
-        invite.GuildGUID = GetGUID();
-
-        invite.EmblemStyle = uint32(m_emblemInfo.GetStyle());
-        invite.EmblemColor = uint32(m_emblemInfo.GetColor());
-        invite.BorderStyle = uint32(m_emblemInfo.GetBorderStyle());
-        invite.BorderColor = uint32(m_emblemInfo.GetBorderColor());
-        invite.Background = uint32(m_emblemInfo.GetBackgroundColor());
-        invite.AchievementPoints = GetAchievementMgr().GetAchievementPoints();
-
-        invite.InviterName = player->GetName();
-        invite.GuildName = GetName();
-
-        if (Guild* oldGuild = pInvitee->GetGuild())
-        {
-            invite.OldGuildGUID = oldGuild->GetGUID();
-            invite.OldGuildName = oldGuild->GetName();
-            invite.OldGuildVirtualRealmAddress = GetVirtualRealmAddress();
-        }
-
-        pInvitee->GetSession()->SendPacket(invite.Write());
-        TC_LOG_DEBUG("guild", "SMSG_GUILD_INVITE [%s]", pInvitee->GetName().c_str());
-    }
+    pInvitee->GetSession()->SendPacket(invite.Write());
+    TC_LOG_DEBUG("guild", "SMSG_GUILD_INVITE [%s]", pInvitee->GetName().c_str());
 }
 
 void Guild::HandleAcceptMember(WorldSession* session)

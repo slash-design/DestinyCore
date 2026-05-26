@@ -17,7 +17,6 @@
  */
 
 #include "BattlegroundAV.h"
-#include "BotAITool.h"
 #include "Config.h"
 #include "Creature.h"
 #include "CreatureAI.h"

@@ -559,14 +559,6 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket& recvData)
 
         loot->NotifyItemRemoved(slotid);
         --loot->unlootedCount;
-
-        if (target->IsPlayerBot())
-        {
-            if (BotGroupAI* pAI = dynamic_cast<BotGroupAI*>(target->GetAI()))
-            {
-                pAI->OnLootedItem(newitem->GetEntry());
-            }
-        }
     }
 
 void WorldSession::HandleSetLootSpecialization(WorldPackets::Loot::SetLootSpecialization& packet)

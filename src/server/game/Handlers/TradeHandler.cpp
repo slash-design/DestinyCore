@@ -321,42 +321,36 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPackets::Trade::AcceptTrade& acc
     {
         if (Item* item = my_trade->GetItem(TradeSlots(i)))
         {
-            if (my_trade->IsNonPlayerBotTrade())
+            if (!item->CanBeTraded(false, true))
             {
-                if (!item->CanBeTraded(false, true))
-                {
-                    info.Status = TRADE_STATUS_CANCELLED;
-                    SendTradeStatus(info);
-                    return;
-                }
+                info.Status = TRADE_STATUS_CANCELLED;
+                SendTradeStatus(info);
+                return;
+            }
 
-                if (item->IsBindedNotWith(trader))
-                {
-                    info.Status = TRADE_STATUS_FAILED;
-                    info.BagResult = EQUIP_ERR_TRADE_BOUND_ITEM;
-                    SendTradeStatus(info);
-                    return;
-                }
+            if (item->IsBindedNotWith(trader))
+            {
+                info.Status = TRADE_STATUS_FAILED;
+                info.BagResult = EQUIP_ERR_TRADE_BOUND_ITEM;
+                SendTradeStatus(info);
+                return;
             }
         }
 
-        if (his_trade->IsNonPlayerBotTrade())
+        if (Item* item = his_trade->GetItem(TradeSlots(i)))
         {
-            if (Item* item = his_trade->GetItem(TradeSlots(i)))
+            if (!item->CanBeTraded(false, true))
             {
-                if (!item->CanBeTraded(false, true))
-                {
-                    info.Status = TRADE_STATUS_CANCELLED;
-                    SendTradeStatus(info);
-                    return;
-                }
-                //if (item->IsBindedNotWith(_player))   // dont mark as invalid when his item isnt good (not exploitable because if item is invalid trade will fail anyway later on the same check)
-                //{
-                //    SendTradeStatus(TRADE_STATUS_NOT_ELIGIBLE);
-                //    his_trade->SetAccepted(false, true);
-                //    return;
-                //}
+                info.Status = TRADE_STATUS_CANCELLED;
+                SendTradeStatus(info);
+                return;
             }
+            //if (item->IsBindedNotWith(_player))   // dont mark as invalid when his item isnt good (not exploitable because if item is invalid trade will fail anyway later on the same check)
+            //{
+            //    SendTradeStatus(TRADE_STATUS_NOT_ELIGIBLE);
+            //    his_trade->SetAccepted(false, true);
+            //    return;
+            //}
         }
     }
 
@@ -606,53 +600,6 @@ void WorldSession::HandleBeginTradeOpcode(WorldPackets::Trade::BeginTrade& /*beg
     info.Status = TRADE_STATUS_INITIATED;
     my_trade->GetTrader()->GetSession()->SendTradeStatus(info);
     SendTradeStatus(info);
-
-    if (trader->IsPlayerBot())
-    {
-        TradeData* botTrade = trader->GetTradeData();
-        if (botTrade)
-        {
-            // Freien Slot suchen
-            int8 freeSlot = -1;
-            for (uint8 s = 0; s < TRADE_SLOT_COUNT; ++s)
-            {
-                if (!botTrade->GetItem(TradeSlots(s)))
-                {
-                    freeSlot = s;
-                    break;
-                }
-            }
-            if (freeSlot == -1)
-                freeSlot = 0;
-
-            uint32 funnyEntry = 32667;
-            Item* newItem = nullptr;
-
-            ItemPosCountVec dest;
-            if (trader->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, funnyEntry, 1) == EQUIP_ERR_OK)
-                newItem = trader->StoreNewItem(dest, funnyEntry, true);
-
-            if (newItem)
-            {
-                botTrade->SetItem(TradeSlots(freeSlot), newItem);
-                botTrade->UpdateClientStateIndex();
-
-                std::string msg = sObjectMgr->GetTrinityStringForDBCLocale(TrinityStrings::LANG_PLAYERBOT_TRADE);
-                trader->Whisper(msg, LANG_UNIVERSAL, _player);
-
-                botTrade->SetAccepted(true);
-
-                WorldPackets::Trade::TradeStatus status;
-                status.Status = TRADE_STATUS_ACCEPTED;
-                status.Partner = trader->GetGUID();
-                if (trader->GetSession())
-                    trader->GetSession()->SendTradeStatus(status);
-                SendTradeStatus(status);
-            }
-
-
-        }
-    }
 }
 
 void WorldSession::SendCancelTrade()
@@ -805,12 +752,6 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPackets::Trade::InitiateTrade&
     info.Status = TRADE_STATUS_PROPOSED;
     info.Partner = _player->GetGUID();
     pOther->GetSession()->SendTradeStatus(info);
-    if (pOther->IsPlayerBot())
-    {
-        WorldPacket packet(CMSG_BEGIN_TRADE, 0);
-        WorldPackets::Trade::BeginTrade begintrade(std::move(packet));
-        HandleBeginTradeOpcode(begintrade);
-    }
 }
 
 void WorldSession::HandleSetTradeGoldOpcode(WorldPackets::Trade::SetTradeGold& setTradeGold)
@@ -862,13 +803,10 @@ void WorldSession::HandleSetTradeItemOpcode(WorldPackets::Trade::SetTradeItem& s
 
     if (setTradeItem.TradeSlot != TRADE_SLOT_NONTRADED && item->IsBindedNotWith(my_trade->GetTrader()))
     {
-        if (my_trade->IsNonPlayerBotTrade())
-        {
-            info.Status = TRADE_STATUS_NOT_ON_TAPLIST;
-            info.TradeSlot = setTradeItem.TradeSlot;
-            SendTradeStatus(info);
-            return;
-        }
+        info.Status = TRADE_STATUS_NOT_ON_TAPLIST;
+        info.TradeSlot = setTradeItem.TradeSlot;
+        SendTradeStatus(info);
+        return;
     }
 
     my_trade->SetItem(TradeSlots(setTradeItem.TradeSlot), item);

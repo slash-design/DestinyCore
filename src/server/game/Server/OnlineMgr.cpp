@@ -16,7 +16,6 @@
  */
 
 #include "OnlineMgr.h"
-#include "PlayerBotMgr.h"
 #include "World.h"
 #include "WorldSession.h"
 
@@ -73,20 +72,9 @@ bool OnlineMgr::AddNewAccount(uint32 guid, std::string& name)
 	if (guid == 0 || name.empty())
 		return false;
 	std::unique_lock<std::mutex> sessionGuard(OnlineMgr::g_uniqueMgrLock);
-	std::string lowerName = boost::algorithm::to_lower_copy(name);
-	bool isBotAcc = sPlayerBotMgr->IsBotAccuntName(lowerName);
-	if (isBotAcc)
-	{
-		if (m_OnlineBotAcc.find(guid) != m_OnlineBotAcc.end())
-			return false;
-		m_OnlineBotAcc[guid] = ToolAccountInfo(guid, name.c_str());
-	}
-	else
-	{
-		if (m_OnlinePlayerAcc.find(guid) != m_OnlinePlayerAcc.end())
-			return false;
-		m_OnlinePlayerAcc[guid] = ToolAccountInfo(guid, name.c_str());
-	}
+	if (m_OnlinePlayerAcc.find(guid) != m_OnlinePlayerAcc.end())
+		return false;
+	m_OnlinePlayerAcc[guid] = ToolAccountInfo(guid, name.c_str());
 	return true;
 }
 
@@ -96,19 +84,6 @@ bool OnlineMgr::CharaterOnline(uint32 accID, uint32 charID, const std::string& c
 	if (m_OnlinePlayerAcc.find(accID) != m_OnlinePlayerAcc.end())
 	{
 		ToolAccountInfo& info = m_OnlinePlayerAcc.find(accID)->second;
-		if (info.online.guid != 0)
-			return false;
-		info.online.guid = charID;
-		info.online.name = charName;
-		info.online.race = race;
-		info.online.profession = pro;
-		info.online.level = lv;
-		info.online.talent = talent;
-		return true;
-	}
-	else if (m_OnlineBotAcc.find(accID) != m_OnlineBotAcc.end())
-	{
-		ToolAccountInfo& info = m_OnlineBotAcc.find(accID)->second;
 		if (info.online.guid != 0)
 			return false;
 		info.online.guid = charID;
@@ -138,37 +113,15 @@ bool OnlineMgr::CharaterOffline(uint32 accID)
 		info.online.talent = -1;
 		return true;
 	}
-	else if (m_OnlineBotAcc.find(accID) != m_OnlineBotAcc.end())
-	{
-		ToolAccountInfo& info = m_OnlineBotAcc.find(accID)->second;
-		if (info.online.guid == 0)
-			return false;
-		info.online.guid = 0;
-		info.online.name.clear();
-		info.online.race = 0;
-		info.online.profession = 0;
-		info.online.level = 0;
-		info.online.talent = -1;
-		return true;
-	}
 	return false;
 }
 
-bool OnlineMgr::CharaterState(uint32 accID, uint32 charID, uint16 lv, uint8 talent)
+bool OnlineMgr::CharaterState(uint32 accID, uint32 /*charID*/, uint16 lv, uint8 talent)
 {
 	std::unique_lock<std::mutex> sessionGuard(OnlineMgr::g_uniqueMgrLock);
 	if (m_OnlinePlayerAcc.find(accID) != m_OnlinePlayerAcc.end())
 	{
 		ToolAccountInfo& info = m_OnlinePlayerAcc.find(accID)->second;
-		if (info.online.guid == 0)
-			return false;
-		info.online.level = lv;
-		info.online.talent = talent;
-		return true;
-	}
-	else if (m_OnlineBotAcc.find(accID) != m_OnlineBotAcc.end())
-	{
-		ToolAccountInfo& info = m_OnlineBotAcc.find(accID)->second;
 		if (info.online.guid == 0)
 			return false;
 		info.online.level = lv;
@@ -214,25 +167,6 @@ std::string OnlineMgr::SerializerPlayerAccount()
 	int count = 100;
 	for (TOOL_ACC::iterator itInfo = m_OnlinePlayerAcc.begin();
 		itInfo != m_OnlinePlayerAcc.end();
-		itInfo++)
-	{
-		--count;
-		if (count <= 0)
-			break;
-		ToolAccountInfo& info = itInfo->second;
-		data["accounts"].append(info.SerializerInfo());
-	}
-	return data.toStyledString();
-}
-
-std::string OnlineMgr::SerializerBotAccount()
-{
-	std::unique_lock<std::mutex> sessionGuard(OnlineMgr::g_uniqueMgrLock);
-	Json::Value data;
-	data["entry"] = "bot_acc";
-	int count = 100;
-	for (TOOL_ACC::iterator itInfo = m_OnlineBotAcc.begin();
-		itInfo != m_OnlineBotAcc.end();
 		itInfo++)
 	{
 		--count;

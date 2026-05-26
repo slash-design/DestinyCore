@@ -43,7 +43,6 @@
 #include "WorldStatePackets.h"
 #include "CreatureAIImpl.h"
 #include <cstdarg>
-#include "PlayerBotMgr.h"
 #include "CommandBG.h"
 
 #ifdef ELUNA
@@ -947,16 +946,6 @@ void Battleground::EndBattleground(uint32 winner)
         player->SendDirectMessage(battlefieldStatus.Write());
 
         player->UpdateCriteria(CRITERIA_TYPE_COMPLETE_BATTLEGROUND, 1);
-
-        if (player->IsPlayerBot())
-        {
-            PlayerBotSession* pSession = dynamic_cast<PlayerBotSession*>((WorldSession*)player->GetSession());
-            if (pSession)
-            {
-                BotGlobleSchedule schedule1(BotGlobleScheduleType::BGSType_LeaveBG, 0);
-                pSession->PushScheduleToQueue(schedule1);
-            }
-        }
     }
 #ifdef ELUNA
     //the type of the winner,change Team to BattlegroundTeamId,it could be better.
@@ -1529,11 +1518,6 @@ void Battleground::RelocateDeadPlayers(ObjectGuid guideGuid)
             if (closestGrave)
             {
                 player->TeleportTo(GetMapId(), closestGrave->Loc.X, closestGrave->Loc.Y, closestGrave->Loc.Z, player->GetOrientation());
-                if (player->IsPlayerBot())
-                {
-                    //needInNewQueuePlayers.push_back(player);
-                    player->UpdatePosition(closestGrave->Loc.X, closestGrave->Loc.Y, closestGrave->Loc.Z, player->GetOrientation(), true);
-                }
             }
         }
         ghostList.clear();
@@ -2052,7 +2036,7 @@ bool Battleground::ExistRealPlayer()
         itPlayer++)
     {
         Player* player = ObjectAccessor::FindConnectedPlayer(itPlayer->first);
-        if (player && !player->IsPlayerBot())
+        if (player)
         {
             return true;
         }

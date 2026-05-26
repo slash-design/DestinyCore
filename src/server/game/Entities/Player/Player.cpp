@@ -132,9 +132,6 @@
 #include "WorldStatePackets.h"
 #include <G3D/g3dmath.h>
 #include "ChallengeModeMgr.h"
-#include "BotMovementAI.h"
-#include "PlayerBotSession.h"
-#include "BotAITool.h"
 
 #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
 #define SHOP_UPDATE_INTERVAL (30*IN_MILLISECONDS)
@@ -150,9 +147,6 @@ uint64 const MAX_MONEY_AMOUNT = 99999999999ULL;
 Player::Player(WorldSession* session) : Unit(true), m_sceneMgr(this), m_archaeologyPlayerMgr(this)
 {
     _lastSummonedBattlePet = 0;
-
-    FakerMoveTimer = 0;
-    m_bot = false;
 
     for (size_t i = 0; i < MAX_PETBATTLE_SLOTS; ++i)
         _battlePetCombatTeam[i] = std::shared_ptr<BattlePet>();
@@ -388,9 +382,6 @@ Player::Player(WorldSession* session) : Unit(true), m_sceneMgr(this), m_archaeol
     m_reputationMgr = new ReputationMgr(this);
     m_questObjectiveCriteriaMgr = std::make_unique<QuestObjectiveCriteriaMgr>(this);
 
-    m_PlayerBotSetting = new PlayerBotSetting(this);
-    m_EquipCombatPower = 0;
-
     for (uint8 i = 0; i < MAX_CUF_PROFILES; ++i)
         _CUFProfiles[i] = nullptr;
 
@@ -437,8 +428,6 @@ Player::~Player()
     delete m_reputationMgr;
     delete _cinematicMgr;
 
-    delete m_PlayerBotSetting;
-
     for (uint8 i = 0; i < VOID_STORAGE_MAX_SLOT; ++i)
         delete _voidStorageItems[i];
 
@@ -449,129 +438,6 @@ Player::~Player()
     _oldPetBattleSpellToMerge.clear();
 
     sWorld->DecreasePlayerCount();
-}
-
-uint32 Player::FindTalentType()
-{
-    return m_PlayerBotSetting->UpdateTalentType();
-}
-
-bool Player::AIEquipItem(uint32 entry)
-{
-    Item* pItem = BotUtility::FindItemFromAllBag(this, entry);
-    if (!pItem)
-        return false;
-    return m_PlayerBotSetting->EquipItem(pItem);
-}
-
-bool Player::CheckNeedTenacityFlush()
-{
-    if (m_PlayerBotSetting)
-        return m_PlayerBotSetting->CheckNeedTenacityFlush();
-    return false;
-}
-
-bool Player::ResetPlayerToLevel(uint32 level, uint32 talent, bool needTenacity)
-{
-    return m_PlayerBotSetting->ResetPlayerToLevel(level, talent, needTenacity);
-}
-
-bool Player::IsSettingFinish()
-{
-    return m_PlayerBotSetting->IsFinish();
-}
-
-void Player::SupplementAmmo()
-{
-    m_PlayerBotSetting->SupplementAmmo();
-}
-
-void Player::OnLevelupToBotAI()
-{
-    if (UnitAI* pUnitAI = GetAI())
-    {
-        BotGroupAI* pAI = dynamic_cast<BotGroupAI*>(pUnitAI);
-        if (pAI)
-        {
-            uint32 type = ReupdateTalents();
-            m_PlayerBotSetting->LearnSpells();
-            pAI->OnLevelUp(type);
-        }
-    }
-}
-
-uint32 Player::ReupdateTalents()
-{
-    if (IsPlayerBot())
-    {
-        if (CalculateTalentsTiers() <= 0)
-        {
-            uint32 type = m_PlayerBotSetting->GetTalentType();
-            return (type > 2) ? 0 : type;
-        }
-        m_PlayerBotSetting->LearnTalents();
-    }
-    uint32 type = m_PlayerBotSetting->GetTalentType();
-    SaveToDB();
-    return (type > 2) ? 0 : type;
-}
-
-uint32 Player::SwitchTalent(uint32 talent)
-{
-    return m_PlayerBotSetting->SwitchPlayerTalent(talent);
-}
-
-bool Player::IsTankPlayer()
-{
-    if (!m_PlayerBotSetting)
-        return false;
-    if (getLevel() < 10)
-        return false;
-    Classes cls = Classes(getClass());
-    if (cls != CLASS_DRUID && cls != CLASS_PALADIN && cls != CLASS_WARRIOR)
-        return false;
-    uint32 type = m_PlayerBotSetting->UpdateTalentType();
-    if (cls == CLASS_DRUID && type == 1)
-        return true;
-    if (cls == CLASS_PALADIN && type == 1)
-        return true;
-    if (cls == CLASS_WARRIOR && type == 2)
-        return true;
-    return false;
-}
-
-void Player::FlushEquipCombatPower(uint8 eSlot, bool apply, const ItemTemplate* pEquipTemplate)
-{
-    int32 equipCPLevel = 0;
-    for (uint8 slot = EquipmentSlots::EQUIPMENT_SLOT_HEAD; slot < EquipmentSlots::EQUIPMENT_SLOT_END; slot++)
-    {
-        Item* pItem = GetItemByPos(255, slot);
-        if (!pItem)
-            continue;
-        if (slot == eSlot)
-        {
-            if (apply)
-            {
-                if (pEquipTemplate)
-                    equipCPLevel += int32(pEquipTemplate->ExtendedData->ItemLevel);
-            }
-            continue;
-        }
-        const ItemTemplate* pTemplate = pItem->GetTemplate();
-        if (!pTemplate)
-            continue;
-        equipCPLevel += int32(pTemplate->ExtendedData->ItemLevel);
-        if (equipCPLevel < 0)
-            equipCPLevel = 0;
-    }
-    if (equipCPLevel < 0)
-        equipCPLevel = 0;
-    m_EquipCombatPower = equipCPLevel;
-}
-
-bool Player::EquipIsTidiness()
-{
-    return m_PlayerBotSetting->EquipIsTidiness();
 }
 
 void Player::CleanupsBeforeDelete(bool finalCleanup)
@@ -1081,8 +947,7 @@ void Player::HandleDrowning(uint32 time_diff)
                 // Calculate and deal damage
                 /// @todo Check this formula
                 uint32 damage = GetMaxHealth() / 5 + urand(0, getLevel()-1);
-                if (!IsPlayerBot())
-                    EnvironmentalDamage(DAMAGE_DROWNING, damage);
+                EnvironmentalDamage(DAMAGE_DROWNING, damage);
             }
             else if (!(m_MirrorTimerFlagsLast & UNDERWATER_INWATER))      // Update time in client if need
                 SendMirrorTimer(BREATH_TIMER, getMaxTimer(BREATH_TIMER), m_MirrorTimer[BREATH_TIMER], -1);
@@ -1282,8 +1147,6 @@ void Player::Update(uint32 p_time)
 
     UpdateAfkReport(now);
 
-    m_PlayerBotSetting->UpdateReset();
-
     if (GetCombatTimer()) // Only set when in pvp combat
         if (Aura* aura = GetAura(SPELL_PVP_RULES_ENABLED))
             if (!aura->IsPermanent())
@@ -1295,15 +1158,6 @@ void Player::Update(uint32 p_time)
     {
         if (GetTypeId() == TYPEID_UNIT)
             UpdateCharmAI();
-        //if (GetAI() == nullptr)// && IsPlayerBot())
-        //{
-        //	if (i_AI)
-        //	{
-        //		i_AI->Reset();
-        //		delete i_AI;
-        //	}
-        //	i_AI = new BotMovementAI(this);
-        //}
         NeedChangeAI = false;
         IsAIEnabled = (GetAI() != nullptr);
     }
@@ -1383,7 +1237,7 @@ void Player::Update(uint32 p_time)
                     }
                 }
                 //120 degrees of radiant range, if player is not in boundary radius
-                else if (!IsPlayerBot() && !IsWithinBoundaryRadius(victim) && !HasInArc(2 * float(M_PI) / 3, victim))
+                else if (!IsWithinBoundaryRadius(victim) && !HasInArc(2 * float(M_PI) / 3, victim))
                 {
                     setAttackTimer(BASE_ATTACK, 100);
                     if (m_swingErrorMsg != 2)               // send single time (client auto repeat)
@@ -1411,7 +1265,7 @@ void Player::Update(uint32 p_time)
             {
                 if (!IsWithinMeleeRange(victim))
                     setAttackTimer(OFF_ATTACK, 100);
-                else if (!IsPlayerBot() && !IsWithinBoundaryRadius(victim) && !HasInArc(2 * float(M_PI) / 3, victim))
+                else if (!IsWithinBoundaryRadius(victim) && !HasInArc(2 * float(M_PI) / 3, victim))
                 {
                     setAttackTimer(BASE_ATTACK, 100);
                 }
@@ -2948,16 +2802,6 @@ void Player::GiveLevel(uint8 level)
     }
 
     sScriptMgr->OnPlayerLevelChanged(this, oldLevel);
-
-    if (level > oldLevel && IsPlayerBot() && m_PlayerBotSetting)
-    {
-        PlayerBotSession* pSession = dynamic_cast<PlayerBotSession*>(GetSession());
-        if (pSession)
-        {
-            BotGlobleSchedule schedule(BotGlobleScheduleType::BGSType_DelayLevelup, GetGUID());
-            pSession->PushScheduleToQueue(schedule);
-        }
-    }
 }
 
 void Player::InitTalentForLevel()
@@ -2968,13 +2812,11 @@ void Player::InitTalentForLevel()
         ResetTalentSpecialization();
 
     uint32 talentTiers = CalculateTalentsTiers();
-	if (IsPlayerBot());
-		//SetFreeTalentPoints(0);
-	else if (!GetSession()->HasPermission(rbac::RBAC_PERM_SKIP_CHECK_MORE_TALENTS_THAN_ALLOWED))
-		for (uint32 t = talentTiers; t < MAX_TALENT_TIERS; ++t)
-			for (uint32 c = 0; c < MAX_TALENT_COLUMNS; ++c)
-				for (TalentEntry const* talent : sDB2Manager.GetTalentsByPosition(getClass(), t, c))
-					RemoveTalent(talent);
+    if (!GetSession()->HasPermission(rbac::RBAC_PERM_SKIP_CHECK_MORE_TALENTS_THAN_ALLOWED))
+        for (uint32 t = talentTiers; t < MAX_TALENT_TIERS; ++t)
+            for (uint32 c = 0; c < MAX_TALENT_COLUMNS; ++c)
+                for (TalentEntry const* talent : sDB2Manager.GetTalentsByPosition(getClass(), t, c))
+                    RemoveTalent(talent);
 
     SetUInt32Value(PLAYER_FIELD_MAX_TALENT_TIERS, talentTiers);
 
@@ -4597,8 +4439,6 @@ void Player::DeleteOldCharacters(uint32 keepDays)
          {
             Field* fields = result->Fetch();
             uint32 account = fields[1].GetUInt32();
-            if (account > 0 && sPlayerBotMgr->GetPlayerBotAccountInfo(account))
-                continue;
             Player::DeleteFromDB(ObjectGuid::Create<HighGuid::Player>(fields[0].GetUInt64()), account, true, true);
          }
          while (result->NextRow());
@@ -5492,13 +5332,6 @@ void Player::ApplyRatingMod(CombatRating combatRating, int32 value, bool apply)
 void Player::UpdateRating(CombatRating cr)
 {
     int32 amount = m_baseRatingValue[cr];
-    if (cr == CombatRating::CR_RESILIENCE_CRIT_TAKEN || cr == CombatRating::CR_RESILIENCE_PLAYER_DAMAGE || cr == CombatRating::CR_LIFESTEAL)
-    {
-        if (IsPlayerBot())
-        {
-            amount += int32(getLevel()) * BotUtility::BotCritTakenAddion;
-        }
-    }
     // Apply bonus from SPELL_AURA_MOD_RATING_FROM_STAT
     // stat used stored in miscValueB for this aura
     AuraEffectList const& modRatingFromStat = GetAuraEffectsByType(SPELL_AURA_MOD_RATING_FROM_STAT);
@@ -8320,8 +8153,6 @@ void Player::_ApplyItemBonuses(Item* item, uint8 slot, bool apply)
 
     if (CanUseAttackType(attType))
         _ApplyWeaponDamage(slot, item, apply);
-
-    FlushEquipCombatPower(slot, apply, proto);
 }
 
 void Player::_ApplyWeaponDamage(uint8 slot, Item* item, bool apply)
@@ -11757,11 +11588,8 @@ InventoryResult Player::CanStoreItems(Item** items, int count, uint32* offending
             return EQUIP_ERR_LOOT_GONE;
 
         // item it 'bind'
-        if (!otherPlayer || (!otherPlayer->IsPlayerBot() && !IsPlayerBot()))
-        {
-            if (item->IsBindedNotWith(this))
-                return EQUIP_ERR_ONLY_ONE_QUIVER;
-        }
+        if (item->IsBindedNotWith(this))
+            return EQUIP_ERR_ONLY_ONE_QUIVER;
 
         ItemTemplate const* pBagProto;
 
@@ -16342,14 +16170,6 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver, 
     if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
     {
         GiveXP(XP, nullptr);
-        if (!IsPlayerBot())
-        {
-            Group* pGroup = GetGroup();
-            if (pGroup && !pGroup->isBGGroup())
-            {
-                pGroup->AllGroupBotGiveXP(XP);
-            }
-        }
     }
     else
         moneyRew = int32(quest->GetRewMoneyMaxLevel() * sWorld->getRate(RATE_DROP_MONEY));
@@ -21732,9 +21552,6 @@ void Player::_SaveActions(CharacterDatabaseTransaction& trans)
 
 void Player::_SaveAuras(CharacterDatabaseTransaction& trans)
 {
-    if (IsPlayerBot())
-        return;
-
     CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHAR_AURA_EFFECT);
     stmt->setUInt64(0, GetGUID().GetCounter());
     trans->Append(stmt);
@@ -24696,20 +24513,15 @@ void Player::LeaveBattleground(bool teleportToEntryPoint)
 {
     if (Battleground* bg = GetBattleground())
     {
-        //sPlayerBotMgr->AllPlayerLeaveBG(GetGUID());
-        //if (this->IsGameMaster())
-        //{
-        if (bg->isBattleground() && !IsPlayerBot() && IsGameMaster())
+        if (bg->isBattleground() && IsGameMaster())
         {
             bg->EndBattleground((GetTeamId() == TEAM_ALLIANCE) ? HORDE : ALLIANCE);
-            //bg->EndBattleground(HORDE);
         }
-        //}
 
         bg->RemovePlayerAtLeave(GetGUID(), teleportToEntryPoint, true);
 
         // call after remove to be sure that player resurrected for correct cast
-        if (bg->isBattleground() && !IsGameMaster() && sWorld->getBoolConfig(CONFIG_BATTLEGROUND_CAST_DESERTER) && !IsPlayerBot())
+        if (bg->isBattleground() && !IsGameMaster() && sWorld->getBoolConfig(CONFIG_BATTLEGROUND_CAST_DESERTER))
         {
             if (bg->GetStatus() == STATUS_IN_PROGRESS || bg->GetStatus() == STATUS_WAIT_JOIN)
             {
@@ -26911,7 +26723,7 @@ void Player::UpdateAreaDependentAuras()
         {
             // use m_zoneUpdateId for speed: UpdateArea called from UpdateZone or instead UpdateZone in both cases m_zoneUpdateId up-to-date
             SpellCastResult scr = iter->second->GetSpellInfo()->CheckLocation(GetMapId(), GetZoneId(), GetAreaId(), this);
-            if (scr != SPELL_CAST_OK && !PlayerBotSetting::IsBotFlyMountAura(iter->first))
+            if (scr != SPELL_CAST_OK)
                 RemoveOwnedAura(iter);
             else
                 ++iter;
@@ -29121,10 +28933,6 @@ void Player::SendTimeSync()
     // Schedule next sync in 10 sec
     m_timeSyncTimer = 10000;
     m_timeSyncServer = getMSTime();
-
-    // Check if it is a PlayerBot
-    if (IsPlayerBot())
-        return;
 
     if (m_timeSyncQueue.size() > 3)
         TC_LOG_ERROR("network", "Player::SendTimeSync: Did not receive CMSG_TIME_SYNC_RESP for over 30 seconds from '%s' (%s), possible cheater",

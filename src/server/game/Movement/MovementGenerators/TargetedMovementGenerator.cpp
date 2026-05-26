@@ -105,13 +105,13 @@ void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T* owner, bool up
     bool forceDest = (owner->GetTypeId() == TYPEID_UNIT && owner->ToCreature()->IsPet()
         && owner->HasUnitState(UNIT_STATE_FOLLOW));
 
-    if (!forceDest && owner->GetTypeId() == TYPEID_UNIT && !owner->IsPlayerBot() && !i_target->IsPlayerBot())
+    if (!forceDest && owner->GetTypeId() == TYPEID_UNIT)
     {
         //TC_LOG_ERROR("misc", "SPMOVE1 ");
         forceDest = (owner->GetTypeId() == TYPEID_UNIT && owner->ToCreature()->CanWalk() && owner->ToCreature()->IsInCombat() && owner->ToCreature()->CanSwim() && (owner->ToCreature()->IsInWater() || owner->ToCreature()->IsUnderWater()));
     }
 
-    if (!forceDest && i_target->GetTypeId() == TYPEID_PLAYER && owner->GetTypeId() == TYPEID_UNIT && !owner->IsPlayerBot() && !i_target->IsPlayerBot())
+    if (!forceDest && i_target->GetTypeId() == TYPEID_PLAYER && owner->GetTypeId() == TYPEID_UNIT)
     {
         //TC_LOG_ERROR("misc", "SPMOVE2 ");
         forceDest = (owner->ToCreature()->CanWalk() && owner->ToCreature()->IsInCombat() && owner->ToCreature()->CanSwim() && (i_target->IsInWater() || i_target->IsUnderWater()));

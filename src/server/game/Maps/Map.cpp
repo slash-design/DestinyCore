@@ -52,8 +52,6 @@
 #include "World.h"
 #include "WorldSession.h"
 #include "WildBattlePet.h"
-#include "PlayerBotMgr.h"
-#include "FieldBotMgr.h"
 #include "../CommandBG/CommandAB.h"
 #include "../CommandBG/CommandWS.h"
 #include "../CommandBG/CommandEY.h"
@@ -825,9 +823,6 @@ void Map::Update(const uint32 t_diff)
 
         // update players at tick
         player->Update(t_diff);
-
-        if (!player->IsPlayerBot())
-            sFieldBotMgr->Update(player->GetGUID());
 
         VisitNearbyCellsOf(player, grid_object_update, world_object_update);
 
@@ -4093,17 +4088,6 @@ bool BattlegroundMap::AddPlayerToMap(Player* player, bool initPlayer /*= true*/)
         player->m_InstanceValid = true;
     }
     bool result = Map::AddPlayerToMap(player);
-    if (result && player->IsPlayerBot())
-    {
-        if (player->GetTeamId() == TEAM_ALLIANCE && m_pAllianceCommander)
-        {
-            m_pAllianceCommander->AddPlayerBot(player, m_bg);
-        }
-        else if (player->GetTeamId() == TEAM_HORDE && m_pHordeCommander)
-        {
-            m_pHordeCommander->AddPlayerBot(player, m_bg);
-        }
-    }
 
     return result;
 }
@@ -4111,18 +4095,6 @@ bool BattlegroundMap::AddPlayerToMap(Player* player, bool initPlayer /*= true*/)
 void BattlegroundMap::RemovePlayerFromMap(Player* player, bool remove)
 {
     TC_LOG_DEBUG("maps", "MAP: Removing player '%s' from bg '%u' of map '%s' before relocating to another map", player->GetName().c_str(), GetInstanceId(), GetMapName());
-    if (player->IsPlayerBot())
-    {
-        PlayerBotMgr::SwitchPlayerBotAI(player, PlayerBotAIType::PBAIT_FIELD, true);
-        if (player->GetTeamId() == TEAM_ALLIANCE && m_pAllianceCommander)
-        {
-            m_pAllianceCommander->RemovePlayerBot(player);
-        }
-        else if (player->GetTeamId() == TEAM_HORDE && m_pHordeCommander)
-        {
-            m_pHordeCommander->RemovePlayerBot(player);
-        }
-    }
     Map::RemovePlayerFromMap(player, remove);
 }
 

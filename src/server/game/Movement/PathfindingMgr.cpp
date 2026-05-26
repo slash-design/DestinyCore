@@ -19,7 +19,6 @@
 #include "PathfindingMgr.h"
 #include "World.h"
 #include "WorldSession.h"
-#include "BotAI.h"
 #include "DisableMgr.h"
 #include <thread>
 
@@ -279,26 +278,6 @@ void PathfindingMgr::Update()
     }
 }
 
-void PathfindingMgr::ProcessFinishPFParameter(PathParameter* pfParameter)
+void PathfindingMgr::ProcessFinishPFParameter(PathParameter* /*pfParameter*/)
 {
-    bool isProcess = false;
-    Player* player = ObjectAccessor::FindPlayer(pfParameter->unitGUID);
-    if (player)
-    {
-        UnitAI* pAI = player->GetAI();
-        if (pAI)
-        {
-            BotBGAI* pBotAI = dynamic_cast<BotBGAI*>(pAI);
-            if (pBotAI)
-            {
-                pBotAI->PushFinishQueue(pfParameter);
-                isProcess = true;
-            }
-        }
-    }
-    //if (!isProcess)
-    //    TC_LOG_WARN("Pathfinding", "PathfindingMgr::ProcessFinishPFParameter SessionID %u GUID %u un process.\n", pfParameter->sessionID, pfParameter->unitGUID);
-
-    //if (pfParameter)
-    //	delete pfParameter;
 }

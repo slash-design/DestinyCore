@@ -287,7 +287,7 @@ void WorldSession::HandleChatMessage(ChatMsg type, uint32 lang, std::string msg,
                 SendChatPlayerNotfoundNotice(target);
                 return;
             }
-            if (!receiver->IsPlayerBot() && (lang != LANG_ADDON && !receiver->isAcceptWhispers() && receiver->GetSession()->HasPermission(rbac::RBAC_PERM_CAN_FILTER_WHISPERS) && !receiver->IsInWhisperWhiteList(sender->GetGUID())))
+            if (lang != LANG_ADDON && !receiver->isAcceptWhispers() && receiver->GetSession()->HasPermission(rbac::RBAC_PERM_CAN_FILTER_WHISPERS) && !receiver->IsInWhisperWhiteList(sender->GetGUID()))
             {
                 SendChatPlayerNotfoundNotice(target);
                 return;
@@ -322,55 +322,14 @@ void WorldSession::HandleChatMessage(ChatMsg type, uint32 lang, std::string msg,
                     return;
 #endif
 
+            // Normal Whisper logic for real players
+            if (!receiver->isAcceptWhispers() && !receiver->IsInWhisperWhiteList(sender->GetGUID()))
+            {
+                SendChatPlayerNotfoundNotice(target);
+                return;
+            }
+
             GetPlayer()->Whisper(msg, Language(lang), receiver);
-            UnitAI* pUnitAi = receiver->GetAI();
-            if (BotGroupAI* pGroupAI = dynamic_cast<BotGroupAI*>(pUnitAi))
-                pGroupAI->ProcessBotCommand(GetPlayer(), msg);
-            else if (BotBGAI* pBGAI = dynamic_cast<BotBGAI*>(pUnitAi))
-                pBGAI->ProcessBotCommand(GetPlayer(), msg);
-
-            if (receiver->IsPlayerBot())
-            {
-                LocaleConstant locale = sender->GetSession()->GetSessionDbcLocale();
-                QueryResult result;
-
-                // Search for locale-specific response first
-                result = WorldDatabase.PQuery(
-                    "SELECT `reply` FROM `ai_talk_whisper_locale` "
-                    "WHERE locale = %u AND '%s' REGEXP cname "
-                    "ORDER BY RAND() LIMIT 1",
-                    locale, msg.c_str()
-                );
-
-                // If nothing is found, English fallback
-                if (!result)
-                {
-                    result = WorldDatabase.PQuery(
-                        "SELECT `reply` FROM `ai_talk_whisper` "
-                        "WHERE '%s' REGEXP cname "
-                        "ORDER BY RAND() LIMIT 1",
-                        msg.c_str()
-                    );
-                }
-
-                if (result)
-                {
-                    Field* fields = result->Fetch();
-                    std::string rpmsg = fields[0].GetString();
-                    receiver->Whisper(rpmsg, Language::LANG_COMMON, GetPlayer());
-                }
-            }
-            else
-            {
-                // Normal Whisper logic for real players
-                if (!receiver->isAcceptWhispers() && !receiver->IsInWhisperWhiteList(sender->GetGUID()))
-                {
-                    SendChatPlayerNotfoundNotice(target);
-                    return;
-                }
-
-                GetPlayer()->Whisper(msg, Language(lang), receiver);
-            }
         } break;
         case CHAT_MSG_PARTY:
         {
@@ -396,49 +355,6 @@ void WorldSession::HandleChatMessage(ChatMsg type, uint32 lang, std::string msg,
             WorldPackets::Chat::Chat packet;
             packet.Initialize(ChatMsg(type), Language(lang), sender, nullptr, msg);
             group->BroadcastPacket(packet.Write(), false, group->GetMemberGroup(GetPlayer()->GetGUID()));
-
-            if (type == CHAT_MSG_PARTY_LEADER)
-                group->ProcessGroupBotCommand(GetPlayer(), msg);
-
-            // AI-PartyTalk
-            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
-            {
-                Player* member = itr->GetSource();
-                if (!member || !member->IsPlayerBot())
-                    continue;
-
-                LocaleConstant locale = GetPlayer()->GetSession()->GetSessionDbcLocale();
-                QueryResult result;
-
-                // First try locale specific
-                result = WorldDatabase.PQuery(
-                    "SELECT `reply` FROM `ai_talk_group_locale` "
-                    "WHERE locale = %u AND '%s' REGEXP cname "
-                    "ORDER BY RAND() LIMIT 1",
-                    locale, msg.c_str()
-                );
-
-                // Fallback in English
-                if (!result)
-                {
-                    result = WorldDatabase.PQuery(
-                        "SELECT `reply` FROM `ai_talk_group` "
-                        "WHERE '%s' REGEXP cname "
-                        "ORDER BY RAND() LIMIT 1",
-                        msg.c_str()
-                    );
-                }
-
-                if (result)
-                {
-                    Field* fields = result->Fetch();
-                    std::string rpmsg = fields[0].GetString();
-
-                    WorldPackets::Chat::Chat botPacket;
-                    botPacket.Initialize(ChatMsg(CHAT_MSG_PARTY), LANG_UNIVERSAL, member, nullptr, rpmsg);
-                    group->BroadcastPacket(botPacket.Write(), false);
-                }
-            }
 
             break;
         }

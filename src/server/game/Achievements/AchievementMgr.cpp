@@ -495,9 +495,6 @@ void PlayerAchievementMgr::CompletedAchievement(AchievementEntry const* achievem
 
     if (achievement->Flags & (ACHIEVEMENT_FLAG_REALM_FIRST_REACH | ACHIEVEMENT_FLAG_REALM_FIRST_KILL))
     {
-        if (referencePlayer->IsPlayerBot())
-            return;
-
         if (sAchievementMgr->IsRealmCompleted(achievement))
             return;
     }
@@ -517,9 +514,6 @@ void PlayerAchievementMgr::CompletedAchievement(AchievementEntry const* achievem
 
     if (achievement->Flags & (ACHIEVEMENT_FLAG_REALM_FIRST_REACH | ACHIEVEMENT_FLAG_REALM_FIRST_KILL))
     {
-        if (referencePlayer->IsPlayerBot())
-            return;
-
         sAchievementMgr->SetRealmCompleted(achievement);
     }
 
@@ -972,9 +966,6 @@ void GuildAchievementMgr::CompletedAchievement(AchievementEntry const* achieveme
 
     if (achievement->Flags & (ACHIEVEMENT_FLAG_REALM_FIRST_REACH | ACHIEVEMENT_FLAG_REALM_FIRST_KILL))
     {
-        if (referencePlayer->IsPlayerBot())
-            return;
-
         sAchievementMgr->SetRealmCompleted(achievement);
     }
 

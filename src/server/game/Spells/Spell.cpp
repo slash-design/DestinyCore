@@ -58,7 +58,6 @@
 #include "LuaEngine.h"
 #endif
 #include <numeric>
-#include "BotAITool.h"
 
 extern pEffect SpellEffects[TOTAL_SPELL_EFFECTS];
 
@@ -5361,7 +5360,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
                     return SPELL_FAILED_VISION_OBSCURED;
         }
 
-        if (target != m_caster && (!m_caster->IsPlayerBot() || m_caster->getClass() != Classes::CLASS_ROGUE))
+        if (target != m_caster)
         {
             // Must be behind the target
             if ((m_spellInfo->HasAttribute(SPELL_ATTR0_CU_REQ_CASTER_BEHIND_TARGET)) && target->HasInArc(static_cast<float>(M_PI), m_caster))
@@ -5486,15 +5485,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
     // script hook
     castResult = CallScriptCheckCastHandlers();
     if (castResult != SPELL_CAST_OK)
-    {
-        if (m_caster->IsPlayerBot())
-        {
-            if (castResult != SPELL_FAILED_DONT_REPORT)
-                return castResult;
-        }
-        else
-            return castResult;
-    }
+        return castResult;
 
     for (SpellEffectInfo const* effect : GetEffects())
     {
@@ -6512,8 +6503,6 @@ SpellCastResult Spell::CheckRange(bool strict) const
     if (!strict && m_casttime == 0)
         return SPELL_CAST_OK;
 
-    bool isBot = m_caster->IsPlayerBot();
-
     float minRange, maxRange;
     std::tie(minRange, maxRange) = GetMinMaxRange(strict);
 
@@ -6534,7 +6523,7 @@ SpellCastResult Spell::CheckRange(bool strict) const
         if (minRange > 0.0f && m_caster->GetExactDistSq(target) < minRange)
             return SPELL_FAILED_OUT_OF_RANGE;
 
-        if (m_caster->GetTypeId() == TYPEID_PLAYER && !isBot &&
+        if (m_caster->GetTypeId() == TYPEID_PLAYER &&
             (((m_spellInfo->FacingCasterFlags & SPELL_FACING_FLAG_INFRONT) && !m_caster->HasInArc(static_cast<float>(M_PI), target))
                 && !m_caster->IsWithinBoundaryRadius(target)))
             return SPELL_FAILED_UNIT_NOT_INFRONT;
@@ -6738,12 +6727,9 @@ SpellCastResult Spell::CheckItems(uint32* param1 /*= nullptr*/, uint32* param2 /
     {
         if (!(_triggeredCastFlags & TRIGGERED_IGNORE_EQUIPPED_ITEM_REQUIREMENT))
         {
-            if (!player->IsPlayerBot() || player->getClass() != Classes::CLASS_ROGUE)
+            if (!player->HasItemFitToSpellRequirements(m_spellInfo))
             {
-                if (!player->HasItemFitToSpellRequirements(m_spellInfo))
-                {
-                    return SPELL_FAILED_EQUIPPED_ITEM_CLASS;
-                }
+                return SPELL_FAILED_EQUIPPED_ITEM_CLASS;
             }
         }
     }

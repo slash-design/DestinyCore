@@ -21,7 +21,6 @@
 #include "Arena.h"
 #include "ArenaHelper.h"
 #include "ArchaeologyPlayerMgr.h"
-#include "PlayerBotSetting.h"
 #include "Unit.h"
 #include "CUFProfile.h"
 #include "DatabaseEnvFwd.h"
@@ -86,7 +85,6 @@ class LootStore;
 class OutdoorPvP;
 class Pet;
 class PetAura;
-class PlayerBotSetting;
 class PlayerAchievementMgr;
 class PlayerMenu;
 class PlayerSocial;
@@ -1177,25 +1175,7 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         explicit Player(WorldSession* session);
         ~Player();
 
-        bool m_bot;
-        int32 FakerMoveTimer;
-
         PlayerAI* AI() const { return reinterpret_cast<PlayerAI*>(i_AI); }
-
-        uint32 FindTalentType();
-        bool AIEquipItem(uint32 entry);
-        bool CheckNeedTenacityFlush();
-        bool ResetPlayerToLevel(uint32 level, uint32 talent = 3, bool needTenacity = false);
-        bool IsSettingFinish();
-        void SupplementAmmo();
-        void OnLevelupToBotAI();
-        uint32 ReupdateTalents();
-        uint32 SwitchTalent(uint32 talent);
-        PlayerBotSetting* m_PlayerBotSetting;
-        bool IsTankPlayer();
-        int32 GetEquipCombatPower() { return m_EquipCombatPower; }
-        void FlushEquipCombatPower(uint8 eSlot, bool apply, const ItemTemplate* pEquipTemplate);
-        bool EquipIsTidiness();
 
         void CleanupsBeforeDelete(bool finalCleanup = true) override;
 
@@ -3129,8 +3109,6 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         uint32 manaBeforeDuel;
 
         WorldLocation _corpseLocation;
-
-        int32 m_EquipCombatPower;
 
         SceneMgr m_sceneMgr;
 

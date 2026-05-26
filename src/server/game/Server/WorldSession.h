@@ -1598,10 +1598,8 @@ class TC_GAME_API WorldSession
         void HandleUpdateMissileTrajectory(WorldPackets::Spells::UpdateMissileTrajectory& packet);
 
         bool HasSocket() { return m_Socket != NULL; }
-        virtual bool IsBotSession() { return false; }
         virtual bool HasSchedules() { return false; }
         virtual bool HasBGSchedule() { return false; }
-        virtual bool IsAccountBotSession() { return false; }
 
         void HandleLearnPvpTalentsOpcode(WorldPackets::Talent::LearnPvpTalents& packet);
         void HandleLearnTalentsOpcode(WorldPackets::Talent::LearnTalents& packet);

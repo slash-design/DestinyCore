@@ -62,37 +62,10 @@ private:
 	void CmdHeartbeat(Json::Value& info);
 	void CmdAuthorization(Json::Value& info);
 	void CmdBGXPReward(Json::Value& info);
-	void CmdBGScoreRate(Json::Value& info);
 	void CmdCreateAccount(Json::Value& info);
 	void CmdPlayerAccount(Json::Value& info);
-	void CmdBotAccount(Json::Value& info);
 	void CmdAccountSecurity(Json::Value& info);
-	void CmdOffline(Json::Value& info);
-	void CmdOfflineAll(Json::Value& info);
-	void CmdLeaveBGAll(Json::Value& info);
-	void CmdBotOnline(Json::Value& info);
-	void CmdBotChange(Json::Value& info);
-	void CmdPlayerChange(Json::Value& info);
 	void CmdBGModel(Json::Value& info);
-	void CmdPVEAutoSetting(Json::Value& info);
-	void CmdPVEMaxLevel(Json::Value& info);
-	void CmdPVEMaxDungeon(Json::Value& info);
-	void CmdPVEDriving(Json::Value& info);
-	void CmdPVEPull(Json::Value& info);
-	void CmdPVEAddion(Json::Value& info);
-	void CmdPVEAutoRevive(Json::Value& info);
-	void CmdPVEFieldCreature(Json::Value& info);
-	void CmdPVEFieldDriving(Json::Value& info);
-	void CmdPVEFieldWarfare(Json::Value& info);
-	void CmdPVPDiminishing(Json::Value& info);
-	void CmdPVPCanBreakControll(Json::Value& info);
-	void CmdAutoBuildArenaTeam(Json::Value& info);
-	void CmdArenaTeamReset(Json::Value& info);
-	void CmdBuildBotsArenaTeam(Json::Value& info);
-	void CmdDownBotArenaTeam(Json::Value& info);
-	void CmdBotArenaHell(Json::Value& info);
-	void CmdBotArenaTeamTactics(Json::Value& info);
-	void CmdDisableDKQuest(Json::Value& info);
 
 private:
 	std::mutex _consoleLock;

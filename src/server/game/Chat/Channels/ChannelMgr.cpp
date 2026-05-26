@@ -23,7 +23,6 @@
 #include "ChatPackets.h"
 #include "DB2Stores.h"
 #include "Player.h"
-#include "PlayerBotTalkMgr.h"
 #include "World.h"
 #include "WorldSession.h"
 
@@ -114,7 +113,6 @@ Channel* ChannelMgr::GetJoinChannel(uint32 channelId, std::string const& name, A
         if (channelId == 0)
         {
             defaultChannel = newChannel;
-            sPlayerBotTalkMgr->SetDefaultChannel(newChannel);
         }
         return newChannel;
     }

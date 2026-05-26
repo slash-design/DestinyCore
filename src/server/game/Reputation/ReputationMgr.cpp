@@ -555,8 +555,6 @@ void ReputationMgr::LoadFromDB(PreparedQueryResult result)
 
 void ReputationMgr::SaveToDB(CharacterDatabaseTransaction& trans)
 {
-    if (_player->IsPlayerBot())
-        return;
     for (FactionStateList::iterator itr = _factions.begin(); itr != _factions.end(); ++itr)
     {
         if (itr->second.needSave)

@@ -62,8 +62,6 @@ public:
     bool IsInAcceptProcess() const { return _acceptProccess; }
     void SetInAcceptProcess(bool state) { _acceptProccess = state; }
 
-    bool IsNonPlayerBotTrade();
-
     uint32 GetClientStateIndex() const { return _clientStateIndex; }
     void UpdateClientStateIndex() { ++_clientStateIndex; }
 

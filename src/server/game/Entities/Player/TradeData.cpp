@@ -187,12 +187,3 @@ void TradeData::UpdateServerStateIndex()
 {
     _serverStateIndex = rand32();
 }
-
-bool TradeData::IsNonPlayerBotTrade()
-{
-    if (_player->IsPlayerBot())
-        return false;
-    if (_trader->IsPlayerBot())
-        return false;
-    return true;
-}

@@ -16,7 +16,6 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AuctionHouseBot.h"
 #include "AuctionHouseMgr.h"
 #include "AuctionHousePackets.h"
 #include "AccountMgr.h"

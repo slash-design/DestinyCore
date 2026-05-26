@@ -331,17 +331,6 @@ bool Pet::LoadPetData(Player* owner, uint32 petEntry, uint32 petnumber, bool cur
             }
         }
 
-        if (owner->IsPlayerBot())
-        {
-            if (m_spells.empty())
-            {
-                InitPetCreateSpells();
-                //resetTalents();
-            }
-            //FlushTalentsByPoints();
-            SettingAllSpellAutocast(true);
-        }
-
         CastSpell(this, HUNTER_PET_ACTIVE_SPELL, true);
     }
 
