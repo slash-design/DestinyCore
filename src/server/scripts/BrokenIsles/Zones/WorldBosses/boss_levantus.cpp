@@ -31,6 +31,7 @@
 #include "Group.h"
 #include "GroupMgr.h"
 #include "Vehicle.h"
+#include "CellImpl.h"
 #include "GridNotifiersImpl.h"
 #include "AreaTriggerAI.h"
 #include "AreaTriggerPackets.h"
