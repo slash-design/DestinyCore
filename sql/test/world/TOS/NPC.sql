@@ -1,1 +1,0 @@
-UPDATE `creature_template` SET `ScriptName` = 'npc_archimage_khadgar_tos' WHERE `entry` = 119726;

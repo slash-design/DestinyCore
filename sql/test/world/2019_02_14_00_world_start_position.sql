@@ -1,2 +1,0 @@
-UPDATE playercreateinfo SET map = 648, zone = 4765, position_x = -8423.81, position_y = 1361.3, position_z = 104.671, orientation = 1.55428 WHERE race = 9 AND class IN (1, 3, 4, 5, 7, 8, 9);
-UPDATE playercreateinfo SET map = 654, zone = 4756, position_x = -1451.53, position_y = 1403.35, position_z = 35.5561, orientation = 0.333847 WHERE race = 22 AND class IN (1, 3, 4, 5, 8, 9, 11);

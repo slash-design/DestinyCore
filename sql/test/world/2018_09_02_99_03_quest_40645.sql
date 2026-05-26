@@ -1,2 +1,0 @@
--- QUEST_TO_THE_DREAMGROVE 40645 KilledMonsterCredit and TeleportTo(1540, 1508.42f, 1650.51f, 31.54f, 5.910209f);
-UPDATE `creature` SET `ScriptName`='npc_generic_bunny_quest_to_the_dreamgrove_59115' WHERE `guid`=448291 AND `id`=59115;

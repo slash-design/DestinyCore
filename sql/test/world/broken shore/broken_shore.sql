@@ -1,1 +1,0 @@
-UPDATE `creature_template` SET  `ScriptName`='npc_treasure_master_iksreeged_121302' WHERE `entry`=121302;

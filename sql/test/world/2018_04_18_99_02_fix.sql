@@ -1,1 +1,0 @@
-UPDATE `creature_template` SET `npcflag`=131072 WHERE `entry` IN (96819,96818,96817);
