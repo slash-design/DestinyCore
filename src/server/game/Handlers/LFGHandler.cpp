@@ -28,6 +28,20 @@
 #include "World.h"
 #include "WorldPacket.h"
 
+namespace
+{
+bool ShouldSendLfgLock(uint32 slot, lfg::LfgLockInfoData const& lock)
+{
+    if (lock.lockStatus != lfg::LFG_LOCKSTATUS_TOO_LOW_LEVEL && lock.lockStatus != lfg::LFG_LOCKSTATUS_TOO_HIGH_LEVEL)
+        return true;
+
+    if (lfg::LFGDungeonData const* dungeon = sLFGMgr->GetLFGDungeon(slot & 0x00FFFFFF))
+        return dungeon->subtype != lfg::LFG_SUBTYPE_LFR && dungeon->subtype != lfg::LFG_SUBTYPE_SCENARIO;
+
+    return true;
+}
+}
+
 void WorldSession::HandleLfgJoinOpcode(WorldPackets::LFG::DFJoin& dfJoin)
 {
     if (!sLFGMgr->isOptionEnabled(lfg::LFG_OPTION_ENABLE_DUNGEON_FINDER | lfg::LFG_OPTION_ENABLE_RAID_BROWSER) ||
@@ -150,7 +164,12 @@ void WorldSession::SendLfgPlayerLockInfo()
 
     // Get player locked Dungeons
     for (auto const& lock : sLFGMgr->GetLockedDungeons(_player->GetGUID()))
+    {
+        if (!ShouldSendLfgLock(lock.first, lock.second))
+            continue;
+
         lfgPlayerInfo.BlackList.Slot.emplace_back(lock.first, lock.second.lockStatus, lock.second.requiredItemLevel, lock.second.currentItemLevel);
+    }
 
     for (uint32 slot : randomDungeons)
     {
@@ -223,7 +242,12 @@ void WorldSession::SendLfgPartyLockInfo()
         WorldPackets::LFG::LFGBlackList& lfgBlackList = lfgPartyInfo.Player.back();
         lfgBlackList.PlayerGuid = pguid;
         for (auto const& lock : sLFGMgr->GetLockedDungeons(pguid))
+        {
+            if (!ShouldSendLfgLock(lock.first, lock.second))
+                continue;
+
             lfgBlackList.Slot.emplace_back(lock.first, lock.second.lockStatus, lock.second.requiredItemLevel, lock.second.currentItemLevel);
+        }
     }
 
     TC_LOG_DEBUG("lfg", "SMSG_LFG_PARTY_INFO %s", GetPlayerInfo().c_str());
