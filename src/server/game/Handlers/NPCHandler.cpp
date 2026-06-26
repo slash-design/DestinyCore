@@ -46,7 +46,8 @@
 #include "SpellMgr.h"
 #include "Trainer.h"
 #include "WorldPacket.h"
-
+#include "LuaEngine/LuaEngine.h"
+#include "SpellHistory.h"
 void WorldSession::HandleTabardVendorActivateOpcode(WorldPackets::NPC::Hello& packet)
 {
     Creature* unit = GetPlayer()->GetNPCIfCanInteractWith(packet.Unit, UNIT_NPC_FLAG_TABARDDESIGNER);
@@ -350,6 +351,17 @@ void WorldSession::HandleGossipHelloOpcode(WorldPackets::NPC::Hello& packet)
 
     if (!sScriptMgr->OnGossipHello(_player, unit))
     {
+
+        // ==========================================
+        if (unit->GetEntry() == 3061)
+        {
+            if (auto history = _player->GetSpellHistory())
+            {
+                history->ResetCooldown(8690, true);   
+            }
+        }
+        // ==========================================
+
         _player->TalkedToCreature(unit->GetEntry(), unit->GetGUID());
         _player->PrepareGossipMenu(unit, unit->GetCreatureTemplate()->GossipMenuId, true);
         _player->SendPreparedGossip(unit);
@@ -362,53 +374,41 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPackets::NPC::GossipSelec
     if (!_player->PlayerTalkClass->GetGossipMenu().GetItem(packet.GossipIndex))
         return;
 
-    // Prevent cheating on C++ scripted menus
     if (_player->PlayerTalkClass->GetInteractionData().SourceGuid != packet.GossipUnit)
         return;
 
     Creature* unit = nullptr;
     GameObject* go = nullptr;
+
     if (packet.GossipUnit.IsCreatureOrVehicle())
     {
         unit = GetPlayer()->GetNPCIfCanInteractWith(packet.GossipUnit, UNIT_NPC_FLAG_GOSSIP);
         if (!unit)
-        {
-            TC_LOG_DEBUG("network", "WORLD: HandleGossipSelectOptionOpcode - %s not found or you can't interact with him.", packet.GossipUnit.ToString().c_str());
             return;
-        }
     }
     else if (packet.GossipUnit.IsGameObject())
     {
         go = _player->GetGameObjectIfCanInteractWith(packet.GossipUnit);
         if (!go)
-        {
-            TC_LOG_DEBUG("network", "WORLD: HandleGossipSelectOptionOpcode - %s not found or you can't interact with it.", packet.GossipUnit.ToString().c_str());
             return;
-        }
     }
     else
     {
-
-        TC_LOG_DEBUG("network", "WORLD: HandleGossipSelectOptionOpcode - unsupported %s.", packet.GossipUnit.ToString().c_str());
         return;
     }
 
-    // remove fake death
     if (GetPlayer()->HasUnitState(UNIT_STATE_DIED))
         GetPlayer()->RemoveAurasByType(SPELL_AURA_FEIGN_DEATH);
 
     if ((unit && unit->GetScriptId() != unit->LastUsedScriptID) || (go && go->GetScriptId() != go->LastUsedScriptID))
     {
-        TC_LOG_DEBUG("network", "WORLD: HandleGossipSelectOptionOpcode - Script reloaded while in use, ignoring and set new scipt id");
-        if (unit)
-            unit->LastUsedScriptID = unit->GetScriptId();
-
-        if (go)
-            go->LastUsedScriptID = go->GetScriptId();
+        if (unit) unit->LastUsedScriptID = unit->GetScriptId();
+        if (go) go->LastUsedScriptID = go->GetScriptId();
         _player->PlayerTalkClass->SendCloseGossip();
         return;
     }
 
+    // --- Core execution logic ---
     if (!packet.PromotionCode.empty())
     {
         if (unit)
@@ -428,8 +428,21 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPackets::NPC::GossipSelec
     {
         if (unit)
         {
+            uint32 optSender = _player->PlayerTalkClass->GetGossipOptionSender(packet.GossipIndex);
+            uint32 optAction = _player->PlayerTalkClass->GetGossipOptionAction(packet.GossipIndex);
+
             unit->AI()->sGossipSelect(_player, packet.GossipID, packet.GossipIndex);
-            if (!sScriptMgr->OnGossipSelect(_player, unit, _player->PlayerTalkClass->GetGossipOptionSender(packet.GossipIndex), _player->PlayerTalkClass->GetGossipOptionAction(packet.GossipIndex)))
+
+            // ==========================================
+            // Fix: Dispatch GossipSelect to Eluna Engine
+            // ==========================================
+            if (sEluna)
+            {
+                sEluna->OnGossipSelect(_player, unit, optSender, optAction);
+            }
+            // ==========================================
+
+            if (!sScriptMgr->OnGossipSelect(_player, unit, optSender, optAction))
                 _player->OnGossipSelect(unit, packet.GossipIndex, packet.GossipID);
         }
         else
@@ -439,9 +452,7 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPackets::NPC::GossipSelec
                 _player->OnGossipSelect(go, packet.GossipIndex, packet.GossipID);
         }
     }
-}
-
-void WorldSession::HandleSpiritHealerActivate(WorldPackets::NPC::SpiritHealerActivate& packet)
+}void WorldSession::HandleSpiritHealerActivate(WorldPackets::NPC::SpiritHealerActivate& packet)
 {
     Creature* unit = GetPlayer()->GetNPCIfCanInteractWith(packet.Healer, UNIT_NPC_FLAG_SPIRITHEALER);
     if (!unit)

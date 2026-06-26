@@ -38,6 +38,65 @@
 #include <boost/algorithm/string.hpp>
  //#include <boost/format.hpp>
 
+
+
+#include <cstdlib> // 确保引入了 atof 和 atoi
+
+// ================== 新增：读取配置并按概率生成等级的函数 ==================
+static uint32 GenerateRandomBotLevel()
+{
+    // 读取配置文件，如果没配，默认生成 110 级 (概率 1.0)
+    std::string distStr = sConfigMgr->GetStringDefault("PlayerBot.LevelDistribution", "110-110:1.0");
+
+    // 按照逗号分割字符串
+    std::vector<std::string> ranges;
+    boost::split(ranges, distStr, boost::is_any_of(","));
+
+    // 生成 0.0000 到 1.0000 之间的随机浮点数
+    float randVal = (float)urand(0, 10000) / 10000.0f;
+    float cumulative = 0.0f;
+
+    for (const std::string& rangeStr : ranges)
+    {
+        std::vector<std::string> pair;
+        boost::split(pair, rangeStr, boost::is_any_of(":"));
+        
+        if (pair.size() == 2)
+        {
+            // 获取该区间的概率
+            float prob = (float)atof(pair[1].c_str());
+            cumulative += prob;
+
+            // 如果随机数落在这个概率区间内
+            if (randVal <= cumulative)
+            {
+                std::vector<std::string> minmax;
+                boost::split(minmax, pair[0], boost::is_any_of("-"));
+                
+                if (minmax.size() == 2)
+                {
+                    uint32 minLvl = atoi(minmax[0].c_str());
+                    uint32 maxLvl = atoi(minmax[1].c_str());
+                    if (minLvl > maxLvl) std::swap(minLvl, maxLvl);
+                    return urand(minLvl, maxLvl); // 在该区间内再进行一次平均随机
+                }
+                else if (minmax.size() == 1)
+                {
+                    return atoi(minmax[0].c_str());
+                }
+            }
+        }
+    }
+    // 如果由于概率填写错误导致没命中，保底返回 110 级
+    return 110; 
+}
+// ==========================================================================
+
+
+
+
+
+
 PlayerBotCharBaseInfo PlayerBotBaseInfo::empty;
 std::map<uint32, std::list<UnitAI*> > PlayerBotMgr::m_DelayDestroyAIs;
 std::mutex PlayerBotMgr::g_uniqueLock;
@@ -53,39 +112,50 @@ std::string PlayerBotCharBaseInfo::GetNameANDClassesText()
         clsEntry += 1;
         break;
     case 2:
-        //clsName = "  ʥ��ʿ : ";
+        //clsName = "  ʥ  ʿ : ";
         clsEntry += 2;
         break;
     case 3:
-        //clsName = "  ��  �� : ";
+        //clsName = "         : ";
         clsEntry += 3;
         break;
     case 4:
-        //clsName = "  ��  �� : ";
+        //clsName = "         : ";
         clsEntry += 4;
         break;
     case 5:
-        //clsName = "  ��  ʦ : ";
+        //clsName = "      ʦ : ";
         clsEntry += 5;
         break;
     case 6:
-        //clsName = "  ��  �� : ";
+        //clsName = "         : ";
         clsEntry += 6;
         break;
     case 7:
-        //clsName = "  ��  �� : ";
+        //clsName = "         : ";
         clsEntry += 7;
         break;
     case 8:
-        //clsName = "  ��  ʦ : ";
+        //clsName = "      ʦ : ";
         clsEntry += 8;
         break;
     case 9:
-        //clsName = "  ��  ʿ : ";
+        //clsName = "      ʿ : ";
         clsEntry += 9;
         break;
+
+    // ================== 新增：武僧与恶魔猎手户口 ==================
+    case 10:
+        clsEntry += 11; // 对应 TrinityString 里的武僧文本偏移
+        break;
+    case 12:
+        clsEntry += 12; // 对应恶魔猎手文本偏移
+        break;
+    // =============================================================
+
+
     case 11:
-        //clsName = "  ��³�� : ";
+        //clsName = "    ³   : ";
         clsEntry += 10;
         break;
     }
@@ -116,9 +186,15 @@ uint32 PlayerBotBaseInfo::GetCharIDByNoArenaType(bool faction, uint32 prof, uint
 }
 
 PlayerBotMgr::PlayerBotMgr() :
-    m_BotAccountAmount(90),
+    // 1. 账号数量：原版配置没有这个参数，我们增加读取 PlayerBot.AccountAmount，
+    // 如果你在 worldserver.conf 里没写这行，就默认生成 200 个账号（足够装下 3000+ 机器人了）
+    m_BotAccountAmount(sConfigMgr->GetIntDefault("PlayerBot.AccountAmount", 200)),
+    
     m_LastBotAccountIndex(0),
-    m_MaxOnlineBot(180),
+    
+    // 2. 最大在线人数：精确对应配置文件里的 pbotasl 参数
+    m_MaxOnlineBot(sConfigMgr->GetIntDefault("pbotasl", 88)),
+    
     m_BotOnlineCount(0),
     m_LFGSearchTick(0),
     m_ArenaSearchTick(0)
@@ -151,6 +227,44 @@ void PlayerBotMgr::SwitchPlayerBotAI(Player* player, PlayerBotAIType aiType, boo
     if (force && player->IsInCombat())
         player->ClearInCombat();
     player->SetSelection(ObjectGuid::Empty);
+    
+    // ================== 核心升级：二合一“完美武装与洗髓”机制 ==================
+    if (PlayerBotSession* pBotSession = dynamic_cast<PlayerBotSession*>(player->GetSession()))
+    {
+        bool needTalents = (player->getLevel() >= 10 && player->GetSpecializationId() == 0);
+        
+        if (!player->EquipIsTidiness() || needTalents || aiType == PlayerBotAIType::PBAIT_GROUP)
+        {
+            uint32 curTType = player->FindTalentType();
+            uint32 newTType = curTType;
+            
+            if (player->getLevel() >= 10) {
+                while (newTType == curTType) newTType = urand(0, 2);
+            } else {
+                newTType = urand(0, 2);
+            }
+
+            // 【找回的遗失机制1：野外排队上线防拥堵分流】
+            uint32 asyncDelay = 500; 
+            if (aiType == PlayerBotAIType::PBAIT_FIELD) 
+            {
+                // 如果是野外闲逛的机器人上线，将生成装备的动作打散到 20秒~120秒 以后执行
+                asyncDelay = urand(20000, 120000); 
+            }
+
+            BotGlobleSchedule schedule2(BotGlobleScheduleType::BGSType_Settting, asyncDelay); 
+            schedule2.parameter1 = player->getLevel();
+            schedule2.parameter2 = player->getLevel();
+            schedule2.parameter3 = newTType + 1;
+            
+            pBotSession->PushScheduleToQueue(schedule2);
+            
+            if (aiType == PlayerBotAIType::PBAIT_GROUP)
+                TC_LOG_INFO("playerbot", "机器人 %s 进组，强制触发全套武装与洗髓！", player->GetName().c_str());
+        }
+    }
+    // =========================================================================
+
     UnitAI* pAI = player->GetAI();
     player->IsAIEnabled = false;
     switch (aiType)
@@ -251,17 +365,15 @@ void PlayerBotMgr::SwitchPlayerBotAI(Player* player, PlayerBotAIType aiType, boo
     case PlayerBotAIType::PBAIT_DUNGEON:
         if (pAI)
         {
-            //if (dynamic_cast<BotFieldAI*>(pAI) != NULL)
-            //{
-            //	player->IsAIEnabled = true;
-            //	return;
-            //}
             PlayerBotMgr::m_DelayDestroyAIs[getMSTime()].push_back(pAI);
             player->SetAI(NULL);
         }
         break;
     }
 }
+
+
+
 
 std::string PlayerBotMgr::GetPlayerLinkText(Player const* player) const
 {
@@ -415,6 +527,17 @@ bool PlayerBotMgr::ExistClassByRace(uint8 race, uint8 prof)
         return (race == 1 || race == 5 || race == 7 || race == 8 || race == 10 || race == 11);
     case 9:
         return (race == 1 || race == 2 || race == 5 || race == 7 || race == 10);
+
+    // ================== 新增：武僧与恶魔猎手种族合法性 ==================
+    case 10:
+        // 武僧：除了地精(9)和狼人(22)，其他经典种族和熊猫人都可以
+        return (race != 9 && race != 22);
+    case 12:
+        // 恶魔猎手：仅限暗夜精灵(4)和血精灵(10)
+        return (race == 4 || race == 10);
+    // ===================================================================
+
+
     case 11:
         return (race == 4 || race == 6);
     }
@@ -690,7 +813,7 @@ WorldPacket PlayerBotMgr::BuildCreatePlayerData(bool group, uint8 prof)
     uint8 race = RandomRace(group, prof);
     uint8 gender = irand(0, 1);
 
-    // Safe defaults, damit Player::Create nicht wegen ung�ltiger Appearance ablehnt
+    // Safe defaults, damit Player::Create nicht wegen ung ltiger Appearance ablehnt
     uint8 skinColor = 0;
     uint8 faceID = 0;
     uint8 hairID = 0;
@@ -783,6 +906,13 @@ void PlayerBotMgr::CreateOncePlayerBot()
                 {
                     TC_LOG_INFO("server.loading", ">> Character created successfully!");
 
+                     // ================== 修改代码开始 ==================
+                    // 调用概率解析函数获取等级
+                    uint32 startLevel = GenerateRandomBotLevel(); 
+                    if (startLevel > 1)
+                        newChar.SetLevel(startLevel);
+                    // ================== 修改代码结束 ==================
+
                     newChar.setCinematic(2);
                     newChar.SetAtLoginFlag(AT_LOGIN_FIRST);
                     newChar.SaveToDB(true);
@@ -869,6 +999,13 @@ bool PlayerBotMgr::CreateQueuedPlayerBotForSession(PlayerBotBaseInfo* pInfo, Wor
         newChar.CleanupsBeforeDelete();
         return false;
     }
+
+    // ================== 修改代码开始 ==================
+    // 调用概率解析函数获取等级
+    uint32 startLevel = GenerateRandomBotLevel(); 
+    if (startLevel > 1)
+        newChar.GiveLevel(startLevel);
+    // ================== 修改代码结束 ==================
 
     newChar.setCinematic(2);
     newChar.SetAtLoginFlag(AT_LOGIN_FIRST);
@@ -1194,6 +1331,7 @@ void PlayerBotMgr::OnAccountBotDelete(ObjectGuid& guid, uint32 accountId)
 void PlayerBotMgr::OnPlayerBotLogin(WorldSession* pSession, Player* pPlayer)
 {
     ++m_BotOnlineCount;
+
     Group* pGroup = pPlayer->GetGroup();
     if (pGroup)
     {
@@ -1219,20 +1357,104 @@ void PlayerBotMgr::OnPlayerBotLogin(WorldSession* pSession, Player* pPlayer)
 
     if (PlayerBotSession* pBotSession = dynamic_cast<PlayerBotSession*>(pSession))
     {
-        if (!pSession->HasSchedules() && !pPlayer->EquipIsTidiness())
+        // ================== 核心 AI 优化：全职业起手技能豪华灌顶 ==================
+        // 【找回的遗失机制2：骑术门卫防死锁 + SaveToDB(false)】
+        if (pPlayer->getLevel() > 0 && !pPlayer->HasSkill(762))
         {
-            uint32 curTType = pPlayer->FindTalentType();
-            uint32 newTType = curTType;
-            while (newTType == curTType)
-                newTType = urand(0, 2);
-            BotGlobleSchedule schedule2(BotGlobleScheduleType::BGSType_Settting, 0);
-            schedule2.parameter1 = pPlayer->getLevel();
-            schedule2.parameter2 = pPlayer->getLevel();
-            schedule2.parameter3 = newTType + 1;
-            pBotSession->PushScheduleToQueue(schedule2);
+            switch (pPlayer->getClass())
+            {
+                case CLASS_WARRIOR: // 1 战士
+                    pPlayer->LearnSpell(100, false);   
+                    pPlayer->LearnSpell(12294, false); 
+                    pPlayer->LearnSpell(163201, false);
+                    pPlayer->LearnSpell(1680, false);  
+                    pPlayer->SetSkill(762, 0, 300, 300);
+                    break;
+                case CLASS_PALADIN: // 2 圣骑士
+                    pPlayer->LearnSpell(35395, false); 
+                    pPlayer->LearnSpell(20271, false); 
+                    pPlayer->LearnSpell(85256, false); 
+                    pPlayer->LearnSpell(19750, false); 
+                    pPlayer->SetSkill(762, 0, 300, 300);
+                    break;
+                case CLASS_HUNTER:  // 3 猎人
+                    pPlayer->LearnSpell(193455, false);
+                    pPlayer->LearnSpell(185358, false);
+                    pPlayer->LearnSpell(2643, false);  
+                    pPlayer->SetSkill(762, 0, 300, 300);
+                    break;
+                case CLASS_ROGUE:   // 4 盗贼
+                    pPlayer->LearnSpell(1752, false);  
+                    pPlayer->LearnSpell(196819, false);
+                    pPlayer->LearnSpell(1784, false);  
+                    pPlayer->LearnSpell(1766, false);  
+                    pPlayer->SetSkill(762, 0, 300, 300);
+                    break;
+                case CLASS_PRIEST:  // 5 牧师
+                    pPlayer->LearnSpell(585, false);   
+                    pPlayer->LearnSpell(589, false);   
+                    pPlayer->LearnSpell(8092, false);  
+                    pPlayer->LearnSpell(2061, false);  
+                    pPlayer->SetSkill(762, 0, 300, 300);
+                    break;
+                case CLASS_DEATH_KNIGHT: // 6 DK
+                    pPlayer->LearnSpell(49998, false); 
+                    pPlayer->LearnSpell(47541, false); 
+                    pPlayer->LearnSpell(49020, false); 
+                    pPlayer->LearnSpell(50842, false); 
+                    pPlayer->SetSkill(762, 0, 300, 300);
+                    break;
+                case CLASS_SHAMAN:  // 7 萨满
+                    pPlayer->LearnSpell(403, false);   
+                    pPlayer->LearnSpell(188196, false);
+                    pPlayer->LearnSpell(8050, false);  
+                    pPlayer->LearnSpell(8004, false);  
+                    pPlayer->SetSkill(762, 0, 300, 300);
+                    break;
+                case CLASS_MAGE:    // 8 法师
+                    pPlayer->LearnSpell(133, false);   
+                    pPlayer->LearnSpell(116, false);   
+                    pPlayer->LearnSpell(44425, false); 
+                    pPlayer->LearnSpell(122, false);   
+                    pPlayer->SetSkill(762, 0, 300, 300);
+                    break;
+                case CLASS_WARLOCK: // 9 术士
+                    pPlayer->LearnSpell(686, false);   
+                    pPlayer->LearnSpell(172, false);   
+                    pPlayer->LearnSpell(980, false);   
+                    pPlayer->LearnSpell(234153, false);
+                    pPlayer->SetSkill(762, 0, 300, 300);
+                    break;
+                case CLASS_MONK:    // 10 武僧
+                    pPlayer->LearnSpell(100780, false);
+                    pPlayer->LearnSpell(100784, false);
+                    pPlayer->LearnSpell(116694, false);
+                    pPlayer->LearnSpell(115151, false);
+                    pPlayer->SetSkill(762, 0, 300, 300);
+                    break;
+                case CLASS_DRUID:   // 11 德鲁伊
+                    pPlayer->LearnSpell(5176, false);  
+                    pPlayer->LearnSpell(8921, false);  
+                    pPlayer->LearnSpell(8936, false);  
+                    pPlayer->LearnSpell(1822, false);  
+                    pPlayer->LearnSpell(5221, false);  
+                    pPlayer->SetSkill(762, 0, 300, 300);
+                    break;
+                case CLASS_DEMON_HUNTER: // 12 恶魔猎手
+                    pPlayer->LearnSpell(162243, false);
+                    pPlayer->LearnSpell(162794, false);
+                    pPlayer->LearnSpell(185123, false);
+                    pPlayer->SetSkill(762, 0, 300, 300);
+                    break;
+            }
+            // 写入数据库，仅执行一生一次！单参数！
+            pPlayer->SaveToDB(false);
         }
+        // =======================================================================
     }
 }
+
+
 
 void PlayerBotMgr::OnPlayerBotLogout(WorldSession* pSession)
 {
@@ -1294,7 +1516,7 @@ void PlayerBotMgr::LoginFriendBotByPlayer(Player* pPlayer)
     //	}
     //#else
     //	std::string allonlineText;
-    //	consoleToUtf8(std::string("|cffff8800������޷��ٻ����ѻ��������ߡ�|r"), allonlineText);
+    //	consoleToUtf8(std::string("|cffff8800      ޷  ٻ    ѻ        ߡ |r"), allonlineText);
     //	sWorld->SendGlobalText(allonlineText.c_str(), NULL);
     //#endif
 }
@@ -1356,13 +1578,18 @@ void PlayerBotMgr::AllPlayerBotRandomLogin(const char* name)
 
             if (name[0] != '\0')
             {
-                for (auto i = 0; i < pInfo->characters.size(); ++i)
+                // ================== 修复 Bug ==================
+                // 原代码：for (auto i = 0; i < pInfo->characters.size(); ++i) 
+                // 原代码：if (strcmp(name, pInfo->characters[i].name.c_str()) == 0)
+                // 修复为使用迭代器遍历 map：
+                for (auto itChar = pInfo->characters.begin(); itChar != pInfo->characters.end(); ++itChar)
                 {
-                    if (strcmp(name, pInfo->characters[i].name.c_str()) == 0)
+                    if (strcmp(name, itChar->second.name.c_str()) == 0)
                     {
-                        PlayerBotCharBaseInfo& charInfo = pInfo->characters[i];
+                        PlayerBotCharBaseInfo& charInfo = itChar->second;
                         WorldPacket _worldPacket(CMSG_PLAYER_LOGIN);
                         WorldPackets::Character::PlayerLogin cmd(std::move(_worldPacket));
+                // ==========================================================
                         cmd.Guid = ObjectGuid::Create<HighGuid::Player>(charInfo.guid);
                         cmd.FarClip = 0.0f;
                         pSession->HandlePlayerLoginOpcode(cmd);
@@ -1479,10 +1706,10 @@ void PlayerBotMgr::SupplementPlayerBot()
 
         TC_LOG_INFO("server.loading", ">> FirstName extracted: %s", firstName.c_str());
 
-        for (int i = 1; i < 10; i++)
+        // ================== 修复：完美覆盖 1-12 所有职业 ==================
+        // 直接从 1 循环到 12，包含死亡骑士(6)、武僧(10)、德鲁伊(11)、恶魔猎手(12)
+        for (int i = 1; i <= 12; i++)
         {
-            if (i == 6) continue;
-
             if (!pInfo->ExistClass(true, i))
             {
                 memset(botname, 0, 30);
@@ -1499,22 +1726,7 @@ void PlayerBotMgr::SupplementPlayerBot()
                 pInfo->needCreateBots.push(BuildCreatePlayerData(false, i));
             }
         }
-
-        if (!pInfo->ExistClass(true, 11))
-        {
-            memset(botname, 0, 30);
-            sprintf(botname, "%sA11", firstName.c_str());
-            TC_LOG_INFO("server.loading", ">> Pushing Alliance Druid bot: %s", botname);
-            pInfo->needCreateBots.push(BuildCreatePlayerData(true, 11));
-        }
-
-        if (!pInfo->ExistClass(false, 11))
-        {
-            memset(botname, 0, 30);
-            sprintf(botname, "%sB11", firstName.c_str());
-            TC_LOG_INFO("server.loading", ">> Pushing Horde Druid bot: %s", botname);
-            pInfo->needCreateBots.push(BuildCreatePlayerData(false, 11));
-        }
+        // ==================================================================
 
         TC_LOG_INFO("server.loading", ">> Total bots in queue: %u", (uint32)pInfo->needCreateBots.size());
     }
@@ -1529,7 +1741,8 @@ void PlayerBotMgr::SupplementOneRandomPlayerBotPerAccount()
 
     // Valid classes for this core/expansion. Death Knight (6) is intentionally skipped,
     // same as SupplementPlayerBot(), because these are normal starter bots.
-    static uint8 const botClasses[] = { 1, 2, 3, 4, 5, 7, 8, 9, 11 };
+    // ================== 修复：让系统随机生成所有的 12 个职业 ==================
+    static uint8 const botClasses[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
 
     uint32 queuedCreateCount = 0;
 
@@ -2066,7 +2279,7 @@ void PlayerBotMgr::AddNewPlayerBot(bool faction, Classes prof, uint32 count)
     if (count > 0)
     {
         std::string allonlineText;
-        consoleToUtf8(std::string("|cffff8800���л������˺��Ѿ�ȫ�����ߣ��޷������»����ˡ�|r"), allonlineText);
+        consoleToUtf8(std::string("|cffff8800   л      ˺  Ѿ ȫ     ߣ  ޷      »    ˡ |r"), allonlineText);
         sWorld->SendGlobalText(allonlineText.c_str(), NULL);
     }
 }
@@ -2114,7 +2327,7 @@ void PlayerBotMgr::AddNewAccountBot(bool faction, Classes prof)
     }
     std::string allonlineText;
 #ifdef INCOMPLETE_BOT
-    consoleToUtf8(std::string("|cffff8800������޷��ٻ������Խ��˺Ž�ɫ|r"), allonlineText);
+    consoleToUtf8(std::string("|cffff8800      ޷  ٻ      Խ  ˺Ž ɫ|r"), allonlineText);
     sWorld->SendGlobalText(allonlineText.c_str(), NULL);
     return;
 #endif
@@ -2179,7 +2392,7 @@ void PlayerBotMgr::AddNewAccountBot(bool faction, Classes prof)
         }
     }
 
-    consoleToUtf8(std::string("|cffff8800û���ҵ�������ͬ��Ӫ��ָ��ְҵ���Խ��˺Ž�ɫ|r"), allonlineText);
+    consoleToUtf8(std::string("|cffff8800û   ҵ       ͬ  Ӫ  ָ  ְҵ   Խ  ˺Ž ɫ|r"), allonlineText);
     sWorld->SendGlobalText(allonlineText.c_str(), NULL);
 }
 
@@ -2279,7 +2492,7 @@ void PlayerBotMgr::AddNewPlayerBotByClass(uint32 count, Classes prof)
     if (allianceCount > 0 || hordeCount > 0)
     {
         std::string allonlineText;
-        consoleToUtf8(std::string("|cffff8800���л������˺��Ѿ�ȫ�����ߣ��޷������»����ˡ�|r"), allonlineText);
+        consoleToUtf8(std::string("|cffff8800   л      ˺  Ѿ ȫ     ߣ  ޷      »    ˡ |r"), allonlineText);
         sWorld->SendGlobalText(allonlineText.c_str(), NULL);
     }
 }
@@ -2405,7 +2618,7 @@ void PlayerBotMgr::AddNewPlayerBotToBG(TeamId team, uint32 minLV, uint32 maxLV, 
     }
 
     std::string allonlineText;
-    consoleToUtf8(std::string("|cffff8800���л������˺��Ѿ�ȫ�����ߣ��޷������»����˵�ս���С�|r"), allonlineText);
+    consoleToUtf8(std::string("|cffff8800   л      ˺  Ѿ ȫ     ߣ  ޷      »    ˵ ս   С |r"), allonlineText);
     sWorld->SendGlobalText(allonlineText.c_str(), NULL);
 }
 
@@ -2663,7 +2876,7 @@ void PlayerBotMgr::AddNewPlayerBotToAA(TeamId team, BattlegroundTypeId bgTypeID,
     }
 
     std::string allonlineText;
-    consoleToUtf8(std::string("|cffff8800���л������˺��Ѿ�ȫ�����ߣ��޷������»����˵��������С�|r"), allonlineText);
+    consoleToUtf8(std::string("|cffff8800   л      ˺  Ѿ ȫ     ߣ  ޷      »    ˵        С |r"), allonlineText);
     sWorld->SendGlobalText(allonlineText.c_str(), NULL);
 }
 
@@ -2914,6 +3127,19 @@ lfg::LfgRoles PlayerBotMgr::GetPlayerBotCurrentLFGRoles(Player* player)
     case 9:
         return lfg::LfgRoles::PLAYER_ROLE_DAMAGE;
         break;
+
+    // ================== 新增：武僧与恶魔猎手职责 ==================
+    case 10:
+        if (talentType == 0) return lfg::LfgRoles::PLAYER_ROLE_TANK;       // 酒仙
+        else if (talentType == 1) return lfg::LfgRoles::PLAYER_ROLE_HEALER;// 织雾
+        else return lfg::LfgRoles::PLAYER_ROLE_DAMAGE;                     // 踏风
+    case 12:
+        if (talentType == 1) return lfg::LfgRoles::PLAYER_ROLE_TANK;       // 复仇
+        else return lfg::LfgRoles::PLAYER_ROLE_DAMAGE;                     // 浩劫
+    // ==============================================================
+
+
+
     case 5:
         if (talentType == 2)
             return lfg::LfgRoles::PLAYER_ROLE_DAMAGE;
@@ -3327,6 +3553,51 @@ uint32 PlayerBotMgr::GetOnlineBotCount2(TeamId team, bool hasReal)
 
 void PlayerBotMgr::Update()
 {
+    uint32 currentMs = getMSTime();
+
+    // ================== 终极修复：平滑登录 + 真实玩家 VIP 通道 ==================
+    static uint32 s_loginTimer = 0;
+
+    if (currentMs >= s_loginTimer)
+    {
+        int32 isAuto = sConfigMgr->GetIntDefault("pbotall", 1);
+        if (isAuto != 0 && m_BotOnlineCount < (uint32)m_MaxOnlineBot)
+        {
+            uint32 busyCount = 0;
+            SessionMap const& sessions = sWorld->GetAllSessions();
+            for (auto const& pair : sessions)
+            {
+                // 【找回的遗失机制3：只检测真实玩家！】
+                if (!pair.second->IsBotSession()) 
+                {
+                    if (pair.second->PlayerLoading() || !pair.second->GetPlayer())
+                    {
+                        busyCount++;
+                    }
+                }
+            }
+
+            if (busyCount == 0)
+            {
+                uint32 batchSize = 1; 
+                uint32 delay = urand(1000, 2500); 
+                
+                int32 originalMax = m_MaxOnlineBot;
+                m_MaxOnlineBot = m_BotOnlineCount + batchSize; 
+                AllPlayerBotRandomLogin(""); 
+                m_MaxOnlineBot = originalMax; 
+                
+                s_loginTimer = currentMs + delay;
+            }
+            else
+            {
+                s_loginTimer = currentMs + 3000;
+            }
+        }
+    }
+    // =======================================================================
+
+
 
     OnlinePlayerBotByGUIDQueue();
 
@@ -3376,4 +3647,6 @@ void PlayerBotMgr::Update()
     {
         m_DelayDestroyAIs.erase(*itDel);
     }
+
+    
 }

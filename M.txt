@@ -1,0 +1,232 @@
+# AI机器人玩家等级自动同步机制 — 源码调查记录
+
+## 核心调度处理（终点）
+
+**文件：** `src/server/game/Server/PlayerBotSession.cpp`
+
+- **第 233 行** — `CastSchedule()` 中 case `BGSType_Settting` 调用 `ProcessSetting(schedule)`
+- **第 353–389 行** — `ProcessSetting()` 最终调用：
+
+```cpp
+player->ResetPlayerToLevel(schedule.parameter2, flushTalent, needTenacity);
+```
+
+这里 `parameter1` 和 `parameter2` 分别代表等级的最小值和最大值，`parameter2`（即目标等级）被传入 `ResetPlayerToLevel()`。
+
+---
+
+## 触发路径一：加入队伍后立即同步
+
+**文件：** `src/server/game/AI/PlayerAI/BotGroupAI/BotGroupAI.cpp`
+- **第 304–325 行** — `ProcessSetting()` 方法
+
+```cpp
+void BotGroupAI::ProcessSetting()
+{
+    // ...前置检查...
+    BotGlobleSchedule schedule2(BotGlobleScheduleType::BGSType_Settting, 0);
+    schedule2.parameter1 = m_MasterPlayer->getLevel();   // ← 直接设为队长等级
+    schedule2.parameter2 = m_MasterPlayer->getLevel();   // ← 直接设为队长等级
+    schedule2.parameter3 = PlayerBotSetting::FindPlayerTalentType(me) + 1;
+    pSession->PushScheduleToQueue(schedule2);
+}
+```
+
+- **第 676 行** — `ProcessCombat()` 中调用 `ProcessSetting()`
+- **第 849 行** — `UpdateAI()` 的每帧更新中调用 `ProcessCombat()`
+
+这条路径的特点是：**无条件将机器人等级设为与队长完全一致**。
+
+---
+
+## 触发路径二：队伍中的持续等级检查
+
+**文件：** `src/server/game/AI/PlayerAI/BotGroupAI/BotGroupAI.cpp`
+- **第 1331–1379 行** — `TrySettingToMaster()` 方法
+
+```cpp
+bool BotGroupAI::TrySettingToMaster()
+{
+    static int32 gapLV = 2;   // ← 允许 ±2 级差距
+    if (!BotUtility::BotCanSettingToMaster)
+        return false;
+    // ...前置检查...
+
+    int32 masterLV = m_MasterPlayer->getLevel();
+    int32 minLV = (masterLV <= gapLV) ? 1 : masterLV - gapLV;
+    int32 maxLV = (masterLV + gapLV >= worldMaxLevel) ? worldMaxLevel : masterLV + gapLV;
+
+    // 如果机器人等级在 [minLV, maxLV] 范围内，不调整
+    if (meLV >= minLV && meLV <= maxLV)
+        return false;
+
+    BotGlobleSchedule schedule2(BotGlobleScheduleType::BGSType_Settting, 0);
+    schedule2.parameter1 = minLV;
+    schedule2.parameter2 = maxLV;
+    pSession->PushScheduleToQueue(schedule2);
+}
+```
+
+- **第 851 行** — `UpdateAI()` 中每帧调用 `TrySettingToMaster()`
+
+这条路径的特点是：**允许 ±2 级差距，超出范围才调整**。但注意 `gapLV = 2` 是 `static` 变量，且受 `BotUtility::BotCanSettingToMaster` 开关控制。
+
+---
+
+## 完整调用链总结
+
+```
+玩家邀请机器人 → 机器人加入队伍 → AI类型切换为 BotGroupAI
+    │
+    ├─ UpdateAI() 每帧执行
+    │   ├─ ProcessCombat() → ProcessSetting()
+    │   │       └→ PushSchedule(BGSType_Settting, parameter1=队长等级, parameter2=队长等级)
+    │   │
+    │   └─ TrySettingToMaster()
+    │           └→ PushSchedule(BGSType_Settting, parameter1=master-2, parameter2=master+2)
+    │
+    └─ PlayerBotSession::CastSchedule() 处理调度
+        └─ ProcessSetting(schedule) → player->ResetPlayerToLevel(parameter2, ...)
+```
+
+---
+
+## 如果你想关闭这个机制，关键修改点
+
+| 位置 | 文件路径（相对） | 行号 | 作用 |
+|------|------------------|------|------|
+| **路径一** | `src/server/game/AI/PlayerAI/BotGroupAI/BotGroupAI.cpp` | 304–325 | `ProcessSetting()` — 无条件同步到队长等级 |
+| **路径二** | `src/server/game/AI/PlayerAI/BotGroupAI/BotGroupAI.cpp` | 1331–1379 | `TrySettingToMaster()` — ±2级范围内才调整 |
+| **开关** | `BotUtility`（相关头文件） | - | `BotCanSettingToMaster` 布尔变量，控制路径二是否生效 |
+
+两条路径都会往调度队列里塞入 `BGSType_Settting`，最终都走 `ProcessSetting()` → `ResetPlayerToLevel()`。如果你想让机器人保持自己的等级不变，需要修改这两处逻辑（或者关闭 `BotCanSettingToMaster` 开关）。
+
+---
+
+## 其他相关触发点（非队伍场景）
+
+以下位置也会使用 `BGSType_Settting` 调度来调整机器人等级，但属于野外/战场等场景：
+
+| 文件 | 行号 | 场景 |
+|------|------|------|
+| `src/server/game/PlayerBot/FieldBotMgr.cpp` | 517–521 | 野战（Warfare）中传送时等级差距调整 |
+| `src/server/game/PlayerBot/FieldBotMgr.cpp` | 762–766 | 跟随目标玩家时等级差距 >2 的调整 |
+| `src/server/game/PlayerBot/PlayerBotMgr.cpp` | 1308–1309 | 登录时的初始等级设置 |
+| `src/server/game/PlayerBot/PlayerBotMgr.cpp` | 2569–2570 / 2615–2616 | 副本需求等级匹配 |
+
+---
+
+*调查日期：2026-06-18*
+
+---
+
+# AI机器人玩家控制命令清单
+
+## 命令触发机制
+
+聊天消息通过 `ChatHandler.cpp` 第 402 行路由：当队长在队伍频道（/pl）发送消息时，调用 `Group::ProcessGroupBotCommand()`，该函数遍历队伍中所有机器人并分发命令。
+
+---
+
+## 一、队伍模式命令（BotGroupAI）
+
+**文件：** `src/server/game/AI/PlayerAI/BotGroupAI/BotGroupAI.cpp` — `ProcessBotCommand()` (第 654–739 行)
+
+| 命令 | 用法 | 说明 |
+|------|------|------|
+| `summon` | `/pl summon` | 召唤机器人到身边 |
+| `attack` | `/pl attack` | 攻击队长当前选中的目标 |
+| `follow` | `/pl follow` | 跟随队长（清除逃跑/停止状态） |
+| `flee` | `/pl flee` | 强制逃跑 |
+| `stop` | `/pl stop` | 停止移动和攻击 |
+| `setting` | `/pl setting` | 立即执行等级/天赋设置同步 |
+| `c` | `/pl c` | 列出机器人当前装备 |
+| `e <物品ID>` | `/pl e 12345` | 给机器人穿上指定ID的装备 |
+| `ue <物品栏位>` | `/pl ue 16` | 卸下机器人指定栏位的装备（16=主手等） |
+| `destroy <物品ID>` | `/pl destroy 12345` | 销毁机器人身上指定ID的物品 |
+| `s <物品ID>` | `/pl s 12345` | 将指定ID的物品交易给队长 |
+| `u <物品ID>` | `/pl u 12345` | 让机器人使用指定ID的物品 |
+| `talent` | `/pl talent [参数]` | 查看/重置天赋 |
+| `rite` | `/pl rite` | 在战场等待加入阶段召唤传送门（仅限战场） |
+| `<法术ID>` | `/pl 40827` | 对队长目标施放指定ID的法术（数字命令，范围1-80000） |
+
+---
+
+## 二、战场模式命令（BotBGAI）
+
+**文件：** `src/server/game/AI/PlayerAI/BotAI.cpp` — `ProcessBotCommand()` (第 158–169 行)
+
+| 命令 | 用法 | 说明 |
+|------|------|------|
+| `rite` | `/pl rite` | 在战场等待阶段召唤传送门 |
+| `attack` | `/pl attack` | 攻击队长当前选中的目标 |
+
+---
+
+## 三、队伍全局命令（仅队长可用）
+
+**文件：** `src/server/game/Groups/Group.cpp` — `ProcessGroupBotCommand()` (第 2602–2741 行)
+
+| 命令 | 用法 | 说明 |
+|------|------|------|
+| `seduce` | `/pl seduce` | 指定一个怪物，让一个机器人去吸引仇恨（其他机器人逃跑） |
+| `pulls` | `/pl pulls` | 坦克机器人拉取目标列表 |
+| `formation combat` | `/pl formation combat` | 所有机器人进入战斗队形 |
+| `formation ring` | `/pl formation ring` | 所有机器人进入环形队形 |
+| `formation random` | `/pl formation random` | 随机移动位置 |
+
+---
+
+## 四、角色前缀命令（配合上述命令使用）
+
+在命令前加 `@` + 角色类型前缀，可限定只影响特定类型的机器人：
+
+| 前缀 | 含义 |
+|------|------|
+| `@tank` | 坦克型机器人 |
+| `@melee` | 近战DPS机器人 |
+| `@ranged` | 远程DPS机器人 |
+| `@heal` | 治疗机器人 |
+| `@dps` | 所有DPS机器人（不含治疗） |
+
+职业缩写前缀：
+
+| 前缀 | 职业 |
+|------|------|
+| `zs` | 战士 |
+| `qs` | 圣骑士 |
+| `lr` | 猎人 |
+| `dz` | 潜行者 |
+| `ms` | 牧师 |
+| `dk` | 死亡骑士 |
+| `sm` | 萨满祭司 |
+| `fs` | 法师 |
+| `ss` | 术士 |
+| `xd` | 德鲁伊 |
+
+**示例：** `/pl @tank attack` — 只让坦克机器人攻击队长目标；`/pl @melee formation combat` — 只有近战DPS进入战斗队形。
+
+---
+
+## 五、命令路由完整流程
+
+```
+玩家输入 /pl <命令>
+    │
+    ├─ ChatHandler.cpp:402 → Group::ProcessGroupBotCommand()
+    │   │
+    │   ├─ seduce → 特殊处理（指定怪物吸引仇恨）
+    │   ├─ pulls/formation → 队伍全局操作
+    │   └─ @前缀解析 → 限定机器人类型
+    │       │
+    │       └→ 遍历所有BotGroupAI/BotBGAI → ProcessBotCommand()
+    │           │
+    │           └→ 匹配命令字符串 → 执行对应方法
+    │
+    └─ AI-PartyTalk（非命令）→ 数据库查询 ai_talk_group / ai_talk_group_locale
+        └→ 机器人随机回复聊天内容（REGEXP匹配）
+```
+
+---
+
+*调查日期：2026-06-18*

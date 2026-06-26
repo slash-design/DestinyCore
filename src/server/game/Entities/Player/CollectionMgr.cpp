@@ -27,6 +27,7 @@
 #include "TransmogrificationPackets.h"
 #include "WorldSession.h"
 #include <boost/dynamic_bitset.hpp>
+#include "PlayerBotSession.h"
 
 namespace
 {
@@ -520,6 +521,20 @@ void CollectionMgr::LoadAccountItemAppearances(PreparedQueryResult knownAppearan
 
 void CollectionMgr::SaveAccountItemAppearances(LoginDatabaseTransaction& trans)
 {
+
+   // ================= 幻化防死锁拦截器 (完美版) =================
+    // 绝不允许机器人将它们随机生成的装备写入战网幻化数据库！
+    // 既然 _owner 就是 WorldSession 指针，我们直接调用判断即可！
+    if (_owner && _owner->IsBotSession())
+    {
+        return; 
+    }
+    // ====================================================
+
+
+
+
+
     uint16 blockIndex = 0;
     boost::to_block_range(*_appearances, DynamicBitsetBlockOutputIterator([this, &blockIndex, trans](uint32 blockValue)
     {

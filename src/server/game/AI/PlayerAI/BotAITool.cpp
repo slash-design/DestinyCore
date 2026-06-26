@@ -634,9 +634,14 @@ void BotUtility::ProcessGroupRingMovement(Player* pCenterPlayer, BOTAI_WORKTYPE 
 		float distZ = centerPos.GetPositionZ();
 		distZ = pCenterUnit->GetMap()->GetHeight(pCenterUnit->GetPhaseShift(), distX, distY, distZ);
 		Position resultPos(distX, distY, distZ, pCenterUnit->GetOrientation());
-		Position pos;
-		pCenterUnit->GetFirstCollisionPosition(pCenterUnit->GetDistance(resultPos), pCenterUnit->GetRelativeAngle(&resultPos));
-		pAI->SetCruxMovement(pos);
+		//Position pos;
+		//pCenterUnit->GetFirstCollisionPosition(pCenterUnit->GetDistance(resultPos), pCenterUnit->GetRelativeAngle(&resultPos));
+		//pAI->SetCruxMovement(pos);
+
+                // ================== 修改后 ==================
+               // 直接使用算好的 resultPos（底层 mmaps 寻路会自动防止穿墙）
+                pAI->SetCruxMovement(resultPos);
+
 		pGroupPlayer->SetSelection(ObjectGuid::Empty);
 		pAI->ClearTankTarget();
 	}
@@ -655,9 +660,14 @@ void BotUtility::ProcessGroupRingMovement(Player* pCenterPlayer, BOTAI_WORKTYPE 
 		float distZ = centerPos.GetPositionZ();
 		distZ = pCenterUnit->GetMap()->GetHeight(pCenterUnit->GetPhaseShift(), distX, distY, distZ);
 		Position resultPos(distX, distY, distZ, pCenterUnit->GetOrientation());
-		Position pos;
-		pCenterUnit->GetFirstCollisionPosition(pCenterUnit->GetDistance(resultPos), pCenterUnit->GetRelativeAngle(&resultPos));
-		pAI->SetCruxMovement(pos);
+		//Position pos;
+		//pCenterUnit->GetFirstCollisionPosition(pCenterUnit->GetDistance(resultPos), pCenterUnit->GetRelativeAngle(&resultPos));
+		//pAI->SetCruxMovement(pos);
+                
+                // ================== 修改后 ==================
+               // 直接使用算好的 resultPos（底层 mmaps 寻路会自动防止穿墙）
+                pAI->SetCruxMovement(resultPos);
+
 		pGroupPlayer->SetSelection(ObjectGuid::Empty);
 		pAI->ClearTankTarget();
 	}
@@ -717,9 +727,15 @@ void BotUtility::ProcessGroupCombatMovement(Player* pCenterPlayer, BOTAI_WORKTYP
 		float distZ = centerPos.GetPositionZ();
 		distZ = pCenterUnit->GetMap()->GetHeight(pCenterUnit->GetPhaseShift(), distX, distY, distZ);
 		Position resultPos(distX, distY, distZ, pCenterUnit->GetOrientation());
-		Position pos;
-		pCenterUnit->GetFirstCollisionPosition(pCenterUnit->GetDistance(resultPos), pCenterUnit->GetRelativeAngle(&resultPos));
-		pAI->SetCruxMovement(pos);
+		//Position pos;
+		//pCenterUnit->GetFirstCollisionPosition(pCenterUnit->GetDistance(resultPos), pCenterUnit->GetRelativeAngle(&resultPos));
+		//pAI->SetCruxMovement(pos);
+                 
+                // ================== 修改后 ==================
+               // 直接使用算好的 resultPos（底层 mmaps 寻路会自动防止穿墙）
+                pAI->SetCruxMovement(resultPos);
+
+
 		pGroupPlayer->SetSelection(ObjectGuid::Empty);
 		pAI->ClearTankTarget();
 	}
@@ -738,9 +754,14 @@ void BotUtility::ProcessGroupCombatMovement(Player* pCenterPlayer, BOTAI_WORKTYP
 		float distZ = centerPos.GetPositionZ();
 		distZ = pCenterUnit->GetMap()->GetHeight(pCenterUnit->GetPhaseShift(), distX, distY, distZ);
 		Position resultPos(distX, distY, distZ, pCenterUnit->GetOrientation());
-		Position pos;
-		pCenterUnit->GetFirstCollisionPosition(pCenterUnit->GetDistance(resultPos), pCenterUnit->GetRelativeAngle(&resultPos));
-		pAI->SetCruxMovement(pos);
+		//Position pos;
+		//pCenterUnit->GetFirstCollisionPosition(pCenterUnit->GetDistance(resultPos), pCenterUnit->GetRelativeAngle(&resultPos));
+		//pAI->SetCruxMovement(pos);
+
+                 // ================== 修改后 ==================
+                // 直接使用算好的 resultPos（底层 mmaps 寻路会自动防止穿墙）
+                 pAI->SetCruxMovement(resultPos);
+
 		pGroupPlayer->SetSelection(ObjectGuid::Empty);
 		pAI->ClearTankTarget();
 	}
@@ -759,9 +780,15 @@ void BotUtility::ProcessGroupCombatMovement(Player* pCenterPlayer, BOTAI_WORKTYP
 		float distZ = centerPos.GetPositionZ();
 		distZ = pCenterUnit->GetMap()->GetHeight(pCenterUnit->GetPhaseShift(), distX, distY, distZ);
 		Position resultPos(distX, distY, distZ, pCenterUnit->GetOrientation());
-		Position pos;
-		pCenterUnit->GetFirstCollisionPosition(pCenterUnit->GetDistance(resultPos), pCenterUnit->GetRelativeAngle(&resultPos));
-		pAI->SetCruxMovement(pos);
+		//Position pos;
+		//pCenterUnit->GetFirstCollisionPosition(pCenterUnit->GetDistance(resultPos), pCenterUnit->GetRelativeAngle(&resultPos));
+		//pAI->SetCruxMovement(pos);
+
+                // ================== 修改后 ==================
+               // 直接使用算好的 resultPos（底层 mmaps 寻路会自动防止穿墙）
+                 pAI->SetCruxMovement(resultPos);
+
+
 		pGroupPlayer->SetSelection(ObjectGuid::Empty);
 		pAI->ClearTankTarget();
 	}

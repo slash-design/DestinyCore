@@ -106,6 +106,12 @@ m_HasReset(false)
 	{
 		BotUtility::PlayerBotTogglePVP(player, true);
 	}
+        // ================== 新增代码开始 ==================
+	// 初始化自动升级定时器为 15 到 30 分钟随机触发一次（单位：毫秒）
+	// 注意：如果你现在是为了测试，可以暂时改成 1 分钟，比如：
+	// m_AutoLevelTimer = urand(1 * MINUTE * IN_MILLISECONDS, 2 * MINUTE * IN_MILLISECONDS);
+	m_AutoLevelTimer = urand(15 * MINUTE * IN_MILLISECONDS, 30 * MINUTE * IN_MILLISECONDS);
+	// ================== 新增代码结束 ==================
 }
 
 BotFieldAI::~BotFieldAI()
@@ -115,97 +121,458 @@ BotFieldAI::~BotFieldAI()
 
 void BotFieldAI::UpdateAI(uint32 diff)
 {
-	m_UpdateTick -= diff;
-	if (m_UpdateTick > 0)
-		return;
-	m_UpdateTick = BOTAI_UPDATE_TICK;
+    // ==========================================================
+    // 【AI 导演系统：野生群演控制中枢 (BotFieldAI 专属)】
+    // ==========================================================
+    if (m_isDirectorDrafted)
+    {
+        // 【0. 距离计算与防走丢判定】
+        float distToAnchor = 0.0f;
+        bool outOfBounds = false;
+        
+        if (m_directorAnchorMapId != 0)
+        {
+            if (me->GetMapId() != m_directorAnchorMapId) 
+                outOfBounds = true;
+            else 
+            {
+                float dx = me->GetPositionX() - m_directorAnchorX;
+                float dy = me->GetPositionY() - m_directorAnchorY;
+                distToAnchor = std::sqrt(dx*dx + dy*dy);
+                
+                // 只有超过 150 码（确诊掉出世界或被传送走）才暴力引渡
+                if (distToAnchor > 150.0f) outOfBounds = true;
+            }
 
-	if (!me->IsSettingFinish())
-		return;
-	UpdateTeleport(BOTAI_UPDATE_TICK);
-	if (!m_Teleporting.CanMovement())
-		return;
-	me->UpdateObjectVisibility(false);
-	m_Guild.UpdateGuildProcess();
-	if (ProcessGroupInvite())
-		return;
-	if (IsBGSchedule())
-	{
-		BotUtility::TryTeleportHome(this);
-		return;
-	}
+            if (outOfBounds)
+            {
+                me->InterruptNonMeleeSpells(false);
+                me->SetStandState(UNIT_STAND_STATE_STAND);
+                me->StopMoving();
+                me->GetMotionMaster()->Clear();
 
-	if (!m_HasReset)
-		ResetBotAI();
-	if (me->IsAlive())
-	{
+                bool teleSuccess = me->TeleportTo(m_directorAnchorMapId, m_directorAnchorX, m_directorAnchorY, m_directorAnchorZ, frand(0.0f, 6.28f));
+                if (!teleSuccess && me->GetMapId() == m_directorAnchorMapId)
+                    me->Relocate(m_directorAnchorX, m_directorAnchorY, m_directorAnchorZ, frand(0.0f, 6.28f));
+
+                return; // 等待传送落地
+            }
+        }
+
+        // 【1. 星探赎身机制】
+        if (me->GetGroup() || me->GetGroupInvite())
+        {
+            SetDirectorDrafted(false);     
+            m_isDirectorSleeping = false;  
+            me->SetStandState(UNIT_STAND_STATE_STAND); 
+            TC_LOG_ERROR("server", ">>> [星探发掘] 群演 [%s] 恢复自由身！", me->GetName().c_str());
+        }
+        else
+        {
+            // 【2. 常规群演苦力逻辑】
+            m_directorCheckTimer += diff;
+            
+            // 【修复报错1】：回退为原本绝对正确的宏定义获取方式
+            bool isInCity = me->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING); 
+            // 城里 300 码内不休眠（基本覆盖主城），野外保持 65 码
+            float sleepRadius = isInCity ? 300.0f : 65.0f; 
+            float wakeRadius  = isInCity ? 150.0f : 50.0f;
+
+            if (m_directorCheckTimer >= 3000) 
+            {
+                m_directorCheckTimer = 0; 
+                float nearestDist = 9999.0f;
+                Player* nearestP = nullptr;
+
+                Map::PlayerList const& players = me->GetMap()->GetPlayers();
+                for (Map::PlayerList::const_iterator itr = players.begin(); itr != players.end(); ++itr)
+                {
+                    Player* p = itr->GetSource();
+                    if (p && !p->IsPlayerBot() && p->IsAlive())
+                    {
+                        float d = p->GetDistance(me);
+                        if (d < nearestDist) { nearestDist = d; nearestP = p; }
+                    }
+                }
+
+                if (m_isDirectorSleeping)
+                {
+                    // 【优化1】：使用动态唤醒距离
+                    if (nearestP && nearestDist < wakeRadius)
+                    {
+                        m_isDirectorSleeping = false;                    
+                        me->SetStandState(UNIT_STAND_STATE_STAND);       
+                        me->Dismount();    
+
+                        // 【核心掩护】：唤醒时立刻向四周散开
+                        m_directorWanderTimer = 6000;
+                    }
+                }
+                else 
+                {
+                    // 【优化2】：使用动态休眠距离
+                    if (!nearestP || nearestDist >= sleepRadius)
+                    {
+                        m_isDirectorSleeping = true;                    
+                        me->StopMoving();                               
+                        me->GetMotionMaster()->Clear();                 
+                        me->SetStandState(UNIT_STAND_STATE_SIT);        
+                    }
+                }
+            } 
+
+            // --- 提线木偶微型大脑 (终极防卡墙版) ---
+            if (!m_isDirectorSleeping && !me->IsInCombat())
+            {
+                // ================= 【修复1：绝对独立的倒计时锁】 =================
+                if (m_directorInteractTimer > 0)
+                {
+                    if (m_directorInteractTimer > diff)
+                    {
+                        m_directorInteractTimer -= diff;
+                        // 发呆期间，有极其微小的概率做个动作假装活人
+                        if (urand(1, 1000) <= 2)
+                        {
+                            uint32 emotes[] = { EMOTE_ONESHOT_TALK, EMOTE_ONESHOT_BOW, EMOTE_ONESHOT_QUESTION, EMOTE_ONESHOT_EXCLAMATION };
+                            me->HandleEmoteCommand(emotes[urand(0, 3)]); 
+                        }
+                        return; // 倒计时没走完，物理切断本帧，绝对不准思考！
+                    }
+                    else
+                    {
+                        m_directorInteractTimer = 0; // 倒计时完毕，解锁大脑！
+                    }
+                }
+
+                // ================= 思考与寻路逻辑 =================
+                m_directorWanderTimer += diff;
+                
+                if (m_directorWanderTimer >= 4000) 
+                {
+                    m_directorWanderTimer = urand(0, 1500); 
+                    bool isAttacking = false;
+                    
+                    bool isInCity = me->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING); 
+
+                    // --- 野外打野逻辑 ---
+                    if (!isInCity && urand(1, 100) <= 30)
+                    {
+                        Creature* target = nullptr;
+                        std::list<Creature*> creatureList;
+                        me->GetCreatureListWithEntryInGrid(creatureList, 0, 25.0f);
+                        for (auto c : creatureList)
+                        {
+                            if (c && c->IsAlive() && me->IsValidAttackTarget(c))
+                            {
+                                if (c->getFaction() == 160) continue;
+                                if (c->HasUnitFlag((UnitFlags)4)) continue;
+                                if (c->GetMaxHealth() > 5000000 && !c->IsInCombatWith(me)) continue;
+                                target = c;
+                                break; 
+                            }
+                        }
+
+                        if (target)
+                        {
+                            // 【破解死结1】：打怪前强行站立
+                            me->SetStandState(UNIT_STAND_STATE_STAND);
+                            me->SetWalk(false); 
+                            me->Attack(target, true);
+                            me->GetMotionMaster()->Clear();
+                            me->GetMotionMaster()->MoveChase(target);
+                            isAttacking = true;
+                        }
+                    }
+
+                    // --- 行为树分流 ---
+                    if (!isAttacking)
+                    {
+                        // 【破解死结2】：每次移动前，绝对强行站立并清空移动队列！无论它刚才是不是坐着！
+                        me->SetStandState(UNIT_STAND_STATE_STAND);
+                        me->GetMotionMaster()->Clear();
+                        me->SetWalk(true);
+
+                        if (!isInCity && distToAnchor > 40.0f)
+                        {
+                            me->GetMotionMaster()->MovePoint(1, m_directorAnchorX, m_directorAnchorY, m_directorAnchorZ);
+                            m_directorInteractTimer = urand(5000, 15000); 
+                        }
+                        else if (!isInCity) 
+                        {
+                            // 【破解死结3】：野外街溜子使用原生安全寻路
+                            me->GetMotionMaster()->MoveRandom(15.0f);
+                            m_directorInteractTimer = urand(5000, 10000);
+                        }
+                        else if (isInCity) // 主城
+                        {
+                            int destinyRoll = urand(1, 100);
+
+                            // 【第一层：30% 几率】去绝对坐标：银行/拍卖行
+                            if (destinyRoll <= 30) 
+                            {
+                                static const struct { uint32 mapId; float x, y, z; } CityPOIs[] = {
+                                    {1, 1643.72f, -4443.32f, 18.62f},   {1, 1513.90f, -4354.57f, 20.55f},
+                                    {0, 1588.68f, 241.05f, -52.14f},    {0, 1579.11f, 187.98f, -56.79f},
+                                    {530, 9683.39f, -7520.52f, 15.74f}, {530, 9805.19f, -7487.27f, 13.55f},
+                                    {530, -2000.13f, 5350.65f, -9.35f}, {530, -2023.69f, 5390.86f, -7.48f},
+                                    {571, 5927.02f, 729.74f, 642.13f},  {571, 5627.04f, 693.37f, 651.99f},
+                                    {0, -8888.40f, 566.25f, 93.35f},    {0, -8823.97f, 683.89f, 97.23f},
+                                    {0, -4889.87f, -993.15f, 503.94f},  {0, -4902.07f, -973.80f, 501.52f},
+                                    {530, -4022.18f, -11734.09f, -151.85f}, {530, -3919.18f, -11547.06f, -150.15f}
+                                };
+
+                                std::vector<int> validIndices;
+                                for (int i = 0; i < sizeof(CityPOIs) / sizeof(CityPOIs[0]); ++i)
+                                {
+                                    if (CityPOIs[i].mapId == me->GetMapId() && me->GetDistance2d(CityPOIs[i].x, CityPOIs[i].y) < 400.0f)
+                                        validIndices.push_back(i);
+                                }
+
+                                if (!validIndices.empty())
+                                {
+                                    int targetIndex = validIndices[urand(0, validIndices.size() - 1)];
+                                    float offsetAngle = frand(0.0f, 6.28f);
+                                    // 【破解死结4】：室内坐标散布范围从 12码 极度缩小到 3码以内，绝对防止卡墙宕机！
+                                    float offsetDist  = frand(1.0f, 3.0f); 
+                                    
+                                    me->GetMotionMaster()->MovePoint(1, 
+                                        CityPOIs[targetIndex].x + offsetDist * std::cos(offsetAngle), 
+                                        CityPOIs[targetIndex].y + offsetDist * std::sin(offsetAngle), 
+                                        CityPOIs[targetIndex].z);
+                                    m_directorInteractTimer = urand(15000, 45000); 
+                                    return; // 正确切断
+                                }
+                            }
+
+                            // 【第二层：40% 几率】在附近找NPC、邮箱或椅子
+                            if (destinyRoll <= 70)
+                            {
+                                Creature* poiNpc = nullptr;
+                                GameObject* poiGo = nullptr;
+                                
+                                std::vector<Creature*> validNpcs;
+                                std::list<Creature*> creatureList;
+                                me->GetCreatureListWithEntryInGrid(creatureList, 0, 100.0f);
+                                for (auto c : creatureList)
+                                {
+                                    if (c && c->IsAlive() && c->IsFriendlyTo(me) && !c->IsPet())
+                                    {
+                                        if (c->IsVendor() || c->IsGossip() || c->IsQuestGiver())
+                                            validNpcs.push_back(c);
+                                    }
+                                }
+
+                                if (!validNpcs.empty())
+                                    poiNpc = validNpcs[urand(0, validNpcs.size() - 1)];
+
+                                if (!poiNpc) 
+                                {
+                                    std::vector<GameObject*> validGos;
+                                    std::list<GameObject*> goList;
+                                    me->GetGameObjectListWithEntryInGrid(goList, 0, 80.0f);
+                                    for (auto go : goList)
+                                    {
+                                        if (go && (go->GetGoType() == GAMEOBJECT_TYPE_MAILBOX || go->GetGoType() == GAMEOBJECT_TYPE_CHAIR))
+                                            validGos.push_back(go);
+                                    }
+                                    if (!validGos.empty())
+                                        poiGo = validGos[urand(0, validGos.size() - 1)];
+                                }
+
+                                if (poiNpc)
+                                {
+                                    float angle = frand(0.0f, 6.28f);
+                                    float dist = frand(1.5f, 3.0f); 
+                                    me->GetMotionMaster()->MovePoint(1, poiNpc->GetPositionX() + dist * std::cos(angle), poiNpc->GetPositionY() + dist * std::sin(angle), poiNpc->GetPositionZ());
+                                    me->SetFacingToObject(poiNpc);
+                                    
+                                    m_directorInteractTimer = urand(10000, 30000);
+                                    if (urand(1, 100) <= 20) me->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
+                                }
+                                else if (poiGo)
+                                {
+                                    float angle = frand(0.0f, 6.28f);
+                                    float dist = (poiGo->GetGoType() == GAMEOBJECT_TYPE_MAILBOX) ? frand(1.0f, 2.0f) : 0.0f;
+                                    me->GetMotionMaster()->MovePoint(1, poiGo->GetPositionX() + dist * std::cos(angle), poiGo->GetPositionY() + dist * std::sin(angle), poiGo->GetPositionZ());
+                                    me->SetFacingToObject(poiGo);
+                                    
+                                    if (poiGo->GetGoType() == GAMEOBJECT_TYPE_MAILBOX)
+                                    {
+                                        m_directorInteractTimer = urand(10000, 25000);
+                                        me->HandleEmoteCommand(EMOTE_STATE_USE_STANDING); 
+                                    }
+                                    else 
+                                    {
+                                        m_directorInteractTimer = urand(15000, 45000);
+                                        me->HandleEmoteCommand(EMOTE_STATE_SIT); 
+                                    }
+                                }
+                                else
+                                {
+                                    // 没找到任何东西，直接随机安全漫步
+                                    me->GetMotionMaster()->MoveRandom(20.0f);
+                                    m_directorInteractTimer = urand(5000, 15000);
+                                }
+                            }
+                            else 
+                            {
+                                // 【第三层：剩余 30% 几率】使用核心原生安全寻路 MoveRandom
+                                // 彻底摒弃手工三角函数带来的卡墙 bug！
+                                me->GetMotionMaster()->MoveRandom(35.0f);
+                                m_directorInteractTimer = urand(5000, 15000); 
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ================= 核心洛巴托米手术 =================
+            if (m_isDirectorSleeping) return; 
+            if (!me->IsInCombat()) return; 
+        } 
+    }
+
+    // 强行驻留锁
+    if (m_isCommandStopped)
+    {
+        me->StopMoving();
+        return; 
+    }
+    
+    // ================== 新增自动升级逻辑 ==================
+    if (me->IsAlive() && !me->IsInCombat())
+    {
+        if (m_AutoLevelTimer <= diff)
+        {
+            uint8 maxLevel = sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL);
+            if (me->getLevel() < maxLevel)
+            {
+                me->GiveLevel(me->getLevel() + 1);
+            }
+            m_AutoLevelTimer = urand(15 * MINUTE * IN_MILLISECONDS, 30 * MINUTE * IN_MILLISECONDS);
+        }
+        else
+        {
+            m_AutoLevelTimer -= diff;
+        }
+    }
+    // ======================================================
+
+    m_UpdateTick -= diff;
+    if (m_UpdateTick > 0)
+        return;
+    m_UpdateTick = BOTAI_UPDATE_TICK;
+
+    if (!me->IsSettingFinish())
+        return;
+    UpdateTeleport(BOTAI_UPDATE_TICK);
+    if (!m_Teleporting.CanMovement())
+        return;
+    me->UpdateObjectVisibility(false);
+    m_Guild.UpdateGuildProcess();
+    if (ProcessGroupInvite())
+        return;
+    if (IsBGSchedule())
+    {
+        BotUtility::TryTeleportHome(this);
+        return;
+    }
+
+    if (!m_HasReset)
+        ResetBotAI();
+        
+    if (me->IsAlive())
+    {
+         // ================== 核心 AI 升级：全系能量无尽模式 ==================
+        for (uint8 i = 0; i < MAX_POWERS; ++i)
+        {
+            if (me->GetMaxPower((Powers)i) > 0 && me->GetPower((Powers)i) < me->GetMaxPower((Powers)i))
+            {
+                me->SetPower((Powers)i, me->GetMaxPower((Powers)i));
+            }
+        }
+        // =======================================================================
+
         Position pos = me->GetPosition();
-		m_CheckStoped.UpdatePosition(diff);
-		BotUtility::TryTeleportPlayerPet(me);
-		ClearMechanicAura();
-		if (!IsNotMovement())
-			ProcessHorror(diff);
-		if (NeedWaitSpecialSpell(BOTAI_UPDATE_TICK))
-			return;
+        m_CheckStoped.UpdatePosition(diff);
+        BotUtility::TryTeleportPlayerPet(me);
+        ClearMechanicAura();
+        if (!IsNotMovement())
+            ProcessHorror(diff);
+        if (NeedWaitSpecialSpell(BOTAI_UPDATE_TICK))
+            return;
 
-		if (me->HasUnitState(UNIT_STATE_CASTING))
-			return;
-		if (!m_CruxMovement.HasCruxMovement() && NonCombatProcess())
-			return;
+        if (me->HasUnitState(UNIT_STATE_CASTING))
+            return;
+        if (!m_CruxMovement.HasCruxMovement() && NonCombatProcess())
+            return;
 
-		if (!me->IsInCombat() && ProcessNormalSpell())
-			return;
-		m_Movement->SyncPosition(pos);
-		if (TryUpMount())
-			return;
-		if (!me->HasAura(m_UseMountID) && !me->HasUnitState(UNIT_STATE_CASTING))
-			m_UsePotion.TryUsePotion();
-		if (me->IsInCombat())
-			UpEnergy();
-		Unit* pTarget = GetBotAIValidSelectedUnit();
-		if (m_CruxMovement.HasCruxMovement())
-		{
-			m_CruxMovement.UpdateCruxMovement(m_Movement);
-		}
-		else if (pTarget && pTarget->IsAlive() && !IsInvincible(pTarget))
-		{
-			float distance = me->GetDistance(pTarget->GetPosition());
-			if (distance < BOTAI_SEARCH_RANGE)
-			{
-				if (IsHealerBotAI() && me->getLevel() >= 10)
-					ProcessHealth();
-				else
-					ProcessCombat(pTarget);
-			}
-			else if (distance > BOTAI_SEARCH_RANGE * 2.5f || me->GetMap() != pTarget->GetMap())
-			{
-				//me->StopMoving();
-				me->SetSelection(ObjectGuid::Empty);
-			}
-			else
-			{
-				m_Movement->MovementToTarget();
-			}
-		}
-		else if (pTarget = GetCombatTarget())
-		{
-			me->AttackStop();
-			me->SetSelection(pTarget->GetGUID());
-		}
-		else
-		{
-			me->SetSelection(ObjectGuid::Empty);
-			ProcessIDLE();
-		}
-	}
-	else
-	{
-		m_CastRecords.ClearRecordSpell();
-		m_WishStore.ClearStores();
-		m_CruxMovement.ClearMovement();
-		me->SetSelection(ObjectGuid::Empty);
-		m_Revive.UpdateRevive(BOTAI_UPDATE_TICK, m_Teleporting);
-	}
+        if (!me->IsInCombat() && ProcessNormalSpell())
+            return;
+        m_Movement->SyncPosition(pos);
+        if (TryUpMount())
+            return;
+        if (!me->HasAura(m_UseMountID) && !me->HasUnitState(UNIT_STATE_CASTING))
+            m_UsePotion.TryUsePotion();
+        if (me->IsInCombat())
+            UpEnergy();
+        Unit* pTarget = GetBotAIValidSelectedUnit();
+
+        // ================== 核心 AI 升级：野外防卫本能 ==================
+        if (!pTarget && me->IsInCombat())
+        {
+            Unit* pAttacker = me->getAttackerForHelper();
+            if (pAttacker && pAttacker->IsAlive() && me->IsValidAttackTarget(pAttacker))
+            {
+                pTarget = pAttacker;
+                me->SetSelection(pTarget->GetGUID());
+                me->Attack(pTarget, true);
+            }
+        }
+        // ================================================================
+
+        if (m_CruxMovement.HasCruxMovement())
+        {
+            m_CruxMovement.UpdateCruxMovement(m_Movement);
+        }
+        else if (pTarget && pTarget->IsAlive() && !IsInvincible(pTarget))
+        {
+            float distance = me->GetDistance(pTarget->GetPosition());
+            if (distance < BOTAI_SEARCH_RANGE)
+            {
+                if (IsHealerBotAI() && me->getLevel() >= 10)
+                    ProcessHealth();
+                else
+                    ProcessCombat(pTarget);
+            }
+            else if (distance > BOTAI_SEARCH_RANGE * 2.5f || me->GetMap() != pTarget->GetMap())
+            {
+                me->SetSelection(ObjectGuid::Empty);
+            }
+            else
+            {
+                m_Movement->MovementToTarget();
+            }
+        }
+        else if (pTarget = GetCombatTarget())
+        {
+            me->AttackStop();
+            me->SetSelection(pTarget->GetGUID());
+        }
+        else
+        {
+            me->SetSelection(ObjectGuid::Empty);
+            ProcessIDLE();
+        }
+    }
+    else
+    {
+        m_CastRecords.ClearRecordSpell();
+        m_WishStore.ClearStores();
+        m_CruxMovement.ClearMovement();
+        me->SetSelection(ObjectGuid::Empty);
+        m_Revive.UpdateRevive(BOTAI_UPDATE_TICK, m_Teleporting);
+    }
 }
 
 void BotFieldAI::ResetBotAI()
@@ -297,7 +664,7 @@ bool BotFieldAI::IsNotSelect(Unit* pTarget)
 {
 	if (!pTarget || !pTarget->IsAlive())
 		return true;
-	if (pTarget->HasAura(27827)) // (27827 ����֮�� ����������)
+	if (pTarget->HasAura(27827)) // (27827     ֮             )
 		return true;
 	return false;
 }
@@ -1461,11 +1828,11 @@ bool BotFieldAI::TargetIsStealth(Player* pTarget)
 {
 	if (!pTarget)
 		return false;
-	// (1784 ����Ǳ�� || 5215 ��³��Ǳ�� || 66 ��ʦ���� || 58984 ��ҹ����)
+	// (1784     Ǳ   || 5215   ³  Ǳ   || 66   ʦ     || 58984   ҹ    )
 	if (pTarget->HasAura(1784) || pTarget->HasAura(5215) ||
 		pTarget->HasAura(66) || pTarget->HasAura(58984))
 	{
-		if (!me->CanSeeOrDetect(pTarget, false, true)) // ���Ǳ��
+		if (!me->CanSeeOrDetect(pTarget, false, true)) //    Ǳ  
 			return true;
 	}
 	return false;

@@ -26,6 +26,23 @@ class Spell;
 class TC_GAME_API PlayerAI : public UnitAI
 {
 public:
+
+
+    // ==========================================
+    // 【AI 导演系统专属控制接口】
+    // ==========================================
+    void SetDirectorSleep(bool sleep) { m_isDirectorSleeping = sleep; }
+    bool IsDirectorSleeping() const { return m_isDirectorSleeping; }
+    void SetDirectorDrafted(bool drafted) { m_isDirectorDrafted = drafted; }
+    // 【修改】加上 map 参数
+    void SetDirectorAnchor(uint32 map, float x, float y, float z) {
+        m_directorAnchorMapId = map;
+        m_directorAnchorX = x;
+        m_directorAnchorY = y;
+        m_directorAnchorZ = z;
+    }
+
+
     explicit PlayerAI(Player* player);
 
     Creature* GetCharmer() const;
@@ -40,6 +57,32 @@ public:
     bool IsRangedAttacker(Player const* who = nullptr) const { return (!who || who == me) ? _isSelfRangedAttacker : IsPlayerRangedAttacker(who); }
 
 protected:
+
+    // ==========================================
+    // 【AI 导演系统变量】默认所有机器人出生即休眠！
+    // ==========================================
+    bool m_isDirectorSleeping = true; 
+    uint32 m_directorCheckTimer = 3000;
+
+    
+    // 【手动停留开关】
+    bool m_isCommandStopped = false;
+   // 【新增】：群演卖身契标记 (默认是 false，代表原生自由人)
+    bool m_isDirectorDrafted = false;
+
+   // 【新增】：提线木偶漫步系统
+    float m_directorAnchorX = 0.0f;
+    float m_directorAnchorY = 0.0f;
+    float m_directorAnchorZ = 0.0f;
+    uint32 m_directorWanderTimer = 0; // 专属溜达计时器
+    uint32 m_directorAnchorMapId = 0; // 【新增】剧组所在地图
+   
+    // 【新增】：高级 RPG 交互系统
+    uint32 m_directorInteractTimer = 0;  // 驻留交互倒计时
+    uint64 m_directorInteractGuid = 0;   // 正在交互的目标 GUID
+
+
+
     struct TargetedSpell : public std::pair<Spell*, Unit*>
     {
         TargetedSpell() : pair<Spell*, Unit*>() { }

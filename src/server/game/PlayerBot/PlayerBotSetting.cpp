@@ -165,6 +165,46 @@ bool PlayerBotSetting::IsEquipByClasses(uint32 cls, const ItemTemplate* itemTemp
 		return IsMageEquip(itemTemplate);
 	case 9:
 		return IsWarlockEquip(itemTemplate);
+
+       // ================== 新增：武僧与恶魔猎手通用装备判定 ==================
+	case 10: // 武僧
+	{
+		if (itemTemplate->GetClass() == ItemClass::ITEM_CLASS_WEAPON) {
+			switch (itemTemplate->GetSubClass()) {
+				case ItemSubclassWeapon::ITEM_SUBCLASS_WEAPON_MACE:
+				case ItemSubclassWeapon::ITEM_SUBCLASS_WEAPON_MACE2:
+				case ItemSubclassWeapon::ITEM_SUBCLASS_WEAPON_SWORD:
+				case ItemSubclassWeapon::ITEM_SUBCLASS_WEAPON_SWORD2:
+				case ItemSubclassWeapon::ITEM_SUBCLASS_WEAPON_STAFF:
+				case ItemSubclassWeapon::ITEM_SUBCLASS_WEAPON_POLEARM:
+					return true;
+				default: return false;
+			}
+		} else if (itemTemplate->GetClass() == ItemClass::ITEM_CLASS_ARMOR) {
+			return itemTemplate->GetSubClass() == ItemSubclassArmor::ITEM_SUBCLASS_ARMOR_LEATHER;
+		}
+		return false;
+	}
+	case 12: // 恶魔猎手
+	{
+		if (itemTemplate->GetClass() == ItemClass::ITEM_CLASS_WEAPON) {
+			switch (itemTemplate->GetSubClass()) {
+				case ItemSubclassWeapon::ITEM_SUBCLASS_WEAPON_AXE:
+				case ItemSubclassWeapon::ITEM_SUBCLASS_WEAPON_AXE2:
+				case ItemSubclassWeapon::ITEM_SUBCLASS_WEAPON_SWORD:
+				case ItemSubclassWeapon::ITEM_SUBCLASS_WEAPON_SWORD2:
+				case 9: // 7.3.5 中的战刃 (Warglaives)
+					return true;
+				default: return false;
+			}
+		} else if (itemTemplate->GetClass() == ItemClass::ITEM_CLASS_ARMOR) {
+			return itemTemplate->GetSubClass() == ItemSubclassArmor::ITEM_SUBCLASS_ARMOR_LEATHER;
+		}
+		return false;
+	}
+    // ===================================================================
+
+
 	case 11:
 		return IsDruidEquip(itemTemplate);
 	default:
@@ -175,7 +215,9 @@ bool PlayerBotSetting::IsEquipByClasses(uint32 cls, const ItemTemplate* itemTemp
 
 bool PlayerBotSetting::IsEquipByClsAndTal(uint32 cls, uint32 tal, const ItemTemplate* itemTemplate, int32 rndPropID)
 {
-	if (tal > 2 || !itemTemplate || cls < 1 || cls == 10 || cls > 11)
+	// ================== 修复：允许武僧(10)和恶魔猎手(12)获取装备 ==================
+	if (tal > 2 || !itemTemplate || cls < 1 || cls > 12)
+		return false;
 		return false;
 	if (!itemTemplate || itemTemplate->ExtendedData->AllowableClass == 0)
 		return false;
@@ -297,6 +339,34 @@ bool PlayerBotSetting::IsEquipByClsAndTal(uint32 cls, uint32 tal, const ItemTemp
 		if (IsCommonEquip(itemTemplate))
 			return true;
 		return IsWarlockEquip(itemTemplate);
+
+        // ================== 新增：武僧与恶魔猎手专精属性过滤 ==================
+	case 10:
+		if (tal == 0) { // 酒仙 (坦克)
+			if (IsTankRandomAttributeByEquip(enchants) || IsTankAttributeEquip(itemTemplate)) return true;
+			if (!IsOnlyPhysicsRandomAttributeByEquip(enchants, true) && !IsOnlyPhysicsAttributeEquip(itemTemplate, true)) return false;
+		} else if (tal == 1) { // 织雾 (治疗)
+			if (IsTankRandomAttributeByEquip(enchants) || IsTankAttributeEquip(itemTemplate)) return false;
+			if (!IsOnlyMagicRandomAttributeByEquip(enchants) && !IsOnlyMagicAttributeEquip(itemTemplate)) return false;
+		} else { // 踏风 (近战输出)
+			if (IsTankRandomAttributeByEquip(enchants) || IsTankAttributeEquip(itemTemplate)) return false;
+			if (!IsOnlyPhysicsRandomAttributeByEquip(enchants, true) && !IsOnlyPhysicsAttributeEquip(itemTemplate, true)) return false;
+		}
+		if (IsCommonEquip(itemTemplate)) return true;
+		return IsEquipByClasses(cls, itemTemplate);
+	case 12:
+		if (tal == 1) { // 复仇 (坦克)
+			if (IsTankRandomAttributeByEquip(enchants) || IsTankAttributeEquip(itemTemplate)) return true;
+		} else { // 浩劫 (近战输出)
+			if (IsTankRandomAttributeByEquip(enchants) || IsTankAttributeEquip(itemTemplate)) return false;
+		}
+		if (!IsOnlyPhysicsRandomAttributeByEquip(enchants, true) && !IsOnlyPhysicsAttributeEquip(itemTemplate, true)) return false;
+		if (IsCommonEquip(itemTemplate)) return true;
+		return IsEquipByClasses(cls, itemTemplate);
+    // =====================================================================
+
+
+
 	case 11:
 		if (IsTankRandomAttributeByEquip(enchants) || IsTankAttributeEquip(itemTemplate))
 			return false;
@@ -1384,7 +1454,7 @@ uint32 PlayerBotSetting::FindPlayerTalentType(Player* player)
 {
 	if (!player)
 		return 0;
-	uint32 spec = player->GetSpecializationId();
+
 	uint32 cls = player->getClass();
 	uint32 pageTalents[3] = { 0 };
 	for (uint32 page = 0; page < 3; page++)
@@ -1486,6 +1556,21 @@ void PlayerBotSetting::Initialize()
 
 	classesTrainersGUID[Classes::CLASS_PRIEST][0] = 5141;
 	classesTrainersGUID[Classes::CLASS_PRIEST][1] = 4606;
+
+
+       // ================== 新增：给武僧和瞎子分配导师和通用技能(骑马等) ==================
+	classesTrainersGUID[10][0] = 5165; // 借用盗贼导师，防止无导师崩溃
+	classesTrainersGUID[10][1] = 4584;
+	classesTrainersGUID[12][0] = 5165;
+	classesTrainersGUID[12][1] = 4584;
+	
+	// 复制盗贼的通用技能（回城、骑马、上马动作等）给武僧和瞎子
+	classesCommonSpells[10] = classesCommonSpells[4];
+	classesCommonSpells[12] = classesCommonSpells[4];
+    // ==============================================================================
+
+
+
 
 	for (uint32 talentId = 0; talentId < sTalentStore.GetNumRows(); ++talentId)
 	{
@@ -1710,7 +1795,7 @@ uint32 PlayerBotSetting::UpdateTalentType()
 {
 	if (m_Player->IsPlayerBot())
 	{
-		uint32 lv = (m_Player->getLevel() < 9) ? 9 : m_Player->getLevel();
+		
 
 	}
 	if (m_ActiveTalentType >= 3)
@@ -1743,13 +1828,77 @@ bool PlayerBotSetting::ResetPlayerToLevel(uint32 level, uint32 talent, bool tena
 	m_ResetStep = 1;
 	m_Finish = false;
 	m_TenacitySetting = tenacity;
+
+        // ================== 终极防护：专精锁定与天赋自愈 ==================
+	// 将这段代码插在 return true; 之前，确保装备状态机正常运行
+	if (m_Player->getLevel() >= 10)
+	{
+		uint32 currentSpecId = m_Player->GetSpecializationId();
+		if (currentSpecId == 0)
+		{
+			// 纯白板，按随机参数分配专精（减1是为了将1/2/3转为底层的0/1/2索引）
+			uint32 specIndex = (talent > 0) ? (talent - 1) : 0;
+			SwitchPlayerTalent(specIndex);
+		}
+		else
+		{
+			// 已有专精，绝对不改变当前专精！只负责点亮天赋！
+			LearnTalents();
+			m_ActiveTalentType = m_Player->FindTalentType(); 
+		}
+	}
+	// =========================================================================
+
+
 	return true;
 }
 
+
 uint32 PlayerBotSetting::SwitchPlayerTalent(uint32 talent)
 {
+	if (!m_Player)
+		return m_ActiveTalentType;
+
+	// 保存当前的专精索引 (0=第一专精, 1=第二专精, 2=第三专精, 3=德鲁伊第四专精)
+	if (talent <= 2)
+		m_ActiveTalentType = talent;
+	else
+		m_ActiveTalentType = 3; 
+
+	// 使用核心自带的枚举进行映射，彻底杜绝无符号匹配等警告
+	uint32 specId = 0;
+	switch (m_Player->getClass())
+	{
+		case CLASS_WARRIOR:      specId = (talent == 0) ? TALENT_SPEC_WARRIOR_ARMS : ((talent == 1) ? TALENT_SPEC_WARRIOR_FURY : TALENT_SPEC_WARRIOR_PROTECTION); break;
+		case CLASS_PALADIN:      specId = (talent == 0) ? TALENT_SPEC_PALADIN_HOLY : ((talent == 1) ? TALENT_SPEC_PALADIN_PROTECTION : TALENT_SPEC_PALADIN_RETRIBUTION); break;
+		case CLASS_HUNTER:       specId = (talent == 0) ? TALENT_SPEC_HUNTER_BEASTMASTER : ((talent == 1) ? TALENT_SPEC_HUNTER_MARKSMAN : TALENT_SPEC_HUNTER_SURVIVAL); break;
+		case CLASS_ROGUE:        specId = (talent == 0) ? TALENT_SPEC_ROGUE_ASSASSINATION : ((talent == 1) ? TALENT_SPEC_ROGUE_COMBAT : TALENT_SPEC_ROGUE_SUBTLETY); break;
+		case CLASS_PRIEST:       specId = (talent == 0) ? TALENT_SPEC_PRIEST_DISCIPLINE : ((talent == 1) ? TALENT_SPEC_PRIEST_HOLY : TALENT_SPEC_PRIEST_SHADOW); break;
+		case CLASS_DEATH_KNIGHT: specId = (talent == 0) ? TALENT_SPEC_DEATHKNIGHT_BLOOD : ((talent == 1) ? TALENT_SPEC_DEATHKNIGHT_FROST : TALENT_SPEC_DEATHKNIGHT_UNHOLY); break;
+		case CLASS_SHAMAN:       specId = (talent == 0) ? TALENT_SPEC_SHAMAN_ELEMENTAL : ((talent == 1) ? TALENT_SPEC_SHAMAN_ENHANCEMENT : TALENT_SPEC_SHAMAN_RESTORATION); break;
+		case CLASS_MAGE:         specId = (talent == 0) ? TALENT_SPEC_MAGE_ARCANE : ((talent == 1) ? TALENT_SPEC_MAGE_FIRE : TALENT_SPEC_MAGE_FROST); break;
+		case CLASS_WARLOCK:      specId = (talent == 0) ? TALENT_SPEC_WARLOCK_AFFLICTION : ((talent == 1) ? TALENT_SPEC_WARLOCK_DEMONOLOGY : TALENT_SPEC_WARLOCK_DESTRUCTION); break;
+		case CLASS_MONK:         specId = (talent == 0) ? TALENT_SPEC_MONK_BREWMASTER : ((talent == 1) ? TALENT_SPEC_MONK_BATTLEDANCER : TALENT_SPEC_MONK_MISTWEAVER); break;
+		case CLASS_DRUID:        specId = (talent == 0) ? TALENT_SPEC_DRUID_BALANCE : ((talent == 1) ? TALENT_SPEC_DRUID_CAT : ((talent == 2) ? TALENT_SPEC_DRUID_BEAR : TALENT_SPEC_DRUID_RESTORATION)); break;
+		case CLASS_DEMON_HUNTER: specId = (talent == 0) ? TALENT_SPEC_DEMON_HUNTER_HAVOC : TALENT_SPEC_DEMON_HUNTER_VENGEANCE; break;
+	}
+
+	if (specId != 0)
+	{
+		// 1. 更新服务端后端的专精记录
+		m_Player->SetPrimarySpecialization(specId);
+		
+		// 2. 强行更新前端 UI 绑定的字段，让你的客户端立刻看到新专精的图标
+		m_Player->SetUInt32Value(PLAYER_FIELD_CURRENT_SPEC_ID, specId);
+	}
+
+	// 触发机器人的“重置状态机”，后台会自动清空旧技能，并学习新专精技能和换装
+	m_ResetStep = 1;
+	m_Finish = false;
+
 	return m_ActiveTalentType;
 }
+
 
 void PlayerBotSetting::SupplementAmmo()
 {
@@ -1839,7 +1988,60 @@ void PlayerBotSetting::UpdateReset()
 
 void PlayerBotSetting::LearnTalents()
 {
-	
+	if (!m_Player)
+		return;
+
+	uint8 level = m_Player->getLevel();
+	uint32 specId = m_Player->GetSpecializationId(); // 获取我们上次修复的真实专精ID
+
+	// 1. 判断 7.3.5 的网格天赋解锁到了第几层 (TierID: 0 到 6)
+	int8 maxTier = -1;
+	if (level >= 15) maxTier = 0;
+	if (level >= 30) maxTier = 1;
+	if (level >= 45) maxTier = 2;
+	if (level >= 60) maxTier = 3;
+	if (level >= 75) maxTier = 4;
+	if (level >= 90) maxTier = 5;
+	if (level >= 100) maxTier = 6;
+
+	// 如果等级不到15级，什么天赋都不学，直接返回
+	if (maxTier < 0)
+		return;
+
+	// 2. 为这 7 层天赋，提前随机掷骰子（每层在 0, 1, 2 三个列中随机选一个）
+	uint8 randomCol[7];
+	for (int i = 0; i < 7; ++i)
+	{
+		randomCol[i] = urand(0, 2);
+	}
+
+	// 3. 遍历底层 Talent.db2 数据库，寻找匹配的天赋
+	for (uint32 talentId = 0; talentId < sTalentStore.GetNumRows(); ++talentId)
+	{
+		TalentEntry const* talentInfo = sTalentStore.LookupEntry(talentId);
+		if (!talentInfo)
+			continue;
+
+		// 过滤 1：必须是当前机器人的职业
+		if (talentInfo->ClassID != m_Player->getClass())
+			continue;
+
+		// 过滤 2：必须是当前专精（SpecID 为 0 代表三系通用，非 0 代表专属）
+		if (talentInfo->SpecID != 0 && talentInfo->SpecID != specId)
+			continue;
+
+		// 过滤 3：必须在当前等级允许的层数范围内
+		if ((int8)talentInfo->TierID > maxTier || talentInfo->TierID > 6)
+			continue;
+
+		// 命中！如果这个天赋恰好位于我们刚刚随机选中的那一列
+		if (talentInfo->ColumnIndex == randomCol[talentInfo->TierID])
+		{
+			// 让机器人正式学会这个天赋！
+			// 【修复】：第二个参数传入 nullptr，忽略技能冷却返回
+			m_Player->LearnTalent(talentId, nullptr);
+		}
+	}
 }
 
 void PlayerBotSetting::LearnCommonSpells()
@@ -2064,6 +2266,39 @@ void PlayerBotSetting::AddEquipFromAll()
 	case 9:
 		RandomWeaponByWarlock();
 		break;
+
+        // ================== 新增：武器分发逻辑 ==================
+	case 10: // 武僧武器分发
+	{
+		if (m_ActiveTalentType == 1) { // 织雾：优先发法杖
+			ItemTemplate* item1 = (ItemTemplate*)GetRandomItemFromLoopLV(prof, InventoryType::INVTYPE_2HWEAPON, level);
+			if (!item1) item1 = (ItemTemplate*)GetRandomItemFromLoopLV(prof, InventoryType::INVTYPE_WEAPONMAINHAND, level);
+			AddOnceEquip(item1);
+		} else if (m_ActiveTalentType == 0) { // 酒仙：发双手敏捷武器
+			AddOnceEquip(GetRandomItemFromLoopLV(prof, InventoryType::INVTYPE_2HWEAPON, level));
+		} else { // 踏风：发双持单手
+			ItemTemplate* item1 = (ItemTemplate*)GetRandomItemFromLoopLV(prof, InventoryType::INVTYPE_WEAPON, level);
+			if (!item1) item1 = (ItemTemplate*)GetRandomItemFromLoopLV(prof, InventoryType::INVTYPE_WEAPONMAINHAND, level);
+			AddOnceEquip(item1);
+			ItemTemplate* item2 = (ItemTemplate*)GetRandomItemFromLoopLV(prof, InventoryType::INVTYPE_WEAPON, level, item1);
+			if (!item2) item2 = (ItemTemplate*)GetRandomItemFromLoopLV(prof, InventoryType::INVTYPE_WEAPONOFFHAND, level);
+			AddOnceEquip(item2);
+		}
+		break;
+	}
+	case 12: // 恶魔猎手武器分发（双持战刃/单手剑）
+	{
+		ItemTemplate* item1 = (ItemTemplate*)GetRandomItemFromLoopLV(prof, InventoryType::INVTYPE_WEAPON, level);
+		if (!item1) item1 = (ItemTemplate*)GetRandomItemFromLoopLV(prof, InventoryType::INVTYPE_WEAPONMAINHAND, level);
+		AddOnceEquip(item1);
+		ItemTemplate* item2 = (ItemTemplate*)GetRandomItemFromLoopLV(prof, InventoryType::INVTYPE_WEAPON, level, item1);
+		if (!item2) item2 = (ItemTemplate*)GetRandomItemFromLoopLV(prof, InventoryType::INVTYPE_WEAPONOFFHAND, level);
+		AddOnceEquip(item2);
+		break;
+	}
+    // =======================================================
+
+
 	case 11:
 		RandomWeaponByDruid();
 		break;

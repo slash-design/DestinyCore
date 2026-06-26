@@ -124,6 +124,7 @@ public:
 
 protected:
 	int32 m_UpdateTick;
+        uint32 m_AutoLevelTimer; // <-- 新增：自动升级定时器
 	bool m_DrivingPVP;
 	uint32 m_UseMountID;
 	ObjectGuid m_WarfareTargetID;

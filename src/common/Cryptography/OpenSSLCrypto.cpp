@@ -23,6 +23,12 @@ OSSL_PROVIDER* LegacyProvider;
 
 void OpenSSLCrypto::threadsSetup([[maybe_unused]] boost::filesystem::path const& providerModulePath)
 {
+
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+    OSSL_PROVIDER_load(nullptr, "legacy");
+    OSSL_PROVIDER_load(nullptr, "default");
+#endif
+
 #ifdef VALGRIND
     ValgrindRandomSetup();
 #endif

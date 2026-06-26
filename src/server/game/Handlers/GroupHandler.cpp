@@ -67,7 +67,15 @@ void WorldSession::HandlePartyInviteOpcode(WorldPackets::Party::PartyInviteClien
     // no player
     if (!player)
     {
+        // ================== 修改代码开始 ==================
+        // 尝试去机器人池子里唤醒这个假在线的名字
+        sPlayerBotMgr->AllPlayerBotRandomLogin(packet.TargetName.c_str());
+        
         SendPartyResult(PARTY_OP_INVITE, packet.TargetName, ERR_BAD_PLAYER_NAME_S);
+        
+        // 发送个黄字提示，告诉自己机器人正在上线
+        // ChatHandler(GetPlayer()->GetSession()).PSendSysMessage("正在尝试唤醒 [%s]，由于在冷启动，请稍等2秒后再邀请一次！", packet.TargetName.c_str());
+        // ================== 修改代码结束 ==================
         return;
     }
 

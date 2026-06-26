@@ -1,4 +1,4 @@
-
+ï»¿
 #include "ScriptMgr.h"
 #include "Cell.h"
 #include "CellImpl.h"
@@ -33,8 +33,8 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON         = "Llévame a la zona de escala de la feria.";
-                BOX_TEXT              = "Viajar a la zona de escala de la feria te costará:";
+                GOSSIP_BUTTON         = "Ll vame a la zona de escala de la feria.";
+                BOX_TEXT              = "Viajar a la zona de escala de la feria te costar :";
                 break;
             default:
                 GOSSIP_BUTTON         = "Take me to the faire staging area.";
@@ -142,11 +142,11 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON_1         = "¿Guía del aventurero de la Luna Negra?";
-                GOSSIP_BUTTON_2         = "¿Qué puedo comprar?";
-                GOSSIP_BUTTON_3         = "¿Vales para la Feria de la Luna Negra?";
-                GOSSIP_BUTTON_4         = "¿Cartas de la Luna Negra?";
-                GOSSIP_BUTTON_5         = "¿Atracciones?";
+                GOSSIP_BUTTON_1         = " Gu a del aventurero de la Luna Negra?";
+                GOSSIP_BUTTON_2         = " Qu  puedo comprar?";
+                GOSSIP_BUTTON_3         = " Vales para la Feria de la Luna Negra?";
+                GOSSIP_BUTTON_4         = " Cartas de la Luna Negra?";
+                GOSSIP_BUTTON_5         = " Atracciones?";
                 break;
             default:
                 GOSSIP_BUTTON_1         = "Darkmoon Adventurer's Guide?";
@@ -187,19 +187,19 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON_1         = "¿Guía del aventurero de la Luna Negra?";
-                GOSSIP_BUTTON_2         = "¿Qué puedo comprar?";
-                GOSSIP_BUTTON_3         = "¿Vales para la Feria de la Luna Negra?";
-                GOSSIP_BUTTON_4         = "¿Cartas de la Luna Negra?";
-                GOSSIP_BUTTON_5         = "¿Atracciones?";
-                GOSSIP_BUTTON_6         = "¿Me puedes dar una guía del aventurero de la Luna Negra?";
-                GOSSIP_BUTTON_7         = "Cuéntame más.";
-                GOSSIP_BUTTON_8         = "¿Tonques?";
-                GOSSIP_BUTTON_9         = "¿Cañón?";
-                GOSSIP_BUTTON_10        = "¿Golpear al gnoll?";
-                GOSSIP_BUTTON_11        = "¿Lanzamiento de anillos?";
-                GOSSIP_BUTTON_12        = "¿Galería de tiro?";
-                GOSSIP_BUTTON_13        = "¿Clarividente?";
+                GOSSIP_BUTTON_1         = " Gu a del aventurero de la Luna Negra?";
+                GOSSIP_BUTTON_2         = " Qu  puedo comprar?";
+                GOSSIP_BUTTON_3         = " Vales para la Feria de la Luna Negra?";
+                GOSSIP_BUTTON_4         = " Cartas de la Luna Negra?";
+                GOSSIP_BUTTON_5         = " Atracciones?";
+                GOSSIP_BUTTON_6         = " Me puedes dar una gu a del aventurero de la Luna Negra?";
+                GOSSIP_BUTTON_7         = "Cu ntame m s.";
+                GOSSIP_BUTTON_8         = " Tonques?";
+                GOSSIP_BUTTON_9         = " Ca  n?";
+                GOSSIP_BUTTON_10        = " Golpear al gnoll?";
+                GOSSIP_BUTTON_11        = " Lanzamiento de anillos?";
+                GOSSIP_BUTTON_12        = " Galer a de tiro?";
+                GOSSIP_BUTTON_13        = " Clarividente?";
                 break;
             default:
                 GOSSIP_BUTTON_1         = "Darkmoon Adventurer's Guide?";
@@ -544,8 +544,8 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON_1         = "¿Cómo puedo jugar a Golpea al gnoll?";
-                GOSSIP_BUTTON_2         = "¡Listo para aporrear! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
+                GOSSIP_BUTTON_1         = " C mo puedo jugar a Golpea al gnoll?";
+                GOSSIP_BUTTON_2         = " Listo para aporrear! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
                 break;
             default:
                 GOSSIP_BUTTON_1         = "How do I play Whack-a-gnoll?";
@@ -572,8 +572,8 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON_1         = "¿Cómo puedo jugar a Golpea al gnoll?";
-                GOSSIP_BUTTON_2         = "¡Listo para aporrear! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
+                GOSSIP_BUTTON_1         = " C mo puedo jugar a Golpea al gnoll?";
+                GOSSIP_BUTTON_2         = " Listo para aporrear! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
                 GOSSIP_BUTTON_3         = "Comprendo.";
                 break;
             default:
@@ -707,8 +707,8 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON_1         = "¿Cómo se usa el cañón?";
-                GOSSIP_BUTTON_2         = "¡Lánzame! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
+                GOSSIP_BUTTON_1         = " C mo se usa el ca  n?";
+                GOSSIP_BUTTON_2         = " L nzame! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
                 break;
             default:
                 GOSSIP_BUTTON_1         = "How do I use the cannon?";
@@ -735,12 +735,12 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON_1         = "¿Cómo uso el cañón?";
-                GOSSIP_BUTTON_2         = "¡Lánzame! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
+                GOSSIP_BUTTON_1         = " C mo uso el ca  n?";
+                GOSSIP_BUTTON_2         = " L nzame! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
                 GOSSIP_BUTTON_3         = "Comprendo.";
                 break;
             default:
-                GOSSIP_BUTTON_1         = "¿How do I use the cannon?";
+                GOSSIP_BUTTON_1         = " How do I use the cannon?";
                 GOSSIP_BUTTON_2         = "Launch me! |cFF0000FF(Darkmoon Game Token)|r";
                 GOSSIP_BUTTON_3         = "Alright.";
                 break;
@@ -889,8 +889,8 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON         = "Teletranspórtame al cañón.";
-                BOX_TEXT              = "El teletransporte al cañón te costará:";
+                GOSSIP_BUTTON         = "Teletransp rtame al ca  n.";
+                BOX_TEXT              = "El teletransporte al ca  n te costar :";
                 break;
             default:
                 GOSSIP_BUTTON         = "Teleport me to the cannon.";
@@ -1169,8 +1169,8 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON_1         = "¿Cómo puedo jugar a la batalla de tonques?";
-                GOSSIP_BUTTON_2         = "¡Estoy listo para jugar! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
+                GOSSIP_BUTTON_1         = " C mo puedo jugar a la batalla de tonques?";
+                GOSSIP_BUTTON_2         = " Estoy listo para jugar! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
                 break;
             default:
                 GOSSIP_BUTTON_1         = "How do I play the Tonk Challenge?";
@@ -1197,8 +1197,8 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON_1         = "¿Cómo puedo jugar a la batalla de tonques?";
-                GOSSIP_BUTTON_2         = "¡Estoy listo para jugar! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
+                GOSSIP_BUTTON_1         = " C mo puedo jugar a la batalla de tonques?";
+                GOSSIP_BUTTON_2         = " Estoy listo para jugar! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
                 GOSSIP_BUTTON_3         = "Comprendo.";
                 break;
             default:
@@ -1274,8 +1274,8 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON_1         = "¿Cómo puedo jugar al lanzamiento de anillo?";
-                GOSSIP_BUTTON_2         = "¡Estoy listo para jugar! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
+                GOSSIP_BUTTON_1         = " C mo puedo jugar al lanzamiento de anillo?";
+                GOSSIP_BUTTON_2         = " Estoy listo para jugar! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
                 break;
             default:
                 GOSSIP_BUTTON_1         = "How do I play the Ring Toss?";
@@ -1302,8 +1302,8 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON_1         = "¿Cómo puedo jugar al lanzamiento de anillo?";
-                GOSSIP_BUTTON_2         = "¡Estoy listo para jugar! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
+                GOSSIP_BUTTON_1         = " C mo puedo jugar al lanzamiento de anillo?";
+                GOSSIP_BUTTON_2         = " Estoy listo para jugar! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
                 GOSSIP_BUTTON_3         = "Comprendo.";
                 break;
             default:
@@ -1454,8 +1454,8 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON_1         = "¿Cómo funciona la galería de tiro?";
-                GOSSIP_BUTTON_2         = "¡Estoy listo para disparar! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
+                GOSSIP_BUTTON_1         = " C mo funciona la galer a de tiro?";
+                GOSSIP_BUTTON_2         = " Estoy listo para disparar! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
                 break;
             default:
                 GOSSIP_BUTTON_1         = "How does the Shooting Gallery work?";
@@ -1482,8 +1482,8 @@ public:
         {
             case LOCALE_esES:
             case LOCALE_esMX:
-                GOSSIP_BUTTON_1         = "¿Cómo funciona la galería de tiro?";
-                GOSSIP_BUTTON_2         = "¡Estoy listo para disparar! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
+                GOSSIP_BUTTON_1         = " C mo funciona la galer a de tiro?";
+                GOSSIP_BUTTON_2         = " Estoy listo para disparar! |cFF0000FF(Ficha de juego de la Luna Negra)|r";
                 GOSSIP_BUTTON_3         = "Comprendo.";
                 break;
             default:
@@ -1975,7 +1975,7 @@ class spell_ring_toss : public SpellScriptLoader
 };
 
 //
-// BRUTAL HACK - Puesto hasta que se arregle el achievementcriteria, que me he peleado con él y no consigo arreglarlo.
+// BRUTAL HACK - Puesto hasta que se arregle el achievementcriteria, que me he peleado con  l y no consigo arreglarlo.
 //
 
 class item_darkmoon_faire_fireworks : public ItemScript

@@ -1,0 +1,54 @@
+{
+  "configurations": [
+    {
+      "name": "x64-RelWithDebInfo",
+      "generator": "Visual Studio 17 2022 Win64",
+      "configurationType": "RelWithDebInfo",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "-m -v:minimal",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "MYSQL_INCLUDE_DIR",
+          "value": "L:/DC735/mysql-8.4.2-winx64/include",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_LIBRARY",
+          "value": "L:/DC735/mysql-8.4.2-winx64/lib/libmysql.lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "BOOST_ROOT",
+          "value": "C:/local/boost_1_84_0", 
+          "type": "PATH"
+        },
+        {
+          "name": "OPENSSL_ROOT_DIR",
+          "value": "C:/Program Files/OpenSSL-Win64",
+          "type": "PATH"
+        },
+        {
+          "name": "TOOLS_BUILD",
+          "value": "ON",
+          "type": "BOOL"
+        },
+        
+        {
+          "name": "Boost_DIR",
+          "value": "C:/local/boost_1_84_0/lib64-msvc-14.3/cmake/Boost-1.84.0",
+          "type": "PATH"
+         },
+
+        {
+          "name": "SCRIPTS",
+          "value": "static",
+          "type": "STRING"
+        }
+      ]
+    }
+  ]
+}

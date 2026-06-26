@@ -18,7 +18,9 @@
 /** \file
     \ingroup world
 */
-
+#include "ElunaConfig.h"
+#include "LuaEngine.h"
+#include "ElunaLoader.h"
 #include "World.h"
 #include "BattlePetDataStore.h"
 #include "WildBattlePet.h"
@@ -2678,6 +2680,17 @@ void World::SetInitialWorldSettings()
     TC_METRIC_EVENT("events", "World initialized", "World initialized in " + std::to_string(startupDuration / 60000) + " minutes " + std::to_string((startupDuration % 60000) / 1000) + " seconds");
 
     sLog->SetRealmId(realm.Id.Realm, realm.Name);
+    // ==========================================
+    // ?? Eluna Lua ???
+    TC_LOG_INFO("server.loading", "Igniting Eluna Lua Engine...");
+    sElunaConfig->Initialize();
+    sEluna = new Eluna(nullptr);
+    sElunaLoader->ReloadElunaForMap(RELOAD_ALL_STATES);
+    // ==========================================
+    // [?????]????????????????????
+    TC_LOG_INFO("server.loading", "Auto-Starting Playerbots...");
+    sWorld->QueueCliCommand(new CliCommandHolder(nullptr, "pbot loginall", nullptr, nullptr));
+    // ==========================================
 }
 
 void World::ResetTimeDiffRecord()
@@ -3000,6 +3013,11 @@ void World::Update(uint32 diff)
     // Stats logger update
     sMetric->Update();
     TC_METRIC_VALUE("update_time_diff", diff);
+    // ===================================
+    // [Eluna 心脏跳动] 让 Lua 引擎的时间流动起来！
+    if (sEluna)
+        sEluna->UpdateEluna(diff);
+   // ===================================
 }
 
 void World::ForceGameEventUpdate()

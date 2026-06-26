@@ -162,10 +162,20 @@ bool WorldSession::SendLearnNewTaxiNode(Creature* unit)
 
 void WorldSession::SendDiscoverNewTaxiNode(uint32 nodeid)
 {
-    if (GetPlayer()->m_taxi.SetTaximaskNode(nodeid))
-        SendPacket(WorldPackets::Taxi::NewTaxiPath().Write());
-}
+    Player* player = GetPlayer();
+    if (!player)
+        return;
 
+    // 先让玩家/机器人正常记录这个飞行点数据
+    if (player->m_taxi.SetTaximaskNode(nodeid))
+    {
+        // 关键防爆盾：只有当它不是机器人时，才发送网络封包给客户端
+        if (!player->IsPlayerBot())
+        {
+            SendPacket(WorldPackets::Taxi::NewTaxiPath().Write());
+        }
+    }
+}
 void WorldSession::HandleActivateTaxiOpcode(WorldPackets::Taxi::ActivateTaxi& activateTaxi)
 {
     Creature* unit = GetPlayer()->GetNPCIfCanInteractWith(activateTaxi.Vendor, UNIT_NPC_FLAG_FLIGHTMASTER);

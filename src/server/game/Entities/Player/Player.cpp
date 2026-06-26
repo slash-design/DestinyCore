@@ -133,6 +133,7 @@
 #include "PlayerBotSession.h"
 #include "BotAITool.h"
 
+
 #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
 #define SHOP_UPDATE_INTERVAL (30*IN_MILLISECONDS)
 
@@ -18671,20 +18672,21 @@ bool Player::LoadFromDB(ObjectGuid guid, CharacterDatabaseQueryHolder const& hol
     SetUInt32Value(PLAYER_FLAGS_EX, fields[21].GetUInt32());
     SetInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX, fields[54].GetUInt32());
 
-    if (!ValidateAppearance(
-        fields[3].GetUInt8(), // race
-        fields[4].GetUInt8(), // class
-        gender,
-        GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_STYLE_ID),
-        GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID),
-        GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_FACE_ID),
-        GetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_FACIAL_STYLE),
-        GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID),
-        customDisplay))
-    {
-        TC_LOG_ERROR("entities.player", "Player::LoadFromDB: Player (%s) has wrong Appearance values (Hair/Skin/Color), can't load.", guid.ToString().c_str());
-        return false;
-    }
+  //  if (!ValidateAppearance(
+      //  fields[3].GetUInt8(), // race
+     //   fields[4].GetUInt8(), // class
+     //   gender,
+     //   GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_STYLE_ID),
+     //   GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID),
+     //   GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_FACE_ID),
+    //    GetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_FACIAL_STYLE),
+      //  GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID),
+       // customDisplay))
+   // {
+        //TC_LOG_ERROR("entities.player", "Player::LoadFromDB: Player (%s) has wrong Appearance values (Hair/Skin/Color), can't load.", //guid.ToString().c_str());
+        //return false;
+        //========================================================================
+    //}
 
     // set which actionbars the client has active - DO NOT REMOVE EVER AGAIN (can be changed though, if it does change fieldwise)
     SetByteValue(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_ACTION_BAR_TOGGLES, fields[68].GetUInt8());
@@ -21548,9 +21550,28 @@ void Player::SaveToDB(bool create /*=false*/)
     _SaveGlyphs(trans);
     _SaveTalents(trans);
     _SaveSpells(trans);
-    GetSpellHistory()->SaveToDB<Player>(trans);
+
+
+
+    // 【减负优化】：如果是机器人，绝不保存法术冷却和历史记录，彻底根除进副本死锁！
+    if (!IsPlayerBot())
+    {
+        GetSpellHistory()->SaveToDB<Player>(trans);
+    }
+
+
     _SaveActions(trans);
-    _SaveAuras(trans);
+
+
+
+
+    // 【极致减负】：机器人不需要保存身上的 Buff 和 Debuff
+    if (!IsPlayerBot())
+    {
+        _SaveAuras(trans);
+    }
+
+
     _SaveSkills(trans);
     m_achievementMgr->SaveToDB(trans);
     m_reputationMgr->SaveToDB(trans);
@@ -28788,6 +28809,12 @@ void Player::_LoadPvpTalents(PreparedQueryResult result)
 
 void Player::_SaveTalents(CharacterDatabaseTransaction& trans)
 {
+
+    // 【减负优化】：如果是机器人，直接跳过天赋保存，根除死锁！
+    if (IsPlayerBot())
+        return;
+
+
     CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHAR_TALENT);
     stmt->setUInt64(0, GetGUID().GetCounter());
     trans->Append(stmt);

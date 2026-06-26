@@ -65,6 +65,9 @@
 #include "BotMovementAI.h"
 #include <Config.h>
 
+#include "LuaEngine.h"
+extern class Eluna* sEluna;
+
 class LoginQueryHolder : public CharacterDatabaseQueryHolder
 {
     private:
@@ -1184,6 +1187,19 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder const& holder)
     _player->RemoveOnLogAuras();
 
     sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
+   // ===================================
+
+
+       if (sEluna)
+    {
+                sEluna->OnLogin(pCurrChar);
+        
+    }
+    else
+    {
+        printf("[C++ 物理探针] 致命异常：sEluna 指针为 NULL！大脑根本没连上这条神经！\n");
+    }
+
 
     TC_METRIC_EVENT("player_events", "Login", pCurrChar->GetName());
 

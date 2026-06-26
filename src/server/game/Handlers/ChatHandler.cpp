@@ -39,6 +39,7 @@
 #include "Util.h"
 #include "World.h"
 #include "WorldPacket.h"
+#include "LuaEngine/LuaEngine.h"
 
 void WorldSession::HandleChatMessageOpcode(WorldPackets::Chat::ChatMessage& chatMessage)
 {
@@ -94,16 +95,26 @@ void WorldSession::HandleChatMessageEmoteOpcode(WorldPackets::Chat::ChatMessageE
 }
 
 void WorldSession::HandleChatMessage(ChatMsg type, uint32 lang, std::string msg, std::string target /*= ""*/)
+
 {
+
     Player* sender = GetPlayer();
 
-    if (lang == LANG_UNIVERSAL && type != CHAT_MSG_EMOTE)
-    {
-        TC_LOG_ERROR("entities.player.cheat", "CMSG_MESSAGECHAT: Possible hacking-attempt: %s tried to send a message in universal language", GetPlayerInfo().c_str());
-        SendNotification(LANG_UNKNOWN_LANGUAGE);
-        return;
-    }
 
+
+
+
+    if (lang == LANG_UNIVERSAL && type != CHAT_MSG_EMOTE)
+
+    {
+
+        TC_LOG_ERROR("entities.player.cheat", "CMSG_MESSAGECHAT: Possible hacking-attempt: %s tried to send a message in universal language", GetPlayerInfo().c_str());
+
+        SendNotification(LANG_UNKNOWN_LANGUAGE);
+
+        return;
+
+    }
     // prevent talking at unknown language (cheating)
     LanguageDesc const* langDesc = GetLanguageDescByID(lang);
     if (!langDesc)
@@ -184,6 +195,25 @@ void WorldSession::HandleChatMessage(ChatMsg type, uint32 lang, std::string msg,
     if (msg.empty())
         return;
 
+
+    // ==========================================
+    // Fix: Dispatch Chat events to Eluna Engine
+    // ==========================================
+    if (type == CHAT_MSG_SAY || type == CHAT_MSG_YELL || type == CHAT_MSG_WHISPER || type == CHAT_MSG_EMOTE)
+    {
+        if (sEluna) 
+        {
+            sEluna->OnChat(sender, (uint32)type, (uint32)lang, msg);
+            
+            // If Lua script returns false, Eluna clears the message.
+            if (msg.empty())
+                return;
+        }
+    }
+    // ==========================================
+
+
+
     if (ChatHandler(this).ParseCommands(msg.c_str()))
         return;
 
@@ -201,6 +231,9 @@ void WorldSession::HandleChatMessage(ChatMsg type, uint32 lang, std::string msg,
 
         return;
     }
+
+    // ========== 
+
 
     switch (type)
     {
@@ -450,6 +483,13 @@ void WorldSession::HandleChatMessage(ChatMsg type, uint32 lang, std::string msg,
             WorldPackets::Chat::Chat packet;
             packet.Initialize(ChatMsg(type), Language(lang), sender, nullptr, msg);
             group->BroadcastPacket(packet.Write(), false);
+
+            // ================== 新增：打通团队频道机器人指令 ==================
+            // 团队人多眼杂，建议这里只允许“团长” (RAID_LEADER) 发号施令
+            if (type == CHAT_MSG_RAID_LEADER)
+                group->ProcessGroupBotCommand(GetPlayer(), msg);
+            // =================================================================
+
             break;
         }
         case CHAT_MSG_RAID_WARNING:
@@ -498,6 +538,14 @@ void WorldSession::HandleChatMessage(ChatMsg type, uint32 lang, std::string msg,
             WorldPackets::Chat::Chat packet;
             packet.Initialize(ChatMsg(type), Language(lang), sender, nullptr, msg);
             group->BroadcastPacket(packet.Write(), false);
+
+            // ================== 新增：打通副本频道机器人指令 ==================
+            // 这里为了方便，我们允许副本内的任何玩家（不仅仅是队长）都能指挥机器人
+            if (type == CHAT_MSG_INSTANCE_CHAT || type == CHAT_MSG_INSTANCE_CHAT_LEADER)
+                group->ProcessGroupBotCommand(GetPlayer(), msg);
+            // =================================================================
+
+
             break;
         }
         default:

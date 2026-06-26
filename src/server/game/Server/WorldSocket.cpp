@@ -639,6 +639,15 @@ struct AccountInfo
 
 void WorldSocket::HandleAuthSession(std::shared_ptr<WorldPackets::Auth::AuthSession> authSession)
 {
+
+
+    // ================= 真实玩家登录雷达：阶段 1 =================
+    TC_LOG_ERROR("network", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+    TC_LOG_ERROR("network", "[真实玩家雷达] 阶段1：收到真实玩家的握手请求！来源IP: %s", GetRemoteIpAddress().to_string().c_str());
+    TC_LOG_ERROR("network", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+    // ============================================================
+
+
     // Get the account information from the auth database
     LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_INFO_BY_NAME);
     stmt->setInt32(0, int32(realm.Id.Realm));
@@ -668,6 +677,13 @@ void WorldSocket::HandleAuthSessionCallback(std::shared_ptr<WorldPackets::Auth::
     }
 
     AccountInfo account(result->Fetch());
+
+     
+    // ================= 真实玩家登录雷达：阶段 2 =================
+    TC_LOG_ERROR("network", "[真实玩家雷达] 阶段2：Auth数据库验证秒回！真实账号名: %s", account.BattleNet.Name.c_str());
+    // ============================================================
+
+
 
     // For hook purposes, we get Remoteaddress at this point.
     std::string address = GetRemoteIpAddress().to_string();

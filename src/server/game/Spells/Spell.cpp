@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include "LuaEngine/LuaEngine.h"
 #include "Spell.h"
 #include "Battlefield.h"
 #include "BattlefieldMgr.h"
@@ -3161,6 +3161,25 @@ bool Spell::UpdateChanneledTargetList()
 
 SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggeredByAura)
 {
+    // ==========================================
+    // Custom: Hearthstone (8690) interception via Eluna OnChat
+    // ==========================================
+    if (m_spellInfo->Id == 8690 && m_caster->GetTypeId() == TYPEID_PLAYER)
+    {
+        // Exclude return casts triggered by Lua
+        if (!(_triggeredCastFlags & TRIGGERED_IGNORE_POWER_AND_REAGENT_COST))
+        {
+            if (sEluna)
+            {
+                std::string secretMsg = "__HEARTHSTONE_START__";
+                sEluna->OnChat(m_caster->ToPlayer(), 0, 0, secretMsg);
+            }
+        }
+    }
+    // ==========================================
+
+
+
     if (m_CastItem)
     {
         m_castItemGUID = m_CastItem->GetGUID();
@@ -3310,7 +3329,7 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
     // exception are only channeled spells that have no casttime and SPELL_ATTR5_CAN_CHANNEL_WHEN_MOVING
     // (even if they are interrupted on moving, spells with almost immediate effect get to have their effect processed before movement interrupter kicks in)
     // don't cancel spells which are affected by a SPELL_AURA_CAST_WHILE_WALKING effect
-    if (((m_spellInfo->IsChanneled() || m_casttime) && m_caster->GetTypeId() == TYPEID_PLAYER && !(m_caster->IsCharmed() && m_caster->GetCharmerGUID().IsCreature()) && m_caster->isMoving() &&
+    if (((m_spellInfo->IsChanneled() || m_casttime) && m_caster->GetTypeId() == TYPEID_PLAYER &&!m_caster->IsPlayerBot() && !(m_caster->IsCharmed() && m_caster->GetCharmerGUID().IsCreature()) && m_caster->isMoving() &&
         m_spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_MOVEMENT) && !m_caster->HasAuraTypeWithAffectMask(SPELL_AURA_CAST_WHILE_WALKING, m_spellInfo))
     {
         // 1. Has casttime, 2. Or doesn't have flag to allow movement during channel
@@ -3437,20 +3456,38 @@ void Spell::cast(bool skipCheck)
 
     if (Player* playerCaster = m_caster->ToPlayer())
     {
-        // now that we've done the basic check, now run the scripts
-        // should be done before the spell is actually executed
+        // 1. 原本的脚本管理器调用（官方原版自带，必须保留）
         sScriptMgr->OnPlayerSpellCast(playerCaster, this, skipCheck);
 
-        // As of 3.0.2 pets begin attacking their owner's target immediately
-        // Let any pets know we've attacked something. Check DmgClass for harmful spells only
-        // This prevents spells such as Hunter's Mark from triggering pet attack
+        // ==========================================
+        // 2. [Eluna 物理并联] 全局修复 Event 5 (法术施放事件)
+        // 彻底接管所有法术！如果 Lua 返回 false，立刻体面地掐断读条！
+        // ==========================================
+#if defined(ELUNA)
+        if (sEluna)
+        {
+            // 这里没有写死 8690，这意味着以后你能用 Lua 拦截任何职业的任何技能！
+            if (!sEluna->OnSpellCast(playerCaster, this, skipCheck))
+            {
+                SendCastResult(SPELL_FAILED_INTERRUPTED); // 通知客户端法术中断
+                finish(false);                            // 清理服务端法术状态
+                return;                                   // 彻底截杀！
+            }
+        }
+#endif
+        // ==========================================
+
+        // 3. As of 3.0.2 pets begin attacking their owner's target immediately
+        // (下面是官方自带的宠物攻击代码，保持原样)
         if (this->GetSpellInfo()->DmgClass != SPELL_DAMAGE_CLASS_NONE)
             if (Pet* playerPet = playerCaster->GetPet())
                 if (playerPet->IsAlive() && playerPet->isControlled() && (m_targets.GetTargetMask() & TARGET_FLAG_UNIT))
                     playerPet->AI()->OwnerAttacked(m_targets.GetUnitTarget());
     }
 
+
     SetExecutedCurrently(true);
+    
 
     if (!(_triggeredCastFlags & TRIGGERED_IGNORE_SET_FACING))
         if (m_caster->GetTypeId() == TYPEID_UNIT && m_targets.GetObjectTarget() && m_caster != m_targets.GetObjectTarget())

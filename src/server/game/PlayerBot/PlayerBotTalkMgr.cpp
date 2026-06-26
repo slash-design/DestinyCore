@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * This file is part of the DestinyCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -216,7 +216,7 @@ bool PlayerBotTalkMgr::IsValidStoryStep(uint32 id, uint32 step)
 std::string PlayerBotTalkMgr::GetDefaultChannelName()
 {
 	std::string defaultChannelName;
-	consoleToUtf8(std::string(" ¿ΩÁ∆µµ¿"), defaultChannelName);
+	consoleToUtf8(std::string("    ∆µ  "), defaultChannelName);
 	return defaultChannelName;
 }
 

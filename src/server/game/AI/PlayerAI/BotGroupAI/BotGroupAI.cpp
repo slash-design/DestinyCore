@@ -1,4 +1,4 @@
-/*
+﻿/*
  * This file is part of the DestinyCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -250,29 +250,84 @@ bool BotGroupAI::CanReciveCommand(std::string& cmd, std::string& param)
 
 void BotGroupAI::ProcessSummonCommand()
 {
-	if (!m_MasterPlayer)
-		return;
-	m_ForceFlee = false;
-	m_StopFollow = false;
-	m_SeduceTarget = ObjectGuid::Empty;
-	me->SetSelection(ObjectGuid::Empty);
-	if (m_Teleporting.CanMovement() && !m_MasterPlayer->IsFlying())
-		m_Teleporting.SetTeleport(m_MasterPlayer, 0);
+    if (!m_MasterPlayer)
+        return;
+
+    // ================== 核心功能 1：脱战自动复活 ==================
+    // 要求：你（m_MasterPlayer）不在战斗中，且机器人（me）是死亡状态
+    // 注意：如果是团灭，你释放灵魂站起来脱战后，按一下召唤，机器人就会集体复活
+    if (!m_MasterPlayer->IsInCombat() && !me->IsAlive()) 
+    {
+        // 满血满蓝复活 (1.0f 代表 100% 状态)
+        me->ResurrectPlayer(1.0f, false);
+        // 生成一具白骨，防止原地留下尸体模型引发视觉 Bug
+        me->SpawnCorpseBones();
+        // 强制保存状态，防止回档
+        me->SaveToDB(); 
+    }
+    // ==============================================================
+
+    // ================== 核心功能 2：把召唤变成“终极强刷按钮” ==================
+    // 删掉专精为0的判断！只要你主动点击召唤它，不管它处于什么状态，无条件给它洗髓伐骨！
+    if (me->getLevel() >= 10)
+    {
+        if (PlayerBotSession* pBotSession = dynamic_cast<PlayerBotSession*>(me->GetSession()))
+        {
+            uint32 curTType = me->FindTalentType();
+            uint32 newTType = curTType;
+            while (newTType == curTType) newTType = urand(0, 2);
+            
+            BotGlobleSchedule schedule2(BotGlobleScheduleType::BGSType_Settting, 0);
+            schedule2.parameter1 = me->getLevel();
+            schedule2.parameter2 = me->getLevel();
+            schedule2.parameter3 = newTType + 1;
+            
+            // 强行推入重置日程
+            pBotSession->PushScheduleToQueue(schedule2);
+        }
+    }
+    // ====================================================================
+
+    // 原有的传送逻辑
+    m_ForceFlee = false;
+    m_StopFollow = false;
+    m_SeduceTarget = ObjectGuid::Empty;
+    me->SetSelection(ObjectGuid::Empty);
+    
+    // 因为前面已经执行了复活，这里的 CanMovement() 判定就能顺利通过并执行传送了
+    if (m_Teleporting.CanMovement() && !m_MasterPlayer->IsFlying())
+        m_Teleporting.SetTeleport(m_MasterPlayer, 0);
 }
+
+
 
 void BotGroupAI::ProcessAttackCommand()
 {
-	Unit* pMasterTarget = m_MasterPlayer->GetSelectedUnit();
-	if (!pMasterTarget || !pMasterTarget->IsAlive())
-		return;
-	if (!me->IsValidAttackTarget(pMasterTarget))
-		return;
-	me->SetSelection(pMasterTarget->GetGUID());
-	m_ForceFlee = false;
-	m_StopFollow = false;
-	m_SeduceTarget = ObjectGuid::Empty;
-}
+    Unit* pMasterTarget = m_MasterPlayer->GetSelectedUnit();
+    if (!pMasterTarget || !pMasterTarget->IsAlive())
+        return;
+    if (!me->IsValidAttackTarget(pMasterTarget))
+        return;
+        
+    me->SetSelection(pMasterTarget->GetGUID());               // 原有代码：选中目标
 
+    // ================== 新增代码开始 ==================
+    // 1. 强制进入近战/施法攻击状态
+    me->Attack(pMasterTarget, true); 
+    
+    // 2. 清除当前的移动状态（打断跟随发呆）
+    if (me->GetMotionMaster())
+    {
+        me->GetMotionMaster()->Clear(); 
+        // 3. 启动底层的追击寻路系统，让机器人跑向目标
+        me->GetMotionMaster()->MoveChase(pMasterTarget); 
+    }
+    // ================== 新增代码结束 ==================
+
+    m_ForceFlee = false;
+    m_StopFollow = false;
+    m_SeduceTarget = ObjectGuid::Empty;
+}
 void BotGroupAI::ProcessFleeCommand()
 {
 	me->SetSelection(ObjectGuid::Empty);
@@ -282,10 +337,37 @@ void BotGroupAI::ProcessFleeCommand()
 
 void BotGroupAI::ProcessStopCommand()
 {
-	me->SetSelection(ObjectGuid::Empty);
-	m_SeduceTarget = ObjectGuid::Empty;
-	m_StopFollow = true;
+    // 1. 状态加锁：锁住大脑，不准再思考跟随和逃跑
+    m_StopFollow = true;
+    m_ForceFlee = false;
+
+    // 2. 战斗打断：这一步能完美打断 Attack 的 MoveChase
+    me->AttackStop();
+    me->InterruptNonMeleeSpells(false);
+    me->SetSelection(ObjectGuid::Empty);
+
+    // ================== 核心黑科技：击碎跟随与逃跑引擎 ==================
+    if (me->GetMotionMaster())
+    {
+        // 先常规清理一下
+        me->GetMotionMaster()->Clear(); 
+        
+        // 【终极必杀技】：强行派发一个“走到自己当前脚下”的任务！
+        // 这会瞬间把底层的 MoveFollow 和 MoveFlee 引擎直接覆盖挤掉！
+        me->GetMotionMaster()->MovePoint(0, me->GetPositionX(), me->GetPositionY(), me->GetPositionZ());
+    }
+    
+    // 强制关闭位移状态
+    me->StopMoving();
+    // =====================================================================
+
+    // 3. 语音反馈
+    //me->Say("原地待命！", LANG_UNIVERSAL);
 }
+
+
+
+
 
 void BotGroupAI::ProcessSetting()
 {
@@ -300,16 +382,31 @@ void BotGroupAI::ProcessSetting()
 		return;
 	if (pSession->HasSchedules())
 		return;
+		
 	BotGlobleSchedule schedule2(BotGlobleScheduleType::BGSType_Settting, 0);
-	schedule2.parameter1 = m_MasterPlayer->getLevel();
-	schedule2.parameter2 = m_MasterPlayer->getLevel();
+
+	// ================== 修改代码开始 ==================
+	// 根据配置文件决定重置时使用的等级
+	if (sConfigMgr->GetBoolDefault("PlayerBot.SyncLevelWithGroup", false))
+	{
+		// 如果开启了同步，使用队长的等级
+		schedule2.parameter1 = m_MasterPlayer->getLevel();
+		schedule2.parameter2 = m_MasterPlayer->getLevel();
+	}
+	else
+	{
+		// 如果关闭了同步，使用机器人自己的等级（保留真实等级）
+		schedule2.parameter1 = me->getLevel();
+		schedule2.parameter2 = me->getLevel();
+	}
+	// ================== 修改代码结束 ==================
+
 	schedule2.parameter3 = PlayerBotSetting::FindPlayerTalentType(me) + 1;
 	//schedule2.parameter4 = 1;
 	pSession->PushScheduleToQueue(schedule2);
 	me->ResetTalents(true);
 	m_HasReset = false;
 }
-
 void BotGroupAI::ProcessListEquip(Player* srcPlayer)
 {
 	std::lock_guard<std::mutex> lock(m_ItemLock);
@@ -393,7 +490,7 @@ void BotGroupAI::ProcessUpequip(Player* srcPlayer, std::string equipLink)
 		if (msg != EQUIP_ERR_OK)
 		{
 			std::string outString;
-			consoleToUtf8(std::string("ʧ��װ��"), outString);
+			consoleToUtf8(std::string("ʧ  װ  "), outString);
 			me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 			return;
 		}
@@ -407,7 +504,7 @@ void BotGroupAI::ProcessUpequip(Player* srcPlayer, std::string equipLink)
 		me->GetSession()->HandleAutoEquipItemOpcode(packet);
 	}
 	std::string outString;
-	consoleToUtf8(std::string("�ɹ�װ��"), outString);
+	consoleToUtf8(std::string(" ɹ װ  "), outString);
 	me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 }
 
@@ -446,19 +543,29 @@ void BotGroupAI::ProcessUnequip(Player* srcPlayer, std::string& equipLink)
 		if (msg != EQUIP_ERR_OK)
 		{
 			std::string outString;
-			consoleToUtf8(std::string("ȡ��ʧ��"), outString);
+			consoleToUtf8(std::string("ȡ  ʧ  "), outString);
 			me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 			return;
 		}
 		me->RemoveItem(255, slot, true);
 		me->StoreItem(dest, pItem, true);
 		std::string outString;
-		consoleToUtf8(std::string("�ɹ�ȡ��"), outString);
+		consoleToUtf8(std::string(" ɹ ȡ  "), outString);
 		me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 		return;
 	}
-	std::string outString;
-	consoleToUtf8(std::string("ȡ��ʧ��"), outString);
+	// ================== 多语言兼容性处理 ==================
+	// 获取发送命令的玩家的客户端语言
+	LocaleConstant loc = srcPlayer->GetSession()->GetSessionDbLocaleIndex();
+	
+	std::string outString = "Equip successful!"; // 官方仓库标准：默认英文
+	
+	// 如果识别到是简体中文 (zhCN) 或繁体中文 (zhTW) 客户端
+	if (loc == LOCALE_zhCN || loc == LOCALE_zhTW)
+	{
+		outString = "装备成功！"; 
+	}
+
 	me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 }
 
@@ -477,7 +584,7 @@ void BotGroupAI::ProcessDestroyItem(Player* srcPlayer, std::string& equipLink)
 		return;
 	BotUtility::FindItemFromAllBag(me, entry, true);
 	std::string outString;
-	consoleToUtf8(std::string("�ɹ�����"), outString);
+	consoleToUtf8(std::string(" ɹ     "), outString);
 	me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 }
 
@@ -495,7 +602,7 @@ void BotGroupAI::ProcessTradeItem(Player* srcPlayer, std::string& equipLink)
 	if (entry == 0)
 	{
 		std::string outString;
-		consoleToUtf8(std::string("��û���������"), outString);
+		consoleToUtf8(std::string("  û         "), outString);
 		me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 		return;
 	}
@@ -503,7 +610,7 @@ void BotGroupAI::ProcessTradeItem(Player* srcPlayer, std::string& equipLink)
 	if (!pItem)
 	{
 		std::string outString;
-		consoleToUtf8(std::string("��û���������"), outString);
+		consoleToUtf8(std::string("  û         "), outString);
 		me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 		return;
 	}
@@ -511,7 +618,7 @@ void BotGroupAI::ProcessTradeItem(Player* srcPlayer, std::string& equipLink)
 	if (!pTrade)
 	{
 		std::string outString;
-		consoleToUtf8(std::string("û�п�ʼ����"), outString);
+		consoleToUtf8(std::string("û п ʼ    "), outString);
 		me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 		return;
 	}
@@ -519,7 +626,7 @@ void BotGroupAI::ProcessTradeItem(Player* srcPlayer, std::string& equipLink)
 	if (!pTradePlayer)
 	{
 		std::string outString;
-		consoleToUtf8(std::string("û�п�ʼ����"), outString);
+		consoleToUtf8(std::string("û п ʼ    "), outString);
 		me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 		return;
 	}
@@ -532,27 +639,27 @@ void BotGroupAI::ProcessTradeItem(Player* srcPlayer, std::string& equipLink)
 	if (pTrade->HasItem(pItem->GetGUID()))
 	{
 		std::string outString;
-		consoleToUtf8(std::string("��������Ѿ�����ȥ��"), outString);
+		consoleToUtf8(std::string("        Ѿ     ȥ  "), outString);
 		me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 		return;
 	}
 	//if (!pItem->CanBeTraded(false, true))
 	//{
 	//	std::string outString;
-	//	consoleToUtf8(std::string("�޷������������"), outString);
+	//	consoleToUtf8(std::string(" ޷            "), outString);
 	//	me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 	//	return;
 	//}
 	if (pTrade->SetItemAtNullSlot(pItem, true))
 	{
 		std::string outString;
-		consoleToUtf8(std::string("����ȥ��"), outString);
+		consoleToUtf8(std::string("    ȥ  "), outString);
 		me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 	}
 	else
 	{
 		std::string outString;
-		consoleToUtf8(std::string("û���ٷŶ�����"), outString);
+		consoleToUtf8(std::string("û   ٷŶ     "), outString);
 		me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 	}
 }
@@ -578,12 +685,12 @@ void BotGroupAI::ProcessUseItem(Player* srcPlayer, std::string& equipLink)
 	if (!me->CastItemUseSpell(pItem, targets, ObjectGuid::Empty, 0))
 	{
 		std::string outString;
-		consoleToUtf8(std::string("ʧ��ʹ��"), outString);
+		consoleToUtf8(std::string("ʧ  ʹ  "), outString);
 		me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 		return;
 	}
 	std::string outString;
-	consoleToUtf8(std::string("�ɹ�ʹ��"), outString);
+	consoleToUtf8(std::string(" ɹ ʹ  "), outString);
 	me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 }
 
@@ -601,8 +708,18 @@ void BotGroupAI::ProcessTalent(Player* srcPlayer, std::string& talentText)
 	OnLevelUp(talentType);
 	m_HasReset = false;
 
-	std::string outString;
-	consoleToUtf8(std::string("�л��츳���"), outString);
+	// ================== 多语言兼容性处理 ==================
+	// 获取发送命令的玩家的客户端语言
+	LocaleConstant loc = srcPlayer->GetSession()->GetSessionDbLocaleIndex();
+	
+	std::string outString = "Talent switch successful!"; // 官方仓库标准：默认英文
+	
+	// 如果识别到是简体中文 (zhCN) 或繁体中文 (zhTW) 客户端
+	if (loc == LOCALE_zhCN || loc == LOCALE_zhTW)
+	{
+		outString = "天赋切换成功！"; 
+	}
+
 	me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 
 }
@@ -617,7 +734,7 @@ void BotGroupAI::ProcessSummonRiteSpell(Player* srcPlayer)
 	if (!m_MovetoUseGO.CanCastSummonRite())
 	{
 		std::string outString;
-		consoleToUtf8(std::string("Ŀǰ�޷���ʼ�ٻ���ʽ��"), outString);
+		consoleToUtf8(std::string("Ŀǰ ޷   ʼ ٻ   ʽ  "), outString);
 		me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 		return;
 	}
@@ -626,13 +743,13 @@ void BotGroupAI::ProcessSummonRiteSpell(Player* srcPlayer)
 	{
 		m_MovetoUseGO.StartSummonRite(castSpellID);
 		std::string outString;
-		consoleToUtf8(std::string("�ٻ���ʽ������"), outString);
+		consoleToUtf8(std::string(" ٻ   ʽ     "), outString);
 		me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 	}
 	else
 	{
 		std::string outString;
-		consoleToUtf8(std::string("Ŀǰ�޷���ʼ�ٻ���ʽ��"), outString);
+		consoleToUtf8(std::string("Ŀǰ ޷   ʼ ٻ   ʽ  "), outString);
 		me->Whisper(outString, Language::LANG_COMMON, srcPlayer);
 	}
 }
@@ -653,7 +770,27 @@ void BotGroupAI::ProcessBotCommand(Player* srcPlayer, std::string cmd)
 		me->SetSelection(ObjectGuid::Empty);
 		m_ForceFlee = false;
 		m_StopFollow = false;
+        
+        // ================== 核心升级：智能环形阵型 ==================
+        if (srcPlayer && me->GetMotionMaster())
+        {
+            me->GetMotionMaster()->Clear(false);
+            
+            // 1. 生成独一无二的跟随角度：
+            // 将 360 度 (2*PI) 分成 6 个方位。利用机器人的 GUID 取模，给每个人分配一个固定方位。
+            float followAngle = (me->GetGUID().GetCounter() % 6) * (M_PI / 3.0f);
+            
+            // 2. 生成错落有致的跟随距离：
+            // 不要全都挤在 2 码，让它们在 2码 到 4码 之间错开
+            float followDist = 2.0f + (me->GetGUID().GetCounter() % 3) * 1.0f;
+            
+            // 3. 执行个性化跟随
+            me->GetMotionMaster()->MoveFollow(srcPlayer, followDist, followAngle); 
+        }
+        // ============================================================
+        
 	}
+
 	else if (cmd == "flee")
 		ProcessFleeCommand();
 	else if (cmd == "stop")
@@ -816,7 +953,209 @@ void BotGroupAI::DamageEndure(Unit* attacker, uint32& damage, DamageEffectType d
 
 void BotGroupAI::UpdateAI(uint32 diff)
 {
-	m_UpdateTick -= diff;
+
+
+  // ==========================================================
+    // 【AI 导演系统：群演智能休眠与唤醒 (最终生产净化版)】
+    // ==========================================================
+    m_directorCheckTimer += diff;
+    
+    // 【核心修复 1】：重新声明雷达监控变量
+    float nearestDist = 9999.0f;
+    Player* nearestP = nullptr;
+
+    // 每 3 秒执行一次雷达扫描
+    if (m_directorCheckTimer >= 3000) 
+    {
+        // 【核心修复 2】：补回被漏掉的真人玩家扫描循环
+        Map::PlayerList const& players = me->GetMap()->GetPlayers();
+        for (Map::PlayerList::const_iterator itr = players.begin(); itr != players.end(); ++itr)
+        {
+            Player* p = itr->GetSource();
+            if (p && !p->IsPlayerBot() && p->IsAlive())
+            {
+                float d = p->GetDistance(me);
+                if (d < nearestDist)
+                {
+                    nearestDist = d;
+                    nearestP = p;
+                }
+            }
+        }
+    }
+
+    // 状态机逻辑判定
+    if (me->GetGroup())
+    {
+        // ================= 主演区 =================
+        // 特权：有队伍的机器人，强制解除休眠并站起！
+        if (m_directorCheckTimer >= 3000) 
+        {
+            if (m_isDirectorSleeping)
+            {
+                m_isDirectorSleeping = false;
+                me->SetStandState(UNIT_STAND_STATE_STAND);
+            }
+        }
+        // 注意：这里没有 return，主演必须往下执行原生打本和跟随逻辑！
+    }
+    else 
+    {
+        // ================= 群演区 =================
+        if (m_directorCheckTimer >= 3000) 
+        {
+            m_directorCheckTimer = 0; // 定时器在这里清零
+
+            // 【深度优化 1：主城超大视野，不轻易休眠】
+            // 只要身上有“休息状态”（在主城或旅店），就判定在城里
+            bool isInCity = me->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING);
+            // 城里 300 码内不休眠（基本覆盖半个主城），野外保持 65 码
+            float sleepRadius = isInCity ? 300.0f : 65.0f; 
+            float wakeRadius  = isInCity ? 150.0f : 50.0f;
+
+            if (m_isDirectorSleeping)
+            {
+                if (nearestP && nearestDist < wakeRadius)
+                {
+                    m_isDirectorSleeping = false;                    
+                    me->SetStandState(UNIT_STAND_STATE_STAND);       
+                    me->Dismount();         
+                    me->SetWalk(true);      
+                    me->GetMotionMaster()->Clear(); 
+                    TC_LOG_ERROR("server", ">>> [动作] [%s] 玩家靠近，起立激活！", me->GetName().c_str());
+                }
+            }
+            else 
+            {
+                if (!nearestP || nearestDist >= sleepRadius)
+                {
+                    m_isDirectorSleeping = true;                    
+                    me->StopMoving();                               
+                    me->GetMotionMaster()->Clear();                 
+                    me->SetStandState(UNIT_STAND_STATE_SIT);        
+                    TC_LOG_ERROR("server", ">>> [动作] [%s] 玩家离开区域，休眠！", me->GetName().c_str());
+                }
+                // 【深度优化 2：活着就要动！持续寻路逻辑】
+                // 只要醒着，且当前没有在移动，就立刻给自己找点事做，而不是永远发呆！
+                else if (!me->HasUnitState(UNIT_STATE_MOVING)) 
+                {
+                    me->SetWalk(true);
+
+                    // 70% 几率找功能 NPC，30% 几率随便溜达
+                    if (urand(1, 100) <= 70)
+                    {
+                        std::vector<Creature*> validNpcs;
+                        std::list<Creature*> creatureList;
+                        // 搜索半径拉大到 80 码！足够覆盖大半个力量谷
+                        me->GetCreatureListWithEntryInGrid(creatureList, 0, 80.0f); 
+
+                        for (auto c : creatureList)
+                        {
+                            if (c && c->IsAlive() && c->IsFriendlyTo(me) && !c->IsPet())
+                            {
+                                // 重点寻找：拍卖师、银行职员、商人
+                                if (c->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_AUCTIONEER | UNIT_NPC_FLAG_BANKER | UNIT_NPC_FLAG_VENDOR))
+                                {
+                                    validNpcs.push_back(c);
+                                }
+                            }
+                        }
+
+                        if (!validNpcs.empty())
+                        {
+                            // 【深度优化 3：随机挑选目标防扎堆】
+                            // 把它发现的所有 NPC 放进池子里随机挑一个，大家就不会全去同一个地方了！
+                            Creature* poiNpc = validNpcs[urand(0, validNpcs.size() - 1)];
+
+                            // 【深度优化 4：社交距离防堆叠】
+                            // 不再死板地站在 NPC 正前方。在 NPC 身边 1.5 到 4 码的 360 度范围内随机站位！
+                            float offsetAngle = frand(0.0f, 6.28f); 
+                            float offsetDist = frand(1.5f, 4.0f);   
+
+                            float nx = poiNpc->GetPositionX() + offsetDist * std::cos(offsetAngle);
+                            float ny = poiNpc->GetPositionY() + offsetDist * std::sin(offsetAngle);
+
+                            me->GetMotionMaster()->MovePoint(1, nx, ny, poiNpc->GetPositionZ());
+                            me->SetFacingToObject(poiNpc);
+                        }
+                        else
+                        {
+                            // 如果 80 码内连个商人都没找到，就在 60 码内大范围溜达
+                            me->GetMotionMaster()->MoveRandom(60.0f);
+                        }
+                    }
+                    else
+                    {
+                        // 30% 几率闲逛
+                        me->GetMotionMaster()->MoveRandom(80.0f);
+                    }
+                }
+            }
+        } // 结束 3000ms 定时器
+
+        // 【核弹级洛巴托米手术】：
+        // 只要你是野生的群演，每帧直接物理切断！绝对不允许继续往下执行任何原生大脑逻辑！
+        return; 
+    }
+    
+
+
+    
+    // 强行驻留锁 (兼容 Stop 命令)
+    if (m_isCommandStopped)
+    {
+        me->StopMoving();
+        return; 
+    }
+    // ==========================================================
+    
+
+
+
+
+
+
+  // ================== 核心修复：执行 Stop 原地待命 ==================
+    if (m_StopFollow)
+    {
+        // 哪怕在待命，如果怪物贴脸打它，它必须能原地还手！
+        if (me->IsInCombat() && me->GetVictim())
+        {
+            // 保持原地，但可以执行基础的攻击动作 (不要 return)
+        }
+        else
+        {
+            // 如果没进战斗，直接拦截所有动作！
+            // 坚决不准去寻找远处的怪，坚决不准去跟随队长！
+            return; 
+        }
+    }
+    // =================================================================
+
+
+
+    // ================== 核心 AI 升级：强制战斗状态同步（暴力护主） ==================
+    // 只要队长在战斗中，不管机器人自己在干嘛，强行把它拉进战斗并拔刀！
+    if (m_MasterPlayer && m_MasterPlayer->IsInCombat() && !me->IsInCombat())
+    {
+        Unit* masterVictim = m_MasterPlayer->GetVictim();
+        if (!masterVictim) // 如果队长没有目标，检查谁在打队长
+            masterVictim = m_MasterPlayer->getAttackerForHelper();
+
+        if (masterVictim && masterVictim->IsAlive() && me->IsValidAttackTarget(masterVictim))
+        {
+            me->SetInCombatWith(masterVictim);
+            me->Attack(masterVictim, true);
+            if (me->GetMotionMaster())
+                me->GetMotionMaster()->MoveChase(masterVictim);
+        }
+    }
+    // ==============================================================================
+        
+     
+
+
+        m_UpdateTick -= diff;
 	if (m_UpdateTick > 0)
 		return;
 	m_UpdateTick = BOTAI_UPDATE_TICK;
@@ -867,6 +1206,20 @@ void BotGroupAI::UpdateAI(uint32 diff)
 	if (me->IsAlive())
 	{
 		
+
+        // ================== 核心 AI 升级：全系能量无尽模式 ==================
+        // 解决 7.3.5 机器人因为缺少星界能量、漩涡值或蓝量导致的“施法动作被打断”问题
+        for (uint8 i = 0; i < MAX_POWERS; ++i)
+        {
+            if (me->GetMaxPower((Powers)i) > 0 && me->GetPower((Powers)i) < me->GetMaxPower((Powers)i))
+            {
+                me->SetPower((Powers)i, me->GetMaxPower((Powers)i));
+            }
+        }
+        // =======================================================================
+
+
+
 if (bothp==0)
 {
 int32 isok = sConfigMgr->GetIntDefault("pbot_hp", 1);
@@ -935,6 +1288,29 @@ me->SetPower(POWER_MANA, (me->GetMaxPower(POWER_MANA)));
 		if (me->IsInCombat())
 			UpEnergy();
 		Unit* pTarget = GetBotAIValidSelectedUnit();
+                
+         // ================== 核心 AI 升级：防卫本能与自动还击 ==================
+        // 如果当前没有合法目标，但自身处于战斗状态，立刻反查是谁在打我
+        if (!pTarget && me->IsInCombat())
+        {
+            Unit* pAttacker = me->getAttackerForHelper();
+            if (pAttacker && pAttacker->IsAlive() && me->IsValidAttackTarget(pAttacker))
+            {
+                pTarget = pAttacker;
+                me->SetSelection(pTarget->GetGUID());
+                me->Attack(pTarget, true);
+                
+                // 唤醒寻路系统，如果是近战则主动冲向攻击者
+                if (me->GetMotionMaster())
+                {
+                    me->GetMotionMaster()->Clear();
+                    me->GetMotionMaster()->MoveChase(pTarget);
+                }
+            }
+        }
+        // =======================================================================
+
+
 		if (m_ForceFlee)
 		{
 			me->AttackStop();
@@ -1093,7 +1469,7 @@ bool BotGroupAI::IsNotSelect(Unit* pTarget)
 {
 	if (!pTarget || !pTarget->IsAlive())
 		return true;
-	if (pTarget->HasAura(27827)) // (27827 ����֮�� ����������)
+	if (pTarget->HasAura(27827)) // (27827     ֮             )
 		return true;
 	if (pTarget->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE))
 		return true;
@@ -1316,6 +1692,12 @@ bool BotGroupAI::UpdateMasterPlayer()
 
 bool BotGroupAI::TrySettingToMaster()
 {
+        // ================== 新增代码开始 ==================
+	// 读取配置：如果设置为 0 (false)，则直接关闭队伍自动等级同步
+	if (!sConfigMgr->GetBoolDefault("PlayerBot.SyncLevelWithGroup", false))
+		return false;
+	// ================== 新增代码结束 ==================
+
 	static int32 gapLV = 2;
 	if (!BotUtility::BotCanSettingToMaster)
 		return false;
@@ -1401,6 +1783,22 @@ bool BotGroupAI::TryTeleportToMaster()
 
 Unit* BotGroupAI::GetCombatTarget(float range)
 {
+
+
+    // ================== 核心 AI 升级：暴力护主判定 ==================
+    // 只要队长（你）在战斗中，无视一切网格扫描，直接锁定你的目标！
+    if (m_MasterPlayer && m_MasterPlayer->IsInCombat())
+    {
+        Unit* masterVictim = m_MasterPlayer->GetVictim();
+        if (masterVictim && masterVictim->IsAlive() && me->IsValidAttackTarget(masterVictim))
+        {
+            return masterVictim;
+        }
+    }
+    // ================================================================
+
+
+
 	Group* pGroup = me->GetGroup();
 	if (!pGroup)
 		return NULL;
@@ -1447,7 +1845,24 @@ Unit* BotGroupAI::GetCombatTarget(float range)
 		validTarget.push_back(pCreature);
 	}
 	if (validTarget.empty())
-		return NULL;
+      
+        {
+        // === 新增修复代码开始 ===
+        // 找不到正在打队伍的怪时，如果队长正在战斗中，直接去打队长的目标
+        if (m_MasterPlayer && m_MasterPlayer->IsInCombat())
+        {
+            Unit* masterVictim = m_MasterPlayer->GetVictim();
+            if (masterVictim && masterVictim->IsAlive() && me->IsValidAttackTarget(masterVictim))
+            {
+                return masterVictim;
+            }
+        }
+        // === 新增修复代码结束 ===
+        return NULL;
+    }
+		
+
+
 	return validTarget[urand(0, validTarget.size() - 1)];
 }
 
@@ -1468,20 +1883,35 @@ void BotGroupAI::ProcessFollowToMaster()
 	Position targetPos = BotUtility::GetPositionFromGroup(m_MasterPlayer, me->GetGUID(), me->GetGroup());
 	m_Movement->MovementTo(targetPos.GetPositionX(), targetPos.GetPositionY(), targetPos.GetPositionZ(), 0);
 	float distance = me->GetDistance(m_MasterPlayer->GetPosition());
-	if (distance <= NEEDFLEE_CHECKRANGE && distance > 0.1f)
-	{
-		me->GetMotionMaster()->Clear();
-		me->GetMotionMaster()->MoveFollow(m_MasterPlayer, 1.0f, m_MasterPlayer->GetOrientation());
-		return;
-	}
 
-	if (me->IsWithinLOSInMap(m_MasterPlayer))
-	{
-		me->GetMotionMaster()->Clear();
-		me->GetMotionMaster()->MoveFollow(m_MasterPlayer, 1.0f, m_MasterPlayer->GetOrientation());
-	}
-	else
-		m_Movement->MovementTo(m_MasterPlayer->GetPositionX(), m_MasterPlayer->GetPositionY(), m_MasterPlayer->GetPositionZ(), 1);
+
+     // ================== 核心升级：动态环形阵型计算 ==================
+    // 1. 利用机器人的唯一 ID 取模，将 360 度 (2*PI) 分成 6 个不同方位
+    float followAngle = (me->GetGUID().GetCounter() % 6) * (M_PI / 3.0f);
+    
+    // 2. 距离也错开，不要全挤在 1 码，分配到 2码 到 4码 之间
+    float followDist = 2.0f + (me->GetGUID().GetCounter() % 3) * 1.0f;
+    // ================================================================
+
+    if (distance <= NEEDFLEE_CHECKRANGE && distance > 0.1f)
+    {
+        me->GetMotionMaster()->Clear();
+        // 替换参数：使用动态距离和角度
+        me->GetMotionMaster()->MoveFollow(m_MasterPlayer, followDist, followAngle);
+        return;
+    }
+
+    if (me->IsWithinLOSInMap(m_MasterPlayer))
+    {
+        me->GetMotionMaster()->Clear();
+        // 替换参数：使用动态距离和角度
+        me->GetMotionMaster()->MoveFollow(m_MasterPlayer, followDist, followAngle);
+    }
+    else
+    {
+        // 如果卡了视角(没在视野内)，跑向队长
+        m_Movement->MovementTo(m_MasterPlayer->GetPositionX(), m_MasterPlayer->GetPositionY(), m_MasterPlayer->GetPositionZ(), 1);
+    }
 }
 
 bool BotGroupAI::NonCombatProcess()
@@ -1508,6 +1938,125 @@ bool BotGroupAI::NonCombatProcess()
 			return true;
 		m_WishStore.UpdateWishStore();
 		BotUtility::TryTeleportPlayerPet(me);
+
+    // ================== 核心 AI 升级：7.3.5 全团一键秒刷 Buff 矩阵 (终极防抽风版) ==================
+        if (me->IsAlive() && !me->IsMounted() && !me->IsInCombat() && !me->HasUnitState(UNIT_STATE_CASTING))
+        {
+            bool hasCasted = false;
+
+            // --- 第一优先级：只给自己上的单体护盾 ---
+            switch (me->getClass())
+            {
+                case CLASS_MAGE:    
+                    if (!me->HasAura(36881)) { 
+                        if (!me->HasSpell(36881)) me->LearnSpell(36881, false);
+                        me->CastSpell(me, 36881, true); 
+                        hasCasted = true; 
+                    } 
+                    break;
+                case CLASS_SHAMAN:  
+                    if (!me->HasAura(192106)) { 
+                        if (!me->HasSpell(192106)) me->LearnSpell(192106, false);
+                        me->CastSpell(me, 192106, true); 
+                        hasCasted = true; 
+                    } 
+                    break;
+            }
+
+            // --- 第二优先级：给全团在一瞬间刷齐群体 Buff ---
+            uint32 checkSpellId = 0;
+            switch (me->getClass())
+            {
+                case CLASS_PRIEST: checkSpellId = 23948; break; // 真言术：韧
+                case CLASS_MAGE:   checkSpellId = 36880; break; // 奥术智慧
+                case CLASS_PALADIN:checkSpellId = 56525; break; // 王者祝福
+            }
+
+            if (checkSpellId > 0)
+            {
+                if (!me->HasSpell(checkSpellId)) me->LearnSpell(checkSpellId, false);
+
+                Group* pGroup = me->GetGroup();
+                if (pGroup)
+                {
+                    Group::MemberSlotList const& memList = pGroup->GetMemberSlots();
+                    for (Group::MemberSlot const& slot : memList)
+                    {
+                        Player* member = ObjectAccessor::FindPlayer(slot.guid);
+                        // 目标必须存活、在视野内、且距离不超过 30 码
+                        if (!member || !member->IsAlive() || !me->IsWithinLOSInMap(member) || me->GetDistance(member) > 30.0f)
+                            continue;
+
+                        // 只要队友身上没这个 Buff，立刻刷！
+                        if (!member->HasAura(checkSpellId))
+                        {
+                            me->SetFacingToObject(member);
+                            
+                            // 1. 面子工程：法师对目标播放施法动作
+                            me->CastSpell(member, checkSpellId, true);
+                            
+                            // 2. 【终极破死循环黑科技】：
+                            // 因为 36880 等老法术在 7.3.5 底层不能给别人加，
+                            // 我们强制让队友在后台“自己对自己”瞬发一次！100% 成功挂上真实 Buff！
+                            if (me->GetGUID() != member->GetGUID()) 
+                            {
+                                member->CastSpell(member, checkSpellId, true);
+                            }
+                            
+                            hasCasted = true; // 标记已施法，但不跳出循环，继续瞬间给下一个人刷！
+                        }
+                    }
+                }
+                else // 没有队伍时，给自己刷
+                {
+                    if (!me->HasAura(checkSpellId))
+                    {
+                        me->CastSpell(me, checkSpellId, true);
+                        hasCasted = true;
+                    }
+                }
+            }
+
+            // --- 第三优先级：一瞬间给全团伤员挂满恢复 (小德回春 / 牧师补盾) ---
+            if (!hasCasted) // 只有主属性 Buff 都刷齐了，才去补血，防止卡动作
+            {
+                Group* pGroup = me->GetGroup();
+                if (pGroup)
+                {
+                    Group::MemberSlotList const& memList = pGroup->GetMemberSlots();
+                    for (Group::MemberSlot const& slot : memList)
+                    {
+                        Player* member = ObjectAccessor::FindPlayer(slot.guid);
+                        if (!member || !member->IsAlive() || me->GetDistance(member) > 30.0f) continue;
+
+                        if (member->GetHealthPct() < 100.0f)
+                        {
+                            if (me->getClass() == CLASS_DRUID && !member->HasAura(8936)) 
+                            { 
+                                if (!me->HasSpell(8936)) me->LearnSpell(8936, false);
+                                me->CastSpell(member, 8936, true); 
+                                hasCasted = true; 
+                            }
+                            if (me->getClass() == CLASS_PRIEST && !member->HasAura(17) && !member->HasAura(6788)) 
+                            { 
+                                if (!me->HasSpell(17)) me->LearnSpell(17, false);
+                                me->CastSpell(member, 17, true); 
+                                hasCasted = true; 
+                            }
+                        }
+                    }
+                }
+            }
+
+            // --- 统一结算：如果这回合刷了任何 Buff，就停顿一下 ---
+            if (hasCasted)
+            {
+                m_Movement->ClearMovement();
+                return true; 
+            }
+        }
+        // =======================================================================
+
 	}
 	return false;
 }
@@ -3036,11 +3585,11 @@ bool BotGroupAI::TargetIsStealth(Player* pTarget)
 {
 	if (!pTarget)
 		return false;
-	// (1784 ����Ǳ�� || 5215 ��³��Ǳ�� || 66 ��ʦ���� || 58984 ��ҹ����)
+	// (1784     Ǳ   || 5215   ³  Ǳ   || 66   ʦ     || 58984   ҹ    )
 	if (pTarget->HasAura(1784) || pTarget->HasAura(5215) ||
 		pTarget->HasAura(66) || pTarget->HasAura(58984))
 	{
-		if (!me->CanSeeOrDetect(pTarget, false, true)) // ���Ǳ��
+		if (!me->CanSeeOrDetect(pTarget, false, true)) //    Ǳ  
 			return true;
 	}
 	return false;

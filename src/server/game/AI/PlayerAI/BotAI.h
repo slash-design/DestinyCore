@@ -91,6 +91,14 @@ public:
 	bool SetMovetoUseGOTarget(ObjectGuid target) { return m_MovetoUseGO.SetNeedMovetoUseGO(target); }
 	void ProcessBotCommand(Player* srcPlayer, std::string cmd);
 
+        // ==========================================
+	// 【AI 导演系统专属控制接口】
+	// ==========================================
+	void SetDirectorSleep(bool sleep) { m_isDirectorSleeping = sleep; }
+	bool IsDirectorSleeping() const { return m_isDirectorSleeping; }
+
+
+
 protected:
 	bool CanReciveCommand(std::string& cmd, std::string& param);
 	void ProcessSummonRiteSpell(Player* srcPlayer);
@@ -212,8 +220,15 @@ protected:
 
 	UINT_SET m_FilterCreatureEntrys;
 
-	uint32 BotCommon_ClearAllCtrl;// = 59752;		// ����
+	uint32 BotCommon_ClearAllCtrl;// = 59752;		//     
 	uint32 m_lastClearCtrlTick;
+
+        // ==========================================
+	// 【AI 导演系统变量】默认所有机器人出生即休眠！
+	// ==========================================
+	bool m_isDirectorSleeping = true;
+        uint32 m_directorCheckTimer = 0; // 下班检测计时器
+
 };
 
 #endif // !_BOT_AI_H_

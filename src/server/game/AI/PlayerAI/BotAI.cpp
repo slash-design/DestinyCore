@@ -320,9 +320,18 @@ void BotBGAI::ProcessAttackCommand(Player* srcPlayer)
         return;
     if (me->GetDistance(pMasterTarget->GetPosition()) > BOTAI_SEARCH_RANGE)
         return;
-    me->SetSelection(pMasterTarget->GetGUID());
-}
+        
+    me->SetSelection(pMasterTarget->GetGUID());               // 原有代码
 
+    // ================== 新增代码 ==================
+    me->Attack(pMasterTarget, true);
+    if (me->GetMotionMaster())
+    {
+        me->GetMotionMaster()->Clear();
+        me->GetMotionMaster()->MoveChase(pMasterTarget);
+    }
+    // ================== 新增代码 ==================
+}
 void BotBGAI::EachTick()
 {
     m_RangeCreatureLists.clear();
@@ -473,6 +482,13 @@ void BotBGAI::DamageEndure(Unit* attacker, uint32& damage, DamageEffectType dama
 
 void BotBGAI::UpdateAI(uint32 diff)
 {
+
+
+
+   // 【AI 导演系统拦截】如果处于休眠状态，直接跳过所有底层运算！
+    if (m_isDirectorSleeping)
+        return;
+
     m_UpdateTick -= diff;
 
     if (m_UpdateTick <= 0)
@@ -1465,6 +1481,10 @@ NearUnitVec BotBGAI::SearchFarEnemy(float minRange, float maxRange)
 void BotBGAI::UpdateBotAI(uint32 diff)
 {
 
+    // 【AI 导演系统：基础拦截锁】
+    if (m_isDirectorSleeping)
+        return;
+
     EachTick();
     if (me->HasUnitState(UNIT_STATE_CASTING))
     {
@@ -1616,7 +1636,14 @@ void BotBGAI::UpdateBotAI(uint32 diff)
 
 void BotBGAI::UpdateBotAI(uint32 diff)
 {
-    Battleground* pBattleground = me->GetBattleground();
+   
+
+  // 【AI 导演系统：基础拦截锁】
+    if (m_isDirectorSleeping)
+        return;
+
+
+   Battleground* pBattleground = me->GetBattleground();
     if (!pBattleground)
         return;
 

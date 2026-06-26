@@ -17,15 +17,20 @@
 
 // This is where scripts' loading functions should be declared:
 
+void AddSC_mod_ollama_chat();
 void AddSC_custom_npcs();
 void AddSC_quest_conversation();
 void AddSC_solocraft();
 void AddLfgSoloScripts();
-
+void AddSC_ai_director();
 void AddCustomScripts()
 {
     AddSC_custom_npcs(); 
     AddSC_quest_conversation();
     AddSC_solocraft();
-	AddLfgSoloScripts();
+    AddLfgSoloScripts();
+    AddSC_mod_ollama_chat();
+    AddSC_ai_director();
 }
+
+
